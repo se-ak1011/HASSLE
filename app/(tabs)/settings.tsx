@@ -15,8 +15,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
-import { exportLast7Days } from '@/services/exportService';
+import { exportLast7Days, exportClinicalReport } from '@/services/exportService';
 import { useFontFamily } from '@/hooks/useFontFamily';
+import { usePlus } from '@/contexts/PlusContext';
+import { PaywallModal } from '@/components/ui/PaywallModal';
 import {
   ReminderFrequency,
   REMINDER_FREQUENCY_LABELS,
@@ -347,7 +349,36 @@ export default function SettingsScreen() {
   const { showAlert } = useAlert();
   const { resetAllData } = useDay();
   const ff = useFontFamily();
+  const { isPlus } = usePlus();
   const [exporting, setExporting] = useState(false);
+  const [exportingClinical, setExportingClinical] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  async function handleClinicalExport() {
+    if (!isPlus) {
+      setShowPaywall(true);
+      return;
+    }
+    if (exportingClinical) return;
+    setExportingClinical(true);
+    try {
+      const result = await exportClinicalReport(30);
+      if (!result.success) {
+        if (result.error === 'no_data') {
+          showAlert(
+            'Nothing to export yet',
+            'Complete at least one day first. Once you end a day, it will appear in your report.'
+          );
+        } else if (result.error === 'sharing_unavailable') {
+          showAlert('Sharing not available', 'Your device does not support file sharing.');
+        } else {
+          showAlert('Export failed', 'Something went wrong generating the report. Please try again.');
+        }
+      }
+    } finally {
+      setExportingClinical(false);
+    }
+  }
 
   function handleClearData() {
     showAlert(
@@ -468,6 +499,32 @@ export default function SettingsScreen() {
           />
         </Card>
 
+        {/* Hassle Plus */}
+        <SectionHeader title="Hassle Plus" />
+        <Card>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+            onPress={() => setShowPaywall(true)}
+          >
+            <View style={[styles.rowIcon, styles.rowIconDefault]}>
+              <MaterialIcons name="auto-awesome" size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>{isPlus ? 'Plus is active' : 'Hassle Plus'}</Text>
+              <Text style={styles.rowSublabel}>
+                {isPlus
+                  ? 'Thank you for supporting Hassle 💜'
+                  : 'The core app stays free. Plus adds extra tools and supports development.'}
+              </Text>
+            </View>
+            <MaterialIcons
+              name={isPlus ? 'check-circle' : 'chevron-right'}
+              size={20}
+              color={isPlus ? Colors.success : Colors.textSubtle}
+            />
+          </Pressable>
+        </Card>
+
         {/* Export */}
         <SectionHeader title="Export" />
         <Card>
@@ -500,12 +557,45 @@ export default function SettingsScreen() {
               <MaterialIcons name="chevron-right" size={20} color={Colors.textSubtle} />
             ) : null}
           </Pressable>
-          <View style={styles.futureNote}>
-            <MaterialIcons name="info-outline" size={13} color={Colors.textSubtle} />
-            <Text style={styles.futureNoteText}>
-              More export options coming — CSV format and longer date ranges.
-            </Text>
-          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.row,
+              pressed && !exportingClinical ? styles.rowPressed : null,
+            ]}
+            onPress={handleClinicalExport}
+            disabled={exportingClinical}
+          >
+            <View style={[styles.rowIcon, styles.rowIconDefault]}>
+              {exportingClinical ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <MaterialIcons name="description" size={18} color={Colors.primary} />
+              )}
+            </View>
+            <View style={styles.rowText}>
+              <View style={styles.rowLabelRow}>
+                <Text style={styles.rowLabel}>
+                  {exportingClinical ? 'Generating report…' : 'Doctor-visit report'}
+                </Text>
+                {!isPlus ? (
+                  <View style={styles.plusTag}>
+                    <Text style={[styles.plusTagText, { fontFamily: ff.semibold }]}>PLUS</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.rowSublabel}>
+                Last 30 days — trends plus a symptom &amp; reflection log for appointments.
+              </Text>
+            </View>
+            {!exportingClinical ? (
+              <MaterialIcons
+                name={isPlus ? 'chevron-right' : 'lock'}
+                size={isPlus ? 20 : 16}
+                color={Colors.textSubtle}
+              />
+            ) : null}
+          </Pressable>
         </Card>
 
         {/* Support */}
@@ -556,6 +646,8 @@ export default function SettingsScreen() {
         {/* Version */}
         <Text style={[styles.version, { fontFamily: ff.regular }]}>Version {APP_VERSION}</Text>
       </ScrollView>
+
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </View>
   );
 }
@@ -738,6 +830,22 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     fontWeight: Fonts.medium,
     color: Colors.text,
+  },
+  rowLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  plusTag: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.full,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+  },
+  plusTagText: {
+    fontSize: 9,
+    color: Colors.background,
+    letterSpacing: 0.8,
   },
   rowLabelDestructive: {
     color: Colors.flare,

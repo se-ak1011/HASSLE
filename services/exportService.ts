@@ -623,3 +623,157 @@ export async function exportLast7Days(): Promise<ExportResult> {
     return { success: false, error: message, daysFound: 0 };
   }
 }
+
+// ─── Doctor-visit / Clinical Report (Hassle Plus) ─────────────────────────────
+// A longer-range, appointment-ready summary: aggregate trends plus a
+// chronological symptom & reflection log pulled from the guided prompts.
+
+function buildClinicalHTML(
+  stats: WeeklyStats,
+  rawDays: DayState[],
+  daysBack: number
+): string {
+  const mode = stats.dominantMode;
+  const generated = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const flarePct =
+    stats.days.length > 0
+      ? Math.round((stats.totalFlareDays / stats.days.length) * 100)
+      : 0;
+
+  const overview = `
+    <div class="grid">
+      <div class="stat"><div class="num">${stats.days.length}</div><div class="lbl">days tracked</div></div>
+      <div class="stat"><div class="num">${formatUnit(stats.avgEnergyStarted, mode)}</div><div class="lbl">avg energy at start</div></div>
+      <div class="stat"><div class="num">${formatUnit(stats.avgEnergyUsed, mode)}</div><div class="lbl">avg energy used</div></div>
+      <div class="stat"><div class="num">${stats.totalFlareDays} <span class="pct">(${flarePct}%)</span></div><div class="lbl">flare days</div></div>
+      <div class="stat"><div class="num">${stats.totalTasksCompleted}</div><div class="lbl">tasks completed</div></div>
+      <div class="stat"><div class="num">${stats.mostDemandingTask ? escapeHtml(stats.mostDemandingTask) : '—'}</div><div class="lbl">most demanding task</div></div>
+    </div>`;
+
+  const tagRows = stats.topTags
+    .map(
+      (t) =>
+        `<tr><td>${escapeHtml(t.tag)}</td><td class="r">${t.count} day${t.count !== 1 ? 's' : ''}</td></tr>`
+    )
+    .join('');
+  const tagsTable = stats.topTags.length
+    ? `<h2>Most common tags</h2><table>${tagRows}</table>`
+    : '';
+
+  const logRows = stats.days
+    .map(
+      (d) => `
+      <tr>
+        <td>${escapeHtml(d.dateReadable)}</td>
+        <td class="r">${formatUnit(d.energyLevel, d.energyMode)}</td>
+        <td class="r">${formatUnit(d.energyUsed, d.energyMode)}</td>
+        <td class="c">${d.isFlareDay ? '●' : ''}</td>
+        <td class="r">${d.tasksCompleted}</td>
+        <td>${d.tags.map(escapeHtml).join(', ')}</td>
+      </tr>`
+    )
+    .join('');
+
+  // Symptom & reflection notes, newest first, only days that have content.
+  const sortedRaw = [...rawDays].sort((a, b) => b.date.localeCompare(a.date));
+  const noteBlocks = sortedRaw
+    .map((d) => {
+      const gp = d.guidedPrompts ?? {};
+      const parts: string[] = [];
+      if (gp.symptoms) parts.push(`<p><b>Symptoms:</b> ${escapeHtml(gp.symptoms)}</p>`);
+      if (gp.drained) parts.push(`<p><b>Drained by:</b> ${escapeHtml(gp.drained)}</p>`);
+      if (gp.helped) parts.push(`<p><b>Helped:</b> ${escapeHtml(gp.helped)}</p>`);
+      if (d.journalEntry) parts.push(`<p>${escapeHtml(d.journalEntry)}</p>`);
+      if (parts.length === 0) return '';
+      return `<div class="note"><div class="note-date">${escapeHtml(
+        formatDateReadable(d.date)
+      )}${d.isFlareDay ? ' · <span class="flare">flare</span>' : ''}</div>${parts.join('')}</div>`;
+    })
+    .filter(Boolean)
+    .join('');
+  const notesSection = noteBlocks
+    ? `<h2>Symptom &amp; reflection log</h2>${noteBlocks}`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #2a2333; margin: 0; padding: 36px 40px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b5b7e; margin: 28px 0 10px; border-bottom: 1px solid #e7e0ee; padding-bottom: 6px; }
+  .meta { color: #8a7f97; font-size: 12px; margin-bottom: 4px; }
+  .disclaimer { color: #8a7f97; font-size: 11px; font-style: italic; margin: 10px 0 4px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .stat { flex: 1 1 30%; min-width: 150px; background: #f6f2fa; border: 1px solid #e7e0ee; border-radius: 10px; padding: 12px 14px; }
+  .num { font-size: 18px; font-weight: 700; color: #4a3a63; }
+  .num .pct { font-size: 12px; font-weight: 500; color: #8a7f97; }
+  .lbl { font-size: 11px; color: #8a7f97; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee6f2; }
+  th { color: #8a7f97; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.04em; }
+  td.r { text-align: right; } td.c { text-align: center; color: #b4467e; }
+  .note { margin-bottom: 12px; padding: 10px 12px; background: #faf8fc; border-left: 3px solid #c9b8dd; border-radius: 4px; }
+  .note-date { font-size: 11px; font-weight: 700; color: #6b5b7e; margin-bottom: 4px; }
+  .note p { margin: 2px 0; font-size: 12px; line-height: 1.5; }
+  .flare { color: #b4467e; font-weight: 700; }
+  .footer { margin-top: 32px; color: #b3a8c0; font-size: 10px; text-align: center; }
+</style></head>
+<body>
+  <h1>Hassle — Symptom &amp; Energy Summary</h1>
+  <div class="meta">${stats.dateRange} · last ${daysBack} days</div>
+  <div class="meta">Generated ${generated}</div>
+  <div class="disclaimer">Self-reported data from the Hassle app. Intended to support a conversation with a clinician, not a medical record.</div>
+  ${overview}
+  ${notesSection}
+  <h2>Daily log</h2>
+  <table>
+    <tr><th>Date</th><th class="r">Start</th><th class="r">Used</th><th class="c">Flare</th><th class="r">Done</th><th>Tags</th></tr>
+    ${logRows}
+  </table>
+  ${tagsTable}
+  <div class="footer">Made with Hassle — a daily planner for bodies that don't cooperate.</div>
+</body></html>`;
+}
+
+/**
+ * Generates a longer-range clinical PDF (Hassle Plus) and opens the share sheet.
+ * @param daysBack how far back to include (e.g. 30 or 90).
+ */
+export async function exportClinicalReport(daysBack: number = 30): Promise<ExportResult> {
+  try {
+    const history = await loadHistory();
+    const cutoff = getDateString(daysBack);
+    const recent = history.filter((d) => d.date >= cutoff);
+
+    if (recent.length === 0) {
+      return { success: false, error: 'no_data', daysFound: 0 };
+    }
+
+    const stats = computeStats(recent);
+    const html = buildClinicalHTML(stats, recent, daysBack);
+
+    const { uri } = await Print.printToFileAsync({ html, base64: false });
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) {
+      return { success: false, error: 'sharing_unavailable', daysFound: recent.length };
+    }
+
+    await Sharing.shareAsync(uri, {
+      mimeType: 'application/pdf',
+      dialogTitle: 'Hassle — Clinical Summary',
+      UTI: 'com.adobe.pdf',
+    });
+
+    return { success: true, daysFound: recent.length };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false, error: message, daysFound: 0 };
+  }
+}

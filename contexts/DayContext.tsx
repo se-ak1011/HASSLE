@@ -96,6 +96,10 @@ export interface DayContextType {
   moveTask(taskId: string, targetDate: string): void;
   /** Undo a reschedule, returning the task to today's pending list. */
   unmoveTask(taskId: string): void;
+  /** Tasks rescheduled to a future date, for the "Coming up" preview. */
+  scheduledTasks: ScheduledTask[];
+  /** Cancel a future reschedule so it never materialises. */
+  removeScheduled(taskId: string): void;
   dismissTask(taskId: string): void;
   updateTaskDefault(name: string, baseCost: number, saveAsDefault: boolean, category?: string): void;
 
@@ -165,6 +169,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefsRaw] = useState<UserPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [flarePreview, setFlarePreview] = useState(false);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
   const dayRef = useRef<DayState | null>(null);
 
   // Keep dayRef in sync so AppState handler can read latest day without stale closure
@@ -263,6 +268,11 @@ export function DayProvider({ children }: { children: ReactNode }) {
     })();
   }, [autoArchivePastDay]);
 
+  // Load rescheduled ("coming up") tasks once on mount.
+  useEffect(() => {
+    loadScheduledTasks().then(setScheduledTasks);
+  }, []);
+
   // Listen for app coming back to foreground — check if the date has changed
   // and auto-archive the previous day's data if needed
   useEffect(() => {
@@ -319,6 +329,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
       if (due.length > 0) {
         await saveScheduledTasks(remaining);
       }
+      setScheduledTasks(remaining);
 
       const newDay: DayState = {
         date: todayStr,
@@ -457,7 +468,9 @@ export function DayProvider({ children }: { children: ReactNode }) {
         };
         loadScheduledTasks().then((list) => {
           const cleaned = list.filter((s) => s.task.id !== taskId);
-          saveScheduledTasks([...cleaned, entry]);
+          const next = [...cleaned, entry];
+          saveScheduledTasks(next);
+          setScheduledTasks(next);
         });
       }
     },
@@ -476,11 +489,22 @@ export function DayProvider({ children }: { children: ReactNode }) {
         ),
       }));
       loadScheduledTasks().then((list) => {
-        saveScheduledTasks(list.filter((s) => s.task.id !== taskId));
+        const next = list.filter((s) => s.task.id !== taskId);
+        saveScheduledTasks(next);
+        setScheduledTasks(next);
       });
     },
     [setDay]
   );
+
+  // Cancel a future ("coming up") reschedule entirely.
+  const removeScheduled = useCallback((taskId: string) => {
+    loadScheduledTasks().then((list) => {
+      const next = list.filter((s) => s.task.id !== taskId);
+      saveScheduledTasks(next);
+      setScheduledTasks(next);
+    });
+  }, []);
 
   // ── Dismiss Task ──────────────────────────────────────────────────────────────
 
@@ -651,6 +675,8 @@ export function DayProvider({ children }: { children: ReactNode }) {
         completeTask,
         moveTask,
         unmoveTask,
+        scheduledTasks,
+        removeScheduled,
         dismissTask,
         updateTaskDefault,
         saveJournal,

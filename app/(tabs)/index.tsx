@@ -21,6 +21,7 @@ import { EnergyBar } from '@/components/ui/EnergyBar';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
 import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
+import { formatShortDate } from '@/services/dates';
 import { CompletionModal } from '@/components/ui/CompletionModal';
 import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
@@ -425,6 +426,8 @@ export default function TodayScreen() {
     completeTask,
     moveTask,
     unmoveTask,
+    scheduledTasks,
+    removeScheduled,
     toggleFlare,
     endDay,
   } = useDay();
@@ -455,6 +458,13 @@ export default function TodayScreen() {
   const pending = day.tasks.filter((t) => t.status === 'pending');
   const completed = day.tasks.filter((t) => t.status === 'completed');
   const moved = day.tasks.filter((t) => t.status === 'moved');
+
+  // "Coming up" = tasks rescheduled to a future date that aren't already shown
+  // in today's "Moved ahead" list (those were moved today and have undo there).
+  const movedIds = new Set(moved.map((t) => t.id));
+  const upcoming = scheduledTasks
+    .filter((s) => !movedIds.has(s.task.id))
+    .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   function handleCompletePress(task: Task) {
     setPendingCompletion(task);
@@ -684,6 +694,39 @@ export default function TodayScreen() {
                   onMove={() => {}}
                   onRevert={() => unmoveTask(task.id)}
                 />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Coming up — tasks rescheduled to a future day */}
+        {upcoming.length > 0 ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Coming up</Text>
+              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{upcoming.length}</Text>
+            </View>
+            <View style={styles.taskList}>
+              {upcoming.map((s) => (
+                <View key={s.task.id} style={styles.comingCard}>
+                  <View style={styles.comingInfo}>
+                    <Text style={[styles.comingName, { fontFamily: ff.medium }]}>{s.task.name}</Text>
+                    <View style={styles.comingDateRow}>
+                      <MaterialIcons name="event" size={13} color={Colors.accent} />
+                      <Text style={[styles.comingDate, { fontFamily: ff.regular }]}>
+                        {formatShortDate(s.scheduledFor)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => removeScheduled(s.task.id)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Cancel scheduled "${s.task.name}"`}
+                  >
+                    <MaterialIcons name="close" size={18} color={Colors.textSubtle} />
+                  </Pressable>
+                </View>
               ))}
             </View>
           </View>
@@ -1212,6 +1255,35 @@ const styles = StyleSheet.create({
   taskList: {
     gap: Spacing.sm,
     marginBottom: Spacing.md,
+  },
+  comingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  },
+  comingInfo: {
+    flex: 1,
+  },
+  comingName: {
+    fontSize: FontSizes.base,
+    fontWeight: Fonts.medium,
+    color: Colors.textMuted,
+    marginBottom: 3,
+  },
+  comingDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  comingDate: {
+    fontSize: FontSizes.sm,
+    color: Colors.accent,
   },
   addTaskBtn: {
     flexDirection: 'row',
