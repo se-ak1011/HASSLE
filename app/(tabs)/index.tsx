@@ -21,7 +21,7 @@ import { EnergyBar } from '@/components/ui/EnergyBar';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
 import { CompletionModal } from '@/components/ui/CompletionModal';
-import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES } from '@/constants/types';
+import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
@@ -45,7 +45,7 @@ function CheckInView() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagInputError, setTagInputError] = useState('');
 
-  const allTags: string[] = [...BUILT_IN_TAGS, ...(prefs?.customTags ?? [])];
+  const allTags: string[] = [...BUILT_IN_TAGS, ...dedupeCustomTags(prefs?.customTags ?? [])];
 
   function handleAddCustomTag() {
     const trimmed = tagInputValue.trim().slice(0, 30);

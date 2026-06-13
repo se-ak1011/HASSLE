@@ -94,6 +94,31 @@ export const BUILT_IN_TAGS: string[] = [
   'decent day',
 ];
 
+/**
+ * Normalize a user's custom tags so they don't collide with the built-in
+ * tags or with each other on a case-insensitive basis. Drops any custom tag
+ * whose lowercase form matches a built-in (e.g. "Period" when "period" is
+ * built-in), and collapses case-duplicate customs to a single entry,
+ * preferring the all-lowercase variant.
+ */
+export function dedupeCustomTags(customTags: string[]): string[] {
+  const builtInLower = new Set(BUILT_IN_TAGS.map((t) => t.toLowerCase()));
+  const chosen = new Map<string, string>(); // lowercase key -> kept original
+  for (const raw of customTags) {
+    const tag = raw.trim();
+    if (!tag) continue;
+    const lower = tag.toLowerCase();
+    if (builtInLower.has(lower)) continue; // already covered by a built-in
+    const existing = chosen.get(lower);
+    if (existing === undefined) {
+      chosen.set(lower, tag);
+    } else if (existing !== lower && tag === lower) {
+      chosen.set(lower, tag); // prefer the all-lowercase form
+    }
+  }
+  return Array.from(chosen.values());
+}
+
 /** Rotating supportive header lines — indexed by day of month. */
 export const HEADER_QUOTES: string[] = [
   'Rest counts as doing something.',

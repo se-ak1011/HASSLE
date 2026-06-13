@@ -16,6 +16,7 @@ import {
   EnergyMode,
   DailyTag,
   BUILT_IN_TAGS,
+  dedupeCustomTags,
   DEFAULT_PREFERENCES,
   DefaultDailyTask,
   ReminderSettings,
@@ -225,7 +226,24 @@ export function DayProvider({ children }: { children: ReactNode }) {
         setDayRaw(null);
       }
 
-      setPrefsRaw(savedPrefs);
+      // Migrate any stale case-duplicate custom tags (e.g. "Period" left over
+      // from before "period" became a built-in) and persist the cleaned list.
+      if (savedPrefs) {
+        const rawCustom = savedPrefs.customTags ?? [];
+        const cleanedCustom = dedupeCustomTags(rawCustom);
+        const changed =
+          cleanedCustom.length !== rawCustom.length ||
+          cleanedCustom.some((t, i) => t !== rawCustom[i]);
+        if (changed) {
+          const migrated = { ...savedPrefs, customTags: cleanedCustom };
+          setPrefsRaw(migrated);
+          savePreferences(migrated);
+        } else {
+          setPrefsRaw(savedPrefs);
+        }
+      } else {
+        setPrefsRaw(savedPrefs);
+      }
       setIsLoading(false);
     })();
   }, [autoArchivePastDay]);

@@ -486,7 +486,7 @@ export default function SettingsScreen() {
               <Text style={styles.rowSublabel}>
                 {exporting
                   ? 'Building your PDF, this will only take a moment.'
-                  : 'Summary PDF \u2014 energy, tasks, symptoms. Share with your care team.'}
+                  : 'Summary PDF — energy, tasks, symptoms. Share with your care team.'}
               </Text>
             </View>
             {!exporting ? (
@@ -496,7 +496,7 @@ export default function SettingsScreen() {
           <View style={styles.futureNote}>
             <MaterialIcons name="info-outline" size={13} color={Colors.textSubtle} />
             <Text style={styles.futureNoteText}>
-              More export options coming \u2014 CSV format and longer date ranges.
+              More export options coming — CSV format and longer date ranges.
             </Text>
           </View>
         </Card>
@@ -525,7 +525,7 @@ export default function SettingsScreen() {
           </Text>
           <Text style={styles.aboutText}>
             Designed for chronic illness, fatigue, and neurodivergent brains,
-            it works with your body \u2014 not against it.
+            it works with your body — not against it.
           </Text>
           <View style={styles.aboutDivider} />
           <Text style={styles.aboutFootnote}>
@@ -860,6 +860,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     color: Colors.textMuted,
     lineHeight: 24,
+    flexShrink: 1,
   },
   aboutDivider: {
     height: 1,

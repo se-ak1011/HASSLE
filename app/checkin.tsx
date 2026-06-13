@@ -12,7 +12,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
-import { EnergyMode, DailyTag, BUILT_IN_TAGS } from '@/constants/types';
+import { EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { useDay } from '@/hooks/useDay';
 
 const SPOON_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -33,7 +33,7 @@ export default function CheckInScreen() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [tagInputError, setTagInputError] = useState('');
 
-  const allTags: string[] = [...BUILT_IN_TAGS, ...(prefs?.customTags ?? [])];
+  const allTags: string[] = [...BUILT_IN_TAGS, ...dedupeCustomTags(prefs?.customTags ?? [])];
 
   function handleAddCustomTag() {
     const trimmed = tagInputValue.trim().slice(0, 30);
