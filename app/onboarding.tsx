@@ -140,7 +140,7 @@ export default function OnboardingScreen() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.7 }]}
           onPress={nextStep}
         >
           <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Get started</Text>
@@ -171,7 +171,7 @@ export default function OnboardingScreen() {
                 style={({ pressed }) => [
                   styles.taskChip,
                   selected && styles.taskChipSelected,
-                  pressed && { opacity: 0.75 },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => toggleTask(task)}
               >
@@ -216,7 +216,7 @@ export default function OnboardingScreen() {
             <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
             <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>
@@ -259,6 +259,7 @@ export default function OnboardingScreen() {
             onValueChange={setRemindersEnabled}
             trackColor={{ false: Colors.border, true: Colors.primary }}
             thumbColor={Colors.white}
+            accessibilityLabel="Enable reminders"
           />
         </View>
 
@@ -271,7 +272,7 @@ export default function OnboardingScreen() {
                 style={({ pressed }) => [
                   styles.freqOption,
                   frequency === opt.value && styles.freqOptionSelected,
-                  pressed && { opacity: 0.75 },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => setFrequency(opt.value)}
               >
@@ -315,7 +316,7 @@ export default function OnboardingScreen() {
             <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
             <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>

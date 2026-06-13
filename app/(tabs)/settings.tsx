@@ -169,6 +169,7 @@ function ReminderSettingsPanel() {
         <Switch
           value={reminders.enabled}
           onValueChange={handleToggle}
+          accessibilityLabel="Enable reminders"
           trackColor={{ false: Colors.border, true: Colors.primary }}
           thumbColor={Colors.white}
           disabled={saving}
@@ -185,7 +186,7 @@ function ReminderSettingsPanel() {
               style={({ pressed }) => [
                 styles.freqOption,
                 reminders.frequency === freq && styles.freqOptionSelected,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.7 },
               ]}
               onPress={() => handleFrequency(freq)}
             >
@@ -249,7 +250,7 @@ function DefaultTasksPanel() {
               style={({ pressed }) => [
                 styles.defaultTaskChip,
                 selected && styles.defaultTaskChipSelected,
-                pressed && { opacity: 0.75 },
+                pressed && { opacity: 0.7 },
               ]}
               onPress={() => toggleTask(task)}
             >

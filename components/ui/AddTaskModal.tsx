@@ -106,7 +106,12 @@ export function AddTaskModal({ visible, onClose }: Props) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.headerTitle, { fontFamily: ff.bold }]}>Add a task</Text>
-            <Pressable onPress={handleClose} hitSlop={12}>
+            <Pressable
+              onPress={handleClose}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
               <MaterialIcons name="close" size={22} color={Colors.textMuted} />
             </Pressable>
           </View>
@@ -249,7 +254,7 @@ export function AddTaskModal({ visible, onClose }: Props) {
               </View>
 
               <Pressable
-                style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.7 }]}
                 onPress={handleAddPremade}
               >
                 <Text style={[styles.addBtnText, { fontFamily: ff.semibold }]}>Add to today</Text>
@@ -309,7 +314,7 @@ export function AddTaskModal({ visible, onClose }: Props) {
                 style={({ pressed }) => [
                   styles.addBtn,
                   !name.trim() && styles.addBtnDisabled,
-                  pressed && { opacity: 0.85 },
+                  pressed && { opacity: 0.7 },
                 ]}
                 onPress={handleAddManual}
                 disabled={!name.trim()}

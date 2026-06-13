@@ -521,7 +521,7 @@ export default function ReflectScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.saveBtn,
-              pressed && { opacity: 0.85 },
+              pressed && { opacity: 0.7 },
             ]}
             onPress={handleSave}
           >

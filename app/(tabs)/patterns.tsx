@@ -494,9 +494,11 @@ export default function PatternsScreen() {
               onPress={reload}
               style={({ pressed }) => [
                 styles.refreshBtn,
-                pressed && { opacity: 0.6 },
+                pressed && { opacity: 0.7 },
               ]}
               hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh insights"
             >
               <MaterialIcons name="refresh" size={18} color={Colors.textSubtle} />
             </Pressable>

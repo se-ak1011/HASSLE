@@ -266,7 +266,7 @@ export default function CheckInScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.continueBtn,
-            pressed && { opacity: 0.85 },
+            pressed && { opacity: 0.7 },
           ]}
           onPress={handleContinue}
         >

@@ -287,6 +287,7 @@ function CheckInView() {
                 }}
                 trackColor={{ false: Colors.border, true: Colors.flare }}
                 thumbColor={Colors.white}
+                accessibilityLabel="Flare day"
               />
             </View>
             {isFlare ? (
@@ -589,6 +590,7 @@ export default function TodayScreen() {
             onValueChange={toggleFlare}
             trackColor={{ false: Colors.border, true: Colors.flare }}
             thumbColor={Colors.white}
+            accessibilityLabel="Flare day"
           />
         </View>
 

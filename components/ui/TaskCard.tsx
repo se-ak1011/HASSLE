@@ -73,6 +73,8 @@ export function TaskCard({ task, onComplete, onMove, mode }: Props) {
               ]}
               onPress={onComplete}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Mark "${task.name}" done`}
             >
               <MaterialIcons name="check" size={20} color={Colors.background} />
             </Pressable>
@@ -84,6 +86,8 @@ export function TaskCard({ task, onComplete, onMove, mode }: Props) {
               ]}
               onPress={onMove}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Move "${task.name}" to tomorrow`}
             >
               <MaterialIcons name="arrow-forward" size={18} color={Colors.textMuted} />
             </Pressable>
