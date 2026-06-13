@@ -97,7 +97,7 @@ export interface DayContextType {
   /** Undo a reschedule, returning the task to today's pending list. */
   unmoveTask(taskId: string): void;
   dismissTask(taskId: string): void;
-  updateTaskDefault(name: string, baseCost: number, saveAsDefault: boolean): void;
+  updateTaskDefault(name: string, baseCost: number, saveAsDefault: boolean, category?: string): void;
 
   // Reflection
   saveJournal(entry: string, prompts: DayState['guidedPrompts']): void;
@@ -497,13 +497,23 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // ── Update Task Default ────────────────────────────────────────────────────────
 
   const updateTaskDefault = useCallback(
-    (name: string, baseCost: number, saveAsDefault: boolean) => {
-      if (saveAsDefault && prefs) {
-        setPrefs({
-          ...prefs,
-          taskDefaults: { ...prefs.taskDefaults, [name]: baseCost },
-        });
-      }
+    (name: string, baseCost: number, saveAsDefault: boolean, category?: string) => {
+      if (!saveAsDefault || !prefs) return;
+      // Remember the cost AND make the task recur every day going forward.
+      const existing = prefs.defaultDailyTasks ?? [];
+      const already = existing.some((t) => t.name === name);
+      const nextDefaults = already
+        ? existing.map((t) =>
+            t.name === name
+              ? { ...t, baseCost, category: category ?? t.category }
+              : t
+          )
+        : [...existing, { name, baseCost, category: category ?? 'General' }];
+      setPrefs({
+        ...prefs,
+        taskDefaults: { ...prefs.taskDefaults, [name]: baseCost },
+        defaultDailyTasks: nextDefaults,
+      });
     },
     [prefs, setPrefs]
   );

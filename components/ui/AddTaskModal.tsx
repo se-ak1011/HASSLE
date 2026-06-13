@@ -65,7 +65,7 @@ export function AddTaskModal({ visible, onClose }: Props) {
   function handleAddPremade() {
     if (!selectedPremade) return;
     addTask(selectedPremade.name, premadeCost, selectedPremade.category, true);
-    updateTaskDefault(selectedPremade.name, premadeCost, saveDefault);
+    updateTaskDefault(selectedPremade.name, premadeCost, saveDefault, selectedPremade.category);
     setSelectedPremade(null);
     onClose();
   }
@@ -243,7 +243,7 @@ export function AddTaskModal({ visible, onClose }: Props) {
 
               <View style={styles.saveDefaultRow}>
                 <Text style={[styles.saveDefaultLabel, { fontFamily: ff.regular }]}>
-                  Save as my default for this task
+                  Add to my daily tasks (every day)
                 </Text>
                 <Switch
                   value={saveDefault}

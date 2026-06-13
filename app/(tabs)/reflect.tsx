@@ -106,6 +106,150 @@ const promptStyles = StyleSheet.create({
   },
 });
 
+// ─── Prompt Carousel ──────────────────────────────────────────────────────────
+// Swipeable cards so the four prompts take one card's height instead of
+// stacking — less overwhelming, one gentle question at a time.
+
+interface CarouselPrompt {
+  key: string;
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+}
+
+function PromptCarousel({ prompts }: { prompts: CarouselPrompt[] }) {
+  const ff = useFontFamily();
+  const [width, setWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+
+  function handleScrollEnd(e: { nativeEvent: { contentOffset: { x: number } } }) {
+    if (width === 0) return;
+    setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+  }
+
+  function goTo(i: number) {
+    scrollRef.current?.scrollTo({ x: i * width, animated: true });
+    setIndex(i);
+  }
+
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {width > 0 ? (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          keyboardShouldPersistTaps="handled"
+        >
+          {prompts.map((p, i) => (
+            <View key={p.key} style={{ width }}>
+              <View style={carouselStyles.card}>
+                <View style={carouselStyles.cardHeader}>
+                  <Text style={[carouselStyles.label, { fontFamily: ff.regular }]}>{p.label}</Text>
+                  <Text style={[carouselStyles.counter, { fontFamily: ff.medium }]}>
+                    {i + 1}/{prompts.length}
+                  </Text>
+                </View>
+                <TextInput
+                  style={[carouselStyles.input, { fontFamily: ff.regular }]}
+                  value={p.value}
+                  onChangeText={p.onChangeText}
+                  multiline
+                  placeholder="Answer any, all, or none…"
+                  placeholderTextColor={Colors.textSubtle}
+                  textAlignVertical="top"
+                />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      <View style={carouselStyles.dotsRow}>
+        {prompts.map((p, i) => (
+          <Pressable
+            key={p.key}
+            onPress={() => goTo(i)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`Go to prompt ${i + 1}${p.value ? ', answered' : ''}`}
+          >
+            <View
+              style={[
+                carouselStyles.dot,
+                i === index && carouselStyles.dotActive,
+                p.value ? carouselStyles.dotFilled : null,
+              ]}
+            />
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const carouselStyles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    marginRight: Spacing.sm,
+    minHeight: 150,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  label: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+  counter: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+  },
+  input: {
+    fontSize: FontSizes.base,
+    color: Colors.text,
+    minHeight: 84,
+    lineHeight: 22,
+    padding: 0,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.border,
+  },
+  dotFilled: {
+    backgroundColor: Colors.accent,
+  },
+  dotActive: {
+    backgroundColor: Colors.primary,
+    width: 9,
+    height: 9,
+    borderRadius: Radius.full,
+  },
+});
+
 // ─── Summary Stats Row ────────────────────────────────────────────────────────
 
 function SummaryRow({
@@ -493,27 +637,15 @@ export default function ReflectScreen() {
           {/* Guided prompts */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Guided prompts</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Answer any, all, or none.</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none.</Text>
 
-            <PromptInput
-              prompt="What drained you most today?"
-              value={drained}
-              onChangeText={setDrained}
-            />
-            <PromptInput
-              prompt="What helped or felt easier?"
-              value={helped}
-              onChangeText={setHelped}
-            />
-            <PromptInput
-              prompt="What did not get done — and that is okay."
-              value={notDone}
-              onChangeText={setNotDone}
-            />
-            <PromptInput
-              prompt="Any symptom changes to note?"
-              value={symptoms}
-              onChangeText={setSymptoms}
+            <PromptCarousel
+              prompts={[
+                { key: 'drained', label: 'What drained you most today?', value: drained, onChangeText: setDrained },
+                { key: 'helped', label: 'What helped or felt easier?', value: helped, onChangeText: setHelped },
+                { key: 'notDone', label: 'What did not get done — and that is okay.', value: notDone, onChangeText: setNotDone },
+                { key: 'symptoms', label: 'Any symptom changes to note?', value: symptoms, onChangeText: setSymptoms },
+              ]}
             />
           </View>
 
