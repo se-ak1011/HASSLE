@@ -20,6 +20,7 @@ import {
   DEFAULT_PREFERENCES,
   DefaultDailyTask,
   ReminderSettings,
+  ScheduledTask,
 } from '@/constants/types';
 import {
   loadTodayState,
@@ -30,6 +31,8 @@ import {
   saveCompletedDay,
   clearAllData,
   getTodayDateString,
+  loadScheduledTasks,
+  saveScheduledTasks,
 } from '@/services/storage';
 
 // ─── Pure Helpers ─────────────────────────────────────────────────────────────
@@ -89,7 +92,10 @@ export interface DayContextType {
   // Tasks
   addTask(name: string, baseCost: number, category?: string, isPreMade?: boolean): void;
   completeTask(taskId: string, feeling: CompletionFeeling): void;
-  moveTaskToTomorrow(taskId: string): void;
+  /** Reschedule a task to a future date (YYYY-MM-DD). */
+  moveTask(taskId: string, targetDate: string): void;
+  /** Undo a reschedule, returning the task to today's pending list. */
+  unmoveTask(taskId: string): void;
   dismissTask(taskId: string): void;
   updateTaskDefault(name: string, baseCost: number, saveAsDefault: boolean): void;
 
@@ -295,13 +301,32 @@ export function DayProvider({ children }: { children: ReactNode }) {
         })
       );
 
+      // Pull in any tasks that were rescheduled to today (or earlier, if missed)
+      const todayStr = getTodayDateString();
+      const scheduled = await loadScheduledTasks();
+      const due = scheduled.filter((s) => s.scheduledFor <= todayStr);
+      const remaining = scheduled.filter((s) => s.scheduledFor > todayStr);
+      const movedInTasks: Task[] = due.map((s) => ({
+        ...s.task,
+        id: `moved-${Date.now()}-${Math.random()}`,
+        status: 'pending' as const,
+        effectiveCost: s.task.baseCost,
+        completedCost: undefined,
+        completedAt: undefined,
+        completionFeeling: undefined,
+        movedTo: undefined,
+      }));
+      if (due.length > 0) {
+        await saveScheduledTasks(remaining);
+      }
+
       const newDay: DayState = {
-        date: getTodayDateString(),
+        date: todayStr,
         energyMode: mode,
         energyLevel: level,
         isFlareDay: isFlare,
         tags,
-        tasks: defaultTasks,
+        tasks: [...defaultTasks, ...movedInTasks],
         checkedIn: true,
       };
       // Hydrate tasks — applies flare multiplier if needed
@@ -405,14 +430,54 @@ export function DayProvider({ children }: { children: ReactNode }) {
 
   // ── Move to Tomorrow ──────────────────────────────────────────────────────────
 
-  const moveTaskToTomorrow = useCallback(
+  // Reschedule a task to a future date. Marks it 'moved' in today's list and
+  // persists it to the scheduled store so it materialises on that day.
+  const moveTask = useCallback(
+    (taskId: string, targetDate: string) => {
+      const task = dayRef.current?.tasks.find((t) => t.id === taskId);
+      setDay((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'moved' as const, movedTo: targetDate }
+            : t
+        ),
+      }));
+      if (task) {
+        const entry: ScheduledTask = {
+          task: {
+            ...task,
+            status: 'pending',
+            movedTo: undefined,
+            completedCost: undefined,
+            completedAt: undefined,
+            completionFeeling: undefined,
+          },
+          scheduledFor: targetDate,
+        };
+        loadScheduledTasks().then((list) => {
+          const cleaned = list.filter((s) => s.task.id !== taskId);
+          saveScheduledTasks([...cleaned, entry]);
+        });
+      }
+    },
+    [setDay]
+  );
+
+  // Undo a reschedule — bring the task back to today's pending list.
+  const unmoveTask = useCallback(
     (taskId: string) => {
       setDay((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, status: 'moved' as const } : t
+          t.id === taskId
+            ? { ...t, status: 'pending' as const, movedTo: undefined }
+            : t
         ),
       }));
+      loadScheduledTasks().then((list) => {
+        saveScheduledTasks(list.filter((s) => s.task.id !== taskId));
+      });
     },
     [setDay]
   );
@@ -574,7 +639,8 @@ export function DayProvider({ children }: { children: ReactNode }) {
         toggleFlare,
         addTask,
         completeTask,
-        moveTaskToTomorrow,
+        moveTask,
+        unmoveTask,
         dismissTask,
         updateTaskDefault,
         saveJournal,

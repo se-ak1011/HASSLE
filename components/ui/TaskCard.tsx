@@ -4,6 +4,7 @@ import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius, Shadow } from '@/constants/theme';
 import { formatCost } from '@/services/formatCost';
+import { formatShortDate } from '@/services/dates';
 import { Task } from '@/constants/types';
 import { useFontFamily } from '@/hooks/useFontFamily';
 
@@ -11,10 +12,11 @@ interface Props {
   task: Task;
   onComplete: () => void;
   onMove: () => void;
+  onRevert?: () => void;
   mode: 'spoon' | 'battery';
 }
 
-export function TaskCard({ task, onComplete, onMove, mode }: Props) {
+export function TaskCard({ task, onComplete, onMove, onRevert, mode }: Props) {
   const ff = useFontFamily();
   const isCompleted = task.status === 'completed';
   const isMoved = task.status === 'moved';
@@ -55,9 +57,15 @@ export function TaskCard({ task, onComplete, onMove, mode }: Props) {
                 <Text style={[styles.flareCostText, { fontFamily: ff.medium }]}>flare ×1.5</Text>
               </View>
             ) : null}
-            {task.isPreMade && !isFlareAdjusted ? (
+            {task.isPreMade && !isMoved && !isFlareAdjusted ? (
               <View style={styles.premadeBadge}>
                 <Text style={[styles.premadeText, { fontFamily: ff.medium }]}>preset</Text>
+              </View>
+            ) : null}
+            {isMoved && task.movedTo ? (
+              <View style={styles.movedBadge}>
+                <MaterialIcons name="event" size={11} color={Colors.accent} />
+                <Text style={[styles.movedText, { fontFamily: ff.medium }]}>{formatShortDate(task.movedTo)}</Text>
               </View>
             ) : null}
           </View>
@@ -87,7 +95,7 @@ export function TaskCard({ task, onComplete, onMove, mode }: Props) {
               onPress={onMove}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel={`Move "${task.name}" to tomorrow`}
+              accessibilityLabel={`Reschedule "${task.name}"`}
             >
               <MaterialIcons name="arrow-forward" size={18} color={Colors.textMuted} />
             </Pressable>
@@ -101,9 +109,25 @@ export function TaskCard({ task, onComplete, onMove, mode }: Props) {
         ) : null}
 
         {isMoved ? (
-          <View style={styles.statusIcon}>
-            <MaterialIcons name="schedule" size={20} color={Colors.textSubtle} />
-          </View>
+          onRevert ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionBtn,
+                styles.moveBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={onRevert}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Undo move of "${task.name}"`}
+            >
+              <MaterialIcons name="undo" size={18} color={Colors.textMuted} />
+            </Pressable>
+          ) : (
+            <View style={styles.statusIcon}>
+              <MaterialIcons name="schedule" size={20} color={Colors.textSubtle} />
+            </View>
+          )
         ) : null}
       </View>
     </View>
@@ -187,6 +211,20 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   premadeText: {
+    fontSize: 10,
+    color: Colors.accent,
+    fontWeight: Fonts.medium,
+  },
+  movedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.accentFaint,
+    borderRadius: Radius.full,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  movedText: {
     fontSize: 10,
     color: Colors.accent,
     fontWeight: Fonts.medium,

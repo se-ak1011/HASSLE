@@ -1,11 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DayState, UserPreferences, DEFAULT_PREFERENCES } from '@/constants/types';
+import {
+  DayState,
+  UserPreferences,
+  DEFAULT_PREFERENCES,
+  ScheduledTask,
+} from '@/constants/types';
 
 const KEYS = {
   DAY_PREFIX: 'hassle_day_',
   PREFERENCES: 'hassle_prefs',
   HISTORY: 'hassle_history',
+  SCHEDULED: 'hassle_scheduled',
 };
+
+/** Tasks deferred to a future date (rescheduled via "move"). */
+export async function loadScheduledTasks(): Promise<ScheduledTask[]> {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.SCHEDULED);
+    if (!raw) return [];
+    return JSON.parse(raw) as ScheduledTask[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveScheduledTasks(list: ScheduledTask[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEYS.SCHEDULED, JSON.stringify(list));
+  } catch {
+    // silent
+  }
+}
 
 function todayKey(): string {
   const d = new Date();
@@ -133,8 +158,8 @@ export async function loadHistory(): Promise<DayState[]> {
  */
 export async function clearAllData(): Promise<void> {
   try {
-    // Clear history and prefs
-    await AsyncStorage.multiRemove([KEYS.HISTORY, KEYS.PREFERENCES]);
+    // Clear history, prefs, and any scheduled (moved) tasks
+    await AsyncStorage.multiRemove([KEYS.HISTORY, KEYS.PREFERENCES, KEYS.SCHEDULED]);
     // Clear today's active day key
     await AsyncStorage.removeItem(todayKey());
     // Also sweep any day keys from the last 90 days to be thorough

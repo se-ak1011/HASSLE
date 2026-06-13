@@ -20,6 +20,7 @@ import { useAlert } from '@/template';
 import { EnergyBar } from '@/components/ui/EnergyBar';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
+import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
 import { CompletionModal } from '@/components/ui/CompletionModal';
 import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
@@ -422,12 +423,14 @@ export default function TodayScreen() {
     energyUsed,
     energyRemaining,
     completeTask,
-    moveTaskToTomorrow,
+    moveTask,
+    unmoveTask,
     toggleFlare,
     endDay,
   } = useDay();
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -625,7 +628,7 @@ export default function TodayScreen() {
                   task={task}
                   mode={day.energyMode}
                   onComplete={() => handleCompletePress(task)}
-                  onMove={() => moveTaskToTomorrow(task.id)}
+                  onMove={() => setMovingTask(task)}
                 />
               ))}
             </View>
@@ -664,11 +667,11 @@ export default function TodayScreen() {
           </View>
         ) : null}
 
-        {/* Moved to tomorrow */}
+        {/* Moved ahead */}
         {moved.length > 0 ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Moved to tomorrow</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Moved ahead</Text>
               <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{moved.length}</Text>
             </View>
             <View style={styles.taskList}>
@@ -679,6 +682,7 @@ export default function TodayScreen() {
                   mode={day.energyMode}
                   onComplete={() => {}}
                   onMove={() => {}}
+                  onRevert={() => unmoveTask(task.id)}
                 />
               ))}
             </View>
@@ -712,6 +716,16 @@ export default function TodayScreen() {
         taskName={pendingCompletion?.name ?? ''}
         onSelect={handleFeelingSelected}
         onDismiss={handleDismissCompletion}
+      />
+
+      <MoveTaskModal
+        visible={movingTask !== null}
+        taskName={movingTask?.name ?? ''}
+        onClose={() => setMovingTask(null)}
+        onPick={(date) => {
+          if (movingTask) moveTask(movingTask.id, date);
+          setMovingTask(null);
+        }}
       />
     </View>
   );

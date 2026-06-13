@@ -23,6 +23,13 @@ export interface Task {
   isDefaultTask?: boolean;    // generated from user's default daily tasks
   completedAt?: string;
   completionFeeling?: CompletionFeeling;
+  movedTo?: string;           // YYYY-MM-DD this task was rescheduled to (status 'moved')
+}
+
+/** A task deferred to a future date. Materialises into that day's task list. */
+export interface ScheduledTask {
+  task: Task;
+  scheduledFor: string;       // YYYY-MM-DD
 }
 
 export interface DayState {
