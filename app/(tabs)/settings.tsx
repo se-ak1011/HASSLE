@@ -8,6 +8,7 @@ import {
   Linking,
   ActivityIndicator,
   Switch,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import {
   REMINDER_FREQUENCY_LABELS,
   ONBOARDING_TASK_OPTIONS,
   DefaultDailyTask,
+  PRESET_CONDITIONS,
 } from '@/constants/types';
 import {
   scheduleReminders,
@@ -271,6 +273,67 @@ function DefaultTasksPanel() {
   );
 }
 
+// ─── Profile Panel (name + conditions) ───────────────────────────────────────
+
+function ProfilePanel() {
+  const { prefs, updateProfile } = useDay();
+  const ff = useFontFamily();
+  const [name, setName] = useState(prefs?.name ?? '');
+  const conditions = prefs?.conditions ?? [];
+
+  function toggleCondition(c: string) {
+    const next = conditions.includes(c)
+      ? conditions.filter((x) => x !== c)
+      : [...conditions, c];
+    updateProfile({ conditions: next });
+  }
+
+  return (
+    <View style={[styles.card, styles.profileCard]}>
+      <Text style={[styles.profileLabel, { fontFamily: ff.semibold }]}>What should we call you?</Text>
+      <TextInput
+        style={[styles.profileInput, { fontFamily: ff.regular }]}
+        value={name}
+        onChangeText={setName}
+        onEndEditing={() => updateProfile({ name: name.trim() })}
+        placeholder="Your name (optional)"
+        placeholderTextColor={Colors.textSubtle}
+        returnKeyType="done"
+        maxLength={40}
+      />
+
+      <Text style={[styles.profileLabel, { fontFamily: ff.semibold, marginTop: Spacing.lg }]}>
+        Conditions
+      </Text>
+      <Text style={[styles.profileHint, { fontFamily: ff.regular }]}>
+        Optional, and just for you. Stays on your device — never displayed anywhere public.
+      </Text>
+      <View style={styles.conditionsWrap}>
+        {PRESET_CONDITIONS.map((c) => {
+          const selected = conditions.includes(c);
+          return (
+            <Pressable
+              key={c}
+              onPress={() => toggleCondition(c)}
+              style={[styles.conditionChip, selected && styles.conditionChipSelected]}
+            >
+              <Text
+                style={[
+                  styles.conditionChipText,
+                  { fontFamily: ff.medium },
+                  selected && styles.conditionChipTextSelected,
+                ]}
+              >
+                {c}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
@@ -349,6 +412,10 @@ export default function SettingsScreen() {
             Simple controls for a simple app.
           </Text>
         </View>
+
+        {/* Profile */}
+        <SectionHeader title="You" />
+        <ProfilePanel />
 
         {/* Data storage info */}
         <SectionHeader title="Your data" />
@@ -531,6 +598,55 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
+  },
+  // ── Profile panel ──────────────────────────────────────────────────────────
+  profileCard: {
+    padding: Spacing.md,
+  },
+  profileLabel: {
+    fontSize: FontSizes.base,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  profileHint: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+    marginBottom: Spacing.md,
+    lineHeight: 18,
+  },
+  profileInput: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSizes.base,
+    color: Colors.text,
+  },
+  conditionsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  conditionChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceElevated,
+  },
+  conditionChipSelected: {
+    backgroundColor: Colors.primaryFaint,
+    borderColor: Colors.primary,
+  },
+  conditionChipText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+  },
+  conditionChipTextSelected: {
+    color: Colors.primaryLight,
   },
   // ── Info card ──────────────────────────────────────────────────────────────
   infoCard: {

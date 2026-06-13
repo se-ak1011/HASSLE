@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -21,7 +22,8 @@ import { EnergyBar } from '@/components/ui/EnergyBar';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
 import { CompletionModal } from '@/components/ui/CompletionModal';
-import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS } from '@/constants/types';
+import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES } from '@/constants/types';
+import { Lola } from '@/constants/lola';
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -130,7 +132,9 @@ function CheckInView() {
 
         {/* Title */}
         <View style={checkInStyles.titleBlock}>
-          <Text style={[checkInStyles.title, { fontFamily: ff.bold }]}>How are you today?</Text>
+          <Text style={[checkInStyles.title, { fontFamily: ff.bold }]}>
+            {prefs?.name ? `How are you today, ${prefs.name}?` : 'How are you today?'}
+          </Text>
           <Text style={[checkInStyles.subtitle, { fontFamily: ff.regular }]}>
             No judgement. Just where you are right now.
           </Text>
@@ -401,6 +405,7 @@ export default function TodayScreen() {
   const ff = useFontFamily();
   const {
     day,
+    prefs,
     energyUsed,
     energyRemaining,
     completeTask,
@@ -490,13 +495,22 @@ export default function TodayScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerText, { fontFamily: ff.regular }]}>Rest counts as doing something.</Text>
+          <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
+            {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
+          </Text>
           {day.isFlareDay ? (
             <View style={styles.flarePill}>
               <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
             </View>
           ) : null}
         </View>
+
+        {/* Lola — looks worse the more drained you are */}
+        <Image
+          source={energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
+          style={styles.lola}
+          resizeMode="contain"
+        />
 
         {/* Tags */}
         {day.tags.length > 0 ? (
@@ -1007,6 +1021,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 28,
     marginRight: Spacing.md,
+  },
+  lola: {
+    width: 130,
+    height: 150,
+    alignSelf: 'center',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   flarePill: {
     backgroundColor: Colors.flareFaint,

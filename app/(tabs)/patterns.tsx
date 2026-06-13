@@ -7,6 +7,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { loadHistory } from '@/services/storage';
 import { DayState, EnergyMode } from '@/constants/types';
 import { formatCost } from '@/services/formatCost';
+import { Lola } from '@/constants/lola';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -507,9 +509,7 @@ export default function PatternsScreen() {
             </View>
           ) : history.length === 0 ? (
             <View style={styles.emptyBox}>
-              <View style={styles.iconCircle}>
-                <MaterialIcons name="auto-graph" size={26} color={Colors.primary} />
-              </View>
+              <Image source={Lola.shrug} style={styles.emptyLola} resizeMode="contain" />
               <Text style={[styles.emptyTitle, { fontFamily: ff.semibold }]}>
                 Patterns will start to appear after a few completed days.
               </Text>
@@ -680,6 +680,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  emptyLola: {
+    width: 120,
+    height: 130,
+    marginBottom: Spacing.md,
   },
   emptyTitle: {
     fontSize: FontSizes.base,

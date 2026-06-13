@@ -87,7 +87,9 @@ export default function CheckInScreen() {
 
         {/* Title */}
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>How are you today?</Text>
+          <Text style={styles.title}>
+            {prefs?.name ? `How are you today, ${prefs.name}?` : 'How are you today?'}
+          </Text>
           <Text style={styles.subtitle}>
             No judgement. Just where you are right now.
           </Text>

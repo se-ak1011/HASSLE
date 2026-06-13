@@ -1,33 +1,34 @@
 // Hassle — Design System
 // Dark, grounded, editorial palette. Worn-in, honest, muted.
+// Plum/charcoal — matched to drained.life (monochrome purple, no green/olive).
 
 export const Colors = {
-  background: '#1A1916',
-  surface: '#232220',
-  surfaceElevated: '#2A2925',
-  surfaceDark: '#141412',
+  background: '#191A1C',
+  surface: '#292728',
+  surfaceElevated: '#332F32',
+  surfaceDark: '#141315',
 
-  primary: '#6F7F5F',       // dusty olive
-  primaryLight: '#8E9E7E',  // lighter olive
-  primaryFaint: '#2C3026',  // very dark faint olive
+  primary: '#5C3F5A',       // plum
+  primaryLight: '#7A5478',  // mauve
+  primaryFaint: '#2A2230',  // very dark faint plum
 
-  accent: '#9B8A6E',        // dusty tan/gold
-  accentFaint: '#2E2920',   // very dark faint tan
+  accent: '#7A5478',        // mauve (matches web --accent)
+  accentFaint: '#261F2A',   // very dark faint mauve
 
-  flare: '#A56A5A',         // muted rust
-  flareFaint: '#2D1F1B',    // very dark faint flare
+  flare: '#7A5268',         // plum flare accent (web --flare-foreground)
+  flareFaint: '#3D2638',    // very dark faint flare (web --flare)
 
-  success: '#6A8B66',       // muted sage
-  successFaint: '#1E2A1D',
+  success: '#7A5478',       // mauve — palette is monochrome, no green
+  successFaint: '#261F2A',
 
-  text: '#EAE6E1',
+  text: '#E7E0D8',
   textMuted: '#B8B2AA',
-  textSubtle: '#7A7570',
+  textSubtle: '#675E61',
 
-  border: '#2E2D2A',
-  borderLight: '#353330',
+  border: '#353239',
+  borderLight: '#3F3B42',
 
-  white: '#EAE6E1',
+  white: '#E7E0D8',
   overlay: 'rgba(10, 10, 9, 0.65)',
 };
 

@@ -49,6 +49,8 @@ export interface ReminderSettings {
 
 export interface UserPreferences {
   energyMode: EnergyMode;
+  name?: string;                        // optional first name for personalised greeting
+  conditions?: string[];                // optional self-noted conditions (local only)
   taskDefaults: Record<string, number>; // taskName → baseCost
   customTags: string[];                 // user-created reusable tags
   defaultDailyTasks: DefaultDailyTask[]; // tasks auto-added at day start
@@ -65,6 +67,8 @@ export interface DefaultDailyTask {
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   energyMode: 'spoon',
+  name: '',
+  conditions: [],
   taskDefaults: {},
   customTags: [],
   defaultDailyTasks: [],
@@ -85,7 +89,35 @@ export const BUILT_IN_TAGS: string[] = [
   'rested',
   'nauseous',
   'low mood',
+  'hypermobility',
+  'period',
   'decent day',
+];
+
+/** Rotating supportive header lines — indexed by day of month. */
+export const HEADER_QUOTES: string[] = [
+  'Rest counts as doing something.',
+  'Existing counts. Everything else is bonus.',
+  "Be honest. No one's watching.",
+  'Whatever got done, got done.',
+  'This is enough.',
+];
+
+/** Optional conditions offered during onboarding (local only, never displayed publicly). */
+export const PRESET_CONDITIONS: string[] = [
+  'Fibromyalgia',
+  'ME/CFS',
+  'EDS/Hypermobility',
+  'POTS',
+  'Lupus',
+  'MS',
+  'Endometriosis',
+  'Long COVID',
+  'Chronic migraine',
+  'Depression',
+  'Anxiety',
+  'ADHD',
+  'Autism',
 ];
 
 export const PREMADE_TASKS: { name: string; baseCost: number; category: string }[] = [

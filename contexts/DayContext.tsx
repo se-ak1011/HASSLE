@@ -119,6 +119,9 @@ export interface DayContextType {
   /** Update the user's default daily tasks (called from Settings screen). */
   updateDefaultDailyTasks(tasks: DefaultDailyTask[]): void;
 
+  /** Update the user's name / conditions (local only, called from Settings). */
+  updateProfile(profile: { name?: string; conditions?: string[] }): void;
+
   // Computed
   energyUsed: number;
   energyRemaining: number;
@@ -498,6 +501,16 @@ export function DayProvider({ children }: { children: ReactNode }) {
     [prefs, setPrefs]
   );
 
+  // ── Update Profile (name / conditions) ────────────────────────────────────────
+
+  const updateProfile = useCallback(
+    (profile: { name?: string; conditions?: string[] }) => {
+      if (!prefs) return;
+      setPrefs({ ...prefs, ...profile });
+    },
+    [prefs, setPrefs]
+  );
+
   // ── Journal ────────────────────────────────────────────────────────────────────
 
   const saveJournal = useCallback(
@@ -542,6 +555,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
         completeOnboarding,
         updateReminders,
         updateDefaultDailyTasks,
+        updateProfile,
         energyUsed,
         energyRemaining,
       }}

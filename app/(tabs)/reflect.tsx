@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { formatCost } from '@/services/formatCost';
 import { loadHistory } from '@/services/storage';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { DayState } from '@/constants/types';
+import { Lola } from '@/constants/lola';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -149,6 +151,7 @@ function SummaryRow({
 
 function PastDayView({ pastDay }: { pastDay: DayState }) {
   const insets = useSafeAreaInsets();
+  const ff = useFontFamily();
 
   const completedTasks = pastDay.tasks.filter((t) => t.status === 'completed');
   const used = completedTasks.reduce(
@@ -192,6 +195,9 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
 
         {/* Summary */}
         <SummaryRow dayData={pastDay} used={used} remaining={remaining} />
+
+        {/* Lola, taking a seat */}
+        <Image source={Lola.sitting} style={styles.lola} resizeMode="contain" />
 
         {/* Flare card */}
         {pastDay.isFlareDay ? (
@@ -543,6 +549,12 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingBottom: Spacing.xxxl,
+  },
+  lola: {
+    width: 150,
+    height: 160,
+    alignSelf: 'center',
+    marginVertical: Spacing.md,
   },
   header: {
     paddingHorizontal: Spacing.lg,
