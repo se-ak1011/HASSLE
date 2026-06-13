@@ -358,6 +358,14 @@ export default function SettingsScreen() {
   const [exportingClinical, setExportingClinical] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
 
+  function openPlusFeature(path: string) {
+    if (!isPlus) {
+      setShowPaywall(true);
+      return;
+    }
+    router.push(path as any);
+  }
+
   async function handleClinicalExport() {
     if (!isPlus) {
       setShowPaywall(true);
@@ -538,6 +546,48 @@ export default function SettingsScreen() {
               size={20}
               color={isPlus ? Colors.success : Colors.textSubtle}
             />
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+            onPress={() => openPlusFeature('/library')}
+          >
+            <View style={[styles.rowIcon, styles.rowIconDefault]}>
+              <MaterialIcons name="menu-book" size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.rowText}>
+              <View style={styles.rowLabelRow}>
+                <Text style={styles.rowLabel}>Reading library</Text>
+                {!isPlus ? (
+                  <View style={styles.plusTag}>
+                    <Text style={[styles.plusTagText, { fontFamily: ff.semibold }]}>PLUS</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.rowSublabel}>Plain-language reads, each linked to real studies.</Text>
+            </View>
+            <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 20 : 16} color={Colors.textSubtle} />
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+            onPress={() => openPlusFeature('/directory')}
+          >
+            <View style={[styles.rowIcon, styles.rowIconDefault]}>
+              <MaterialIcons name="place" size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.rowText}>
+              <View style={styles.rowLabelRow}>
+                <Text style={styles.rowLabel}>Specialist directory</Text>
+                {!isPlus ? (
+                  <View style={styles.plusTag}>
+                    <Text style={[styles.plusTagText, { fontFamily: ff.semibold }]}>PLUS</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.rowSublabel}>Clinicians who understand invisible illness. Coming soon.</Text>
+            </View>
+            <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 20 : 16} color={Colors.textSubtle} />
           </Pressable>
         </Card>
 

@@ -34,8 +34,7 @@ const BENEFITS: Benefit[] = [
   {
     icon: 'menu-book',
     title: 'Invisible-illness library',
-    desc: 'Curated, sourced reading on chronic and neurodivergent conditions.',
-    soon: true,
+    desc: 'Plain-language reading on chronic and neurodivergent conditions, each linked to the real study behind it.',
   },
   {
     icon: 'place',

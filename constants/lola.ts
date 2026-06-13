@@ -6,4 +6,6 @@ export const Lola = {
   xeyes: require('@/assets/images/lola-xeyes.png'),
   sitting: require('@/assets/images/lola-sitting.png'),
   shrug: require('@/assets/images/lola-shrug.png'),
+  books: require('@/assets/images/lola-books.png'), // research library
+  explorer: require('@/assets/images/lola-explorer.png'), // doctor's directory
 };

@@ -34,6 +34,8 @@ export default function RootLayout() {
                 <Stack.Screen name="checkin" />
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="account" />
+                <Stack.Screen name="library" />
+                <Stack.Screen name="directory" />
               </Stack>
             </AccountProvider>
           </PlusProvider>
