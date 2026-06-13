@@ -188,15 +188,22 @@ function CheckInView() {
 
         {/* Energy level selector */}
         <View style={checkInStyles.section}>
-          <Text style={[checkInStyles.label, { fontFamily: ff.medium }]}>
-            {mode === 'spoon'
-              ? energyLevel !== null
-                ? `How many spoons do you have today? (${energyLevel})`
-                : 'How many spoons do you have today?'
-              : energyLevel !== null
-              ? `What is your battery level? (${energyLevel}%)`
-              : 'What is your battery level?'}
-          </Text>
+          <View style={checkInStyles.energyLabelRow}>
+            <Text style={[checkInStyles.label, checkInStyles.energyLabelText, { fontFamily: ff.medium }]}>
+              {mode === 'spoon'
+                ? energyLevel !== null
+                  ? `How many spoons do you have today? (${energyLevel})`
+                  : 'How many spoons do you have today?'
+                : energyLevel !== null
+                ? `What is your battery level? (${energyLevel}%)`
+                : 'What is your battery level?'}
+            </Text>
+            <Image
+              source={Lola.shrug}
+              style={checkInStyles.energyLola}
+              resizeMode="contain"
+            />
+          </View>
           <View style={checkInStyles.energyGrid}>
             {values.map((v) => (
               <Pressable
@@ -492,24 +499,25 @@ export default function TodayScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
-            {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
-          </Text>
-          {day.isFlareDay ? (
-            <View style={styles.flarePill}>
-              <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
-            </View>
-          ) : null}
+        {/* Header — quote on the left, Lola alongside on the right */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerTextCol}>
+            <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
+              {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
+            </Text>
+            {day.isFlareDay ? (
+              <View style={styles.flarePill}>
+                <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
+              </View>
+            ) : null}
+          </View>
+          {/* Lola — looks worse the more drained you are, or on a flare day */}
+          <Image
+            source={day.isFlareDay || energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
+            style={styles.lolaSide}
+            resizeMode="contain"
+          />
         </View>
-
-        {/* Lola — looks worse the more drained you are, or on a flare day */}
-        <Image
-          source={day.isFlareDay || energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
-          style={styles.lola}
-          resizeMode="contain"
-        />
 
         {/* Tags */}
         {day.tags.length > 0 ? (
@@ -749,6 +757,20 @@ const checkInStyles = StyleSheet.create({
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+  energyLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  energyLabelText: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  energyLola: {
+    width: 38,
+    height: 46,
   },
   modeRow: {
     flexDirection: 'row',
@@ -1004,29 +1026,29 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: Spacing.xxxl,
   },
-  header: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.md,
-    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  headerTextCol: {
+    flex: 1,
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    gap: Spacing.sm,
   },
   headerText: {
-    flex: 1,
     fontSize: FontSizes.lg,
     fontWeight: Fonts.semibold,
     color: Colors.textSubtle,
     fontStyle: 'italic',
     lineHeight: 28,
-    marginRight: Spacing.md,
   },
-  lola: {
-    width: 130,
-    height: 150,
-    alignSelf: 'center',
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.sm,
+  lolaSide: {
+    width: 112,
+    height: 132,
   },
   flarePill: {
     backgroundColor: Colors.flareFaint,

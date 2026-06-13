@@ -122,16 +122,17 @@ function SummaryRow({
   const remainingDisplay = formatCost(remaining, dayData.energyMode, { short: true });
 
   return (
-    <View style={styles.summaryRow}>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryValue}>{completedTasks.length}</Text>
+    <View style={styles.summaryColumn}>
+      <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>done</Text>
+        <Text style={styles.summaryValue}>{completedTasks.length}</Text>
       </View>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryValue}>{usedDisplay}</Text>
+      <View style={styles.summaryItem}>
         <Text style={styles.summaryLabel}>used</Text>
+        <Text style={styles.summaryValue}>{usedDisplay}</Text>
       </View>
-      <View style={styles.summaryCard}>
+      <View style={styles.summaryItem}>
+        <Text style={styles.summaryLabel}>left</Text>
         <Text
           style={[
             styles.summaryValue,
@@ -140,7 +141,6 @@ function SummaryRow({
         >
           {remainingDisplay}
         </Text>
-        <Text style={styles.summaryLabel}>left</Text>
       </View>
     </View>
   );
@@ -192,11 +192,11 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
           </Text>
         </View>
 
-        {/* Summary */}
-        <SummaryRow dayData={pastDay} used={used} remaining={remaining} />
-
-        {/* Lola, taking a seat */}
-        <Image source={Lola.sitting} style={styles.lola} resizeMode="contain" />
+        {/* Summary + Lola, side by side */}
+        <View style={styles.summaryLolaRow}>
+          <SummaryRow dayData={pastDay} used={used} remaining={remaining} />
+          <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
+        </View>
 
         {/* Flare card */}
         {pastDay.isFlareDay ? (
@@ -411,11 +411,11 @@ export default function ReflectScreen() {
             </Text>
           </View>
 
-          {/* Summary */}
-          <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
-
-          {/* Lola, taking a seat */}
-          <Image source={Lola.sitting} style={styles.lola} resizeMode="contain" />
+          {/* Summary + Lola, side by side */}
+          <View style={styles.summaryLolaRow}>
+            <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
+            <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
+          </View>
 
           {/* Flare day card */}
           {day.isFlareDay ? (
@@ -589,23 +589,30 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.medium,
   },
   subtitle: {
-    fontSize: FontSizes.base,
+    fontSize: FontSizes.md,
     color: Colors.textMuted,
-    lineHeight: 24,
+    lineHeight: 26,
     fontStyle: 'italic',
   },
-  summaryRow: {
+  summaryLolaRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  summaryCard: {
+  summaryColumn: {
     flex: 1,
+    gap: Spacing.sm,
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -614,7 +621,6 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.bold,
     color: Colors.primary,
     letterSpacing: -0.3,
-    marginBottom: 2,
   },
   flareValue: {
     color: Colors.flare,
@@ -622,7 +628,12 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: FontSizes.xs,
     color: Colors.textSubtle,
-    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  lolaSide: {
+    width: 120,
+    height: 140,
   },
   section: {
     paddingHorizontal: Spacing.lg,

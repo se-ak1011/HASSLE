@@ -516,7 +516,7 @@ export default function SettingsScreen() {
         <SectionHeader title="About Hassle" />
         <View style={[styles.card, styles.aboutCard]}>
           <Text style={styles.aboutText}>
-            Hassle is a daily planner built for bodies that don&apos;t cooperate.
+            {"Hassle is a daily planner built for bodies that don't cooperate."}
           </Text>
           <Text style={styles.aboutText}>
             It helps you track your energy, understand what things actually cost
@@ -861,6 +861,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     lineHeight: 24,
     flexShrink: 1,
+    width: '100%',
   },
   aboutDivider: {
     height: 1,
