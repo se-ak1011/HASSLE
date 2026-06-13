@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius, Shadow } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { usePlus } from '@/contexts/PlusContext';
+import { PLUS_PRICE_LABEL, PLUS_PRICE_USD, PLUS_TRIAL_DAYS } from '@/constants/pricing';
 
 interface Props {
   visible: boolean;
@@ -109,12 +110,18 @@ export function PaywallModal({ visible, onClose }: Props) {
                   style={({ pressed }) => [styles.unlockBtn, pressed && { opacity: 0.85 }]}
                   onPress={handleUnlock}
                   accessibilityRole="button"
-                  accessibilityLabel="Unlock Hassle Plus"
+                  accessibilityLabel={`Start ${PLUS_TRIAL_DAYS}-day free trial`}
                 >
-                  <Text style={[styles.unlockText, { fontFamily: ff.semibold }]}>Unlock Plus</Text>
+                  <Text style={[styles.unlockText, { fontFamily: ff.semibold }]}>
+                    Start {PLUS_TRIAL_DAYS}-day free trial
+                  </Text>
                 </Pressable>
                 <Text style={[styles.priceNote, { fontFamily: ff.regular }]}>
-                  Free during the beta. Paid plans will come later — and a hardship option always will too.
+                  {PLUS_TRIAL_DAYS} days free, then {PLUS_PRICE_LABEL} (≈ {PLUS_PRICE_USD}). Cancel
+                  anytime. A hardship option will always exist.
+                </Text>
+                <Text style={[styles.betaNote, { fontFamily: ff.regular }]}>
+                  Billing isn't live yet — as an early tester, Plus unlocks free for now.
                 </Text>
               </>
             )}
@@ -253,6 +260,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.sm,
     lineHeight: 16,
+  },
+  betaNote: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    lineHeight: 16,
+    opacity: 0.75,
   },
   activeRow: {
     flexDirection: 'row',

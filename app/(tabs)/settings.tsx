@@ -18,7 +18,9 @@ import { useAlert } from '@/template';
 import { exportLast7Days, exportClinicalReport } from '@/services/exportService';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { usePlus } from '@/contexts/PlusContext';
+import { useAccount } from '@/contexts/AccountContext';
 import { PaywallModal } from '@/components/ui/PaywallModal';
+import { useRouter } from 'expo-router';
 import {
   ReminderFrequency,
   REMINDER_FREQUENCY_LABELS,
@@ -349,7 +351,9 @@ export default function SettingsScreen() {
   const { showAlert } = useAlert();
   const { resetAllData } = useDay();
   const ff = useFontFamily();
+  const router = useRouter();
   const { isPlus } = usePlus();
+  const { mode } = useAccount();
   const [exporting, setExporting] = useState(false);
   const [exportingClinical, setExportingClinical] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -471,10 +475,22 @@ export default function SettingsScreen() {
             </View>
           </View>
           <View style={styles.infoDivider} />
-          <Text style={[styles.infoFootnote, { fontFamily: ff.regular }]}>
-            Account sync may come in a future version. For now, your data stays
-            with you.
-          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.accountRow, pressed ? styles.rowPressed : null]}
+            onPress={() => router.push('/account')}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="sync" size={18} color={Colors.primary} />
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Account &amp; sync</Text>
+              <Text style={styles.rowSublabel}>
+                {mode === 'cloud'
+                  ? 'Signed in — syncing across your devices'
+                  : 'Optional. Add a free account to sync across devices.'}
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={Colors.textSubtle} />
+          </Pressable>
         </View>
 
         {/* Default daily tasks */}
@@ -637,8 +653,8 @@ export default function SettingsScreen() {
           <View style={styles.privacyRow}>
             <MaterialIcons name="lock-outline" size={16} color={Colors.textSubtle} />
             <Text style={styles.privacyText}>
-              No analytics. No tracking. No accounts. Your data never leaves
-              your device.
+              No analytics. No tracking. No account required. Your data stays on
+              your device unless you choose to sync it.
             </Text>
           </View>
         </View>
@@ -791,6 +807,12 @@ const styles = StyleSheet.create({
     color: Colors.textSubtle,
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.xs,
   },
   // ── Settings rows ─────────────────────────────────────────────────────────
   row: {

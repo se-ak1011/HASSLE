@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertProvider } from '@/template';
 import { DayProvider } from '@/contexts/DayContext';
 import { PlusProvider } from '@/contexts/PlusContext';
+import { AccountProvider } from '@/contexts/AccountContext';
 import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Colors } from '@/constants/theme';
@@ -26,12 +27,15 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <DayProvider>
           <PlusProvider>
-            <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="onboarding" />
-              <Stack.Screen name="checkin" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
+            <AccountProvider>
+              <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="checkin" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="account" />
+              </Stack>
+            </AccountProvider>
           </PlusProvider>
         </DayProvider>
       </SafeAreaProvider>
