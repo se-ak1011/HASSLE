@@ -3,25 +3,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertProvider } from '@/template';
 import { DayProvider } from '@/contexts/DayContext';
 import { View, ActivityIndicator } from 'react-native';
-import {
-  useFonts,
-  Caveat_400Regular,
-  Caveat_500Medium,
-  Caveat_600SemiBold,
-  Caveat_700Bold,
-} from '@expo-google-fonts/caveat';
-import {
-  PermanentMarker_400Regular,
-} from '@expo-google-fonts/permanent-marker';
+import { useFonts } from 'expo-font';
 import { Colors } from '@/constants/theme';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Caveat_400Regular,
-    Caveat_500Medium,
-    Caveat_600SemiBold,
-    Caveat_700Bold,
-    PermanentMarker_400Regular,
+    ChronicSans: require('@/assets/fonts/ChronicSans.otf'),
+    ChronicSansFlare: require('@/assets/fonts/ChronicSansFlare.otf'),
   });
 
   if (!fontsLoaded) {

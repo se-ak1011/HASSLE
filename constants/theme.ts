@@ -41,24 +41,24 @@ export const Fonts = {
 };
 
 /**
- * Font family names — loaded via @expo-google-fonts.
+ * Font family names — local .otf files loaded via expo-font in app/_layout.tsx.
  * Use useFontFamily() hook in components to get the correct set
- * based on flare state (Caveat = normal, PermanentMarker = flare).
+ * based on flare state (Chronic Sans = normal, Chronic Sans Flare = flare).
  */
 export const FontFamily = {
-  // Normal mode: organic handwritten feel
+  // Normal mode
   normal: {
-    regular: 'Caveat_400Regular',
-    medium: 'Caveat_500Medium',
-    semibold: 'Caveat_600SemiBold',
-    bold: 'Caveat_700Bold',
+    regular: 'ChronicSans',
+    medium: 'ChronicSans',
+    semibold: 'ChronicSans',
+    bold: 'ChronicSans',
   },
-  // Flare mode: heavy, bold handwritten
+  // Flare mode
   flare: {
-    regular: 'PermanentMarker_400Regular',
-    medium: 'PermanentMarker_400Regular',
-    semibold: 'PermanentMarker_400Regular',
-    bold: 'PermanentMarker_400Regular',
+    regular: 'ChronicSansFlare',
+    medium: 'ChronicSansFlare',
+    semibold: 'ChronicSansFlare',
+    bold: 'ChronicSansFlare',
   },
 };
 

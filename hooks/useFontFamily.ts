@@ -2,8 +2,8 @@
  * useFontFamily
  *
  * Returns the active font family based on the current day's flare state.
- * - Normal mode:  Caveat (organic, handwritten feel)
- * - Flare mode:   Permanent Marker (heavier, bolder — signals intensity)
+ * - Normal mode:  Chronic Sans
+ * - Flare mode:   Chronic Sans Flare
  *
  * Gracefully falls back to system font if fonts are not yet loaded.
  */
@@ -17,17 +17,17 @@ export type FontFamilySet = {
 };
 
 const NORMAL_FONTS: FontFamilySet = {
-  regular: 'Caveat_400Regular',
-  medium: 'Caveat_500Medium',
-  semibold: 'Caveat_600SemiBold',
-  bold: 'Caveat_700Bold',
+  regular: 'ChronicSans',
+  medium: 'ChronicSans',
+  semibold: 'ChronicSans',
+  bold: 'ChronicSans',
 };
 
 const FLARE_FONTS: FontFamilySet = {
-  regular: 'PermanentMarker_400Regular',
-  medium: 'PermanentMarker_400Regular',
-  semibold: 'PermanentMarker_400Regular',
-  bold: 'PermanentMarker_400Regular',
+  regular: 'ChronicSansFlare',
+  medium: 'ChronicSansFlare',
+  semibold: 'ChronicSansFlare',
+  bold: 'ChronicSansFlare',
 };
 
 export function useFontFamily(): FontFamilySet {

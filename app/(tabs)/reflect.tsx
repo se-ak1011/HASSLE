@@ -415,6 +415,9 @@ export default function ReflectScreen() {
           {/* Summary */}
           <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
 
+          {/* Lola, taking a seat */}
+          <Image source={Lola.sitting} style={styles.lola} resizeMode="contain" />
+
           {/* Flare day card */}
           {day.isFlareDay ? (
             <View style={[styles.section, styles.flareCard]}>
