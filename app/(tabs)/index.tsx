@@ -31,12 +31,15 @@ const BATTERY_VALUES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 function CheckInView() {
   const insets = useSafeAreaInsets();
-  const { completeCheckIn, prefs, addCustomTag } = useDay();
+  const { completeCheckIn, prefs, addCustomTag, setFlarePreview } = useDay();
   const ff = useFontFamily();
 
   const [mode, setMode] = useState<EnergyMode>(prefs?.energyMode ?? 'spoon');
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
   const [isFlare, setIsFlare] = useState(false);
+
+  // Reset flare-font preview when leaving the check-in screen
+  useEffect(() => () => setFlarePreview(false), [setFlarePreview]);
   const [tags, setTags] = useState<DailyTag[]>([]);
   const [showCustomSpoon, setShowCustomSpoon] = useState(false);
   const [customSpoonInput, setCustomSpoonInput] = useState('');
@@ -278,7 +281,10 @@ function CheckInView() {
               </View>
               <Switch
                 value={isFlare}
-                onValueChange={setIsFlare}
+                onValueChange={(v) => {
+                  setIsFlare(v);
+                  setFlarePreview(v);
+                }}
                 trackColor={{ false: Colors.border, true: Colors.flare }}
                 thumbColor={Colors.white}
               />

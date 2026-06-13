@@ -7,6 +7,7 @@ import {
   Linking,
   ActivityIndicator,
   Switch,
+  Dimensions,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,11 @@ import {
 
 const SUPPORT_EMAIL = 'drainedstore@gmail.com';
 const APP_VERSION = '1.0.0';
+
+// Definite content width for the About card text. A pixel width (vs '100%')
+// forces line-break measurement to wrap, which percentage widths don't always
+// trigger for the first child of a flex container.
+const ABOUT_TEXT_WIDTH = Dimensions.get('window').width - Spacing.lg * 2 - Spacing.md * 2;
 
 // ─── Row Components ───────────────────────────────────────────────────────────
 
@@ -860,8 +866,7 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     color: Colors.textMuted,
     lineHeight: 24,
-    flexShrink: 1,
-    width: '100%',
+    maxWidth: ABOUT_TEXT_WIDTH,
   },
   aboutDivider: {
     height: 1,

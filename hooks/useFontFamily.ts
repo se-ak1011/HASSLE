@@ -33,8 +33,8 @@ const FLARE_FONTS: FontFamilySet = {
 export function useFontFamily(): FontFamilySet {
   // Gracefully handle the case where this is called before DayContext is ready
   try {
-    const { day } = useDay();
-    return day?.isFlareDay ? FLARE_FONTS : NORMAL_FONTS;
+    const { day, flarePreview } = useDay();
+    return day?.isFlareDay || flarePreview ? FLARE_FONTS : NORMAL_FONTS;
   } catch {
     return NORMAL_FONTS;
   }

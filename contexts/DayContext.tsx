@@ -67,6 +67,14 @@ export interface DayContextType {
   prefs: UserPreferences | null;
   isLoading: boolean;
 
+  /**
+   * Preview flare typography before a day is started. The check-in screen's
+   * flare toggle sets this so the whole UI switches to the flare font even
+   * though no active day exists yet.
+   */
+  flarePreview: boolean;
+  setFlarePreview(value: boolean): void;
+
   // Check-in
   completeCheckIn(
     mode: EnergyMode,
@@ -150,6 +158,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
   const [day, setDayRaw] = useState<DayState | null>(null);
   const [prefs, setPrefsRaw] = useState<UserPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [flarePreview, setFlarePreview] = useState(false);
   const dayRef = useRef<DayState | null>(null);
 
   // Keep dayRef in sync so AppState handler can read latest day without stale closure
@@ -559,6 +568,8 @@ export function DayProvider({ children }: { children: ReactNode }) {
         day,
         prefs,
         isLoading,
+        flarePreview,
+        setFlarePreview,
         completeCheckIn,
         toggleFlare,
         addTask,
