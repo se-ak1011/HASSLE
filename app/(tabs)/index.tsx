@@ -505,9 +505,9 @@ export default function TodayScreen() {
           ) : null}
         </View>
 
-        {/* Lola — looks worse the more drained you are */}
+        {/* Lola — looks worse the more drained you are, or on a flare day */}
         <Image
-          source={energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
+          source={day.isFlareDay || energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
           style={styles.lola}
           resizeMode="contain"
         />
