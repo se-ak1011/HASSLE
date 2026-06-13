@@ -21,9 +21,9 @@ export const Colors = {
   success: '#7A5478',       // mauve — palette is monochrome, no green
   successFaint: '#261F2A',
 
-  text: '#E7E0D8',
-  textMuted: '#B8B2AA',
-  textSubtle: '#675E61',
+  text: '#F2ECE4',
+  textMuted: '#D2CCC3',
+  textSubtle: '#9A9097',
 
   border: '#353239',
   borderLight: '#3F3B42',
@@ -63,14 +63,14 @@ export const FontFamily = {
 };
 
 export const FontSizes = {
-  xs: 11,
-  sm: 13,
-  base: 16,
-  md: 18,
-  lg: 20,
-  xl: 24,
-  xxl: 30,
-  xxxl: 38,
+  xs: 12,
+  sm: 14,
+  base: 17,
+  md: 20,
+  lg: 22,
+  xl: 26,
+  xxl: 33,
+  xxxl: 42,
 };
 
 export const Spacing = {

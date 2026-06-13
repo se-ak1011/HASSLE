@@ -16,13 +16,13 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Pressable,
   ScrollView,
   Switch,
   Animated,
 } from 'react-native';
+import { Text } from '@/components/ui/AppText';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';

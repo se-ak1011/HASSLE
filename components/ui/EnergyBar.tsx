@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './AppText';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { EnergyMode } from '@/constants/types';
 import { useFontFamily } from '@/hooks/useFontFamily';
