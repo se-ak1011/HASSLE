@@ -43,11 +43,14 @@ export default function AccountScreen() {
 
   const [intent, setIntent] = useState<AccountMode>(mode);
   const [busy, setBusy] = useState<AuthProvider | 'out' | 'sync' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSignIn(provider: AuthProvider) {
     setBusy(provider);
+    setError(null);
     try {
-      await signIn(provider);
+      const result = await signIn(provider);
+      if (!result.ok && result.error) setError(result.error);
     } finally {
       setBusy(null);
     }
@@ -80,7 +83,7 @@ export default function AccountScreen() {
           hour: 'numeric',
           minute: '2-digit',
         })
-      : 'Backup activates in an upcoming update';
+      : 'Not synced yet — tap Sync now';
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -206,9 +209,15 @@ export default function AccountScreen() {
                 )}
               </Pressable>
               <Text style={[styles.note, { fontFamily: ff.regular }]}>
-                Free, and separate from Hassle Plus. Sign-in sets up your account now; the cloud
-                backup itself switches on in an upcoming update.
+                Free, and separate from Hassle Plus. Your data syncs privately to your account —
+                only you can see it.
               </Text>
+              {error ? (
+                <View style={styles.errorRow}>
+                  <MaterialIcons name="error-outline" size={15} color={Colors.flare} />
+                  <Text style={[styles.errorText, { fontFamily: ff.regular }]}>{error}</Text>
+                </View>
+              ) : null}
             </>
           ) : null}
 
@@ -356,6 +365,8 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: { fontSize: FontSizes.base, color: Colors.text },
   note: { fontSize: FontSizes.xs, color: Colors.textSubtle, lineHeight: 17, marginTop: 2 },
+  errorRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: Spacing.sm },
+  errorText: { flex: 1, fontSize: FontSizes.xs, color: Colors.flare, lineHeight: 17 },
   signedInCard: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,

@@ -6,21 +6,19 @@ import React, {
   useState,
   ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '@/services/supabase';
 import { syncService, SyncStatus } from '@/services/syncService';
 
 /**
- * Hassle — Account & Sync (opt-in).
+ * Hassle — Account & Sync (opt-in, powered by Supabase).
  *
  * Local-first is the default and a full first-class experience: no account, no
  * email, everything on-device. A synced account is entirely OPTIONAL and free —
  * it only mirrors the same data across devices. Nothing about the app is gated
  * behind having an account (that's separate from Hassle Plus).
- *
- * `signIn` is the seam real OAuth (Sign in with Apple / Google) drops into. For
- * now it establishes the account identity locally so the opt-in flow and its UI
- * states are real; the actual cloud backup activates when `syncService` is
- * configured.
  */
 
 export type AccountMode = 'local' | 'cloud';
@@ -33,27 +31,30 @@ export interface Account {
   email?: string;
 }
 
-const ACCOUNT_KEY = 'hassle_account';
-
 interface AccountContextType {
-  /** 'local' (default) or 'cloud' once signed in. Derived from `account`. */
   mode: AccountMode;
   account: Account | null;
   isLoading: boolean;
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
-  /** Opt in to syncing by signing in. Seam for real OAuth. */
   signIn(provider: AuthProvider): Promise<{ ok: boolean; error?: string }>;
-  /** Return to device-only. Local data is kept untouched. */
   signOut(): Promise<void>;
-  /** Manually push/pull now. No-op (reports status) until backend is wired. */
   syncNow(): Promise<void>;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
-function providerLabel(p: AuthProvider): string {
-  return p === 'apple' ? 'Apple' : 'Google';
+WebBrowser.maybeCompleteAuthSession();
+
+function accountFromSession(session: Session | null): Account | null {
+  const u = session?.user;
+  if (!u) return null;
+  const rawProvider = (u.app_metadata?.provider as string) ?? 'google';
+  const provider: AuthProvider = rawProvider === 'apple' ? 'apple' : 'google';
+  const meta = u.user_metadata ?? {};
+  const displayName =
+    meta.full_name || meta.name || u.email || `${provider === 'apple' ? 'Apple' : 'Google'} account`;
+  return { id: u.id, provider, displayName, email: u.email ?? undefined };
 }
 
 export function AccountProvider({ children }: { children: ReactNode }) {
@@ -63,57 +64,70 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(ACCOUNT_KEY);
-        if (raw) setAccount(JSON.parse(raw) as Account);
-      } catch {
-        // silent — default to local
-      }
+    supabase.auth.getSession().then(({ data }) => {
+      setAccount(accountFromSession(data.session));
       setIsLoading(false);
-    })();
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAccount(accountFromSession(session));
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signIn = useCallback(async (provider: AuthProvider) => {
-    // Seam: a real Sign in with Apple / Google flow replaces this body and
-    // returns the verified identity. Until then we establish the account
-    // locally so the opt-in experience is real.
-    const acct: Account = {
-      id: `${provider}_${Date.now()}`,
-      provider,
-      displayName: providerLabel(provider) + ' account',
-    };
-    setAccount(acct);
-    try {
-      await AsyncStorage.setItem(ACCOUNT_KEY, JSON.stringify(acct));
-    } catch {
-      // silent
-    }
-    // Kick an initial sync (no-op until configured).
-    const result = await syncService.pull();
+  // After sign-in: pull (restore on a new device), then push (back up).
+  const runInitialSync = useCallback(async () => {
+    setSyncStatus('syncing');
+    await syncService.pull();
+    const result = await syncService.push();
     setSyncStatus(result.status);
     if (result.syncedAt) setLastSyncedAt(result.syncedAt);
-    return { ok: true };
   }, []);
 
+  const signIn = useCallback(
+    async (provider: AuthProvider) => {
+      try {
+        const redirectTo = makeRedirectUri({ scheme: 'hassle', path: 'auth-callback' });
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo, skipBrowserRedirect: true },
+        });
+        if (error || !data?.url) {
+          return { ok: false, error: error?.message ?? 'Could not start sign-in.' };
+        }
+
+        const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        if (res.type !== 'success' || !res.url) {
+          return { ok: false, error: 'Sign-in was cancelled.' };
+        }
+
+        // Establish the session from the redirect. Supports both the PKCE
+        // (?code=) and implicit (#access_token=) OAuth flows.
+        const sessionError = await establishSession(res.url);
+        if (sessionError) return { ok: false, error: sessionError };
+
+        runInitialSync();
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : 'Sign-in failed.' };
+      }
+    },
+    [runInitialSync]
+  );
+
   const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
     setAccount(null);
     setSyncStatus('idle');
     setLastSyncedAt(null);
-    try {
-      await AsyncStorage.removeItem(ACCOUNT_KEY);
-    } catch {
-      // silent
-    }
   }, []);
 
   const syncNow = useCallback(async () => {
-    if (!account) return;
     setSyncStatus('syncing');
     const result = await syncService.push();
     setSyncStatus(result.status);
     if (result.syncedAt) setLastSyncedAt(result.syncedAt);
-  }, [account]);
+  }, []);
 
   const mode: AccountMode = account ? 'cloud' : 'local';
 
@@ -124,6 +138,28 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       {children}
     </AccountContext.Provider>
   );
+}
+
+/** Returns an error string on failure, or null on success. */
+async function establishSession(url: string): Promise<string | null> {
+  const hash = url.includes('#') ? url.split('#')[1] : '';
+  const query = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
+  const params = new URLSearchParams(hash || query);
+
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (access_token && refresh_token) {
+    const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+    return error ? error.message : null;
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    return error ? error.message : null;
+  }
+
+  return 'No session was returned from sign-in.';
 }
 
 export function useAccount(): AccountContextType {

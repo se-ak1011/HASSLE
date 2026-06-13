@@ -26,12 +26,6 @@ const BENEFITS: Benefit[] = [
     desc: 'A clean, longer-range PDF of your energy, flares, symptoms and patterns to bring to appointments.',
   },
   {
-    icon: 'cloud-done',
-    title: 'Cloud sync & backup',
-    desc: 'Keep your history safe and carry it across devices. Opt-in and encrypted.',
-    soon: true,
-  },
-  {
     icon: 'menu-book',
     title: 'Invisible-illness library',
     desc: 'Plain-language reading on chronic and neurodivergent conditions, each linked to the real study behind it.',
