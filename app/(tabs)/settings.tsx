@@ -523,7 +523,7 @@ export default function SettingsScreen() {
         <SectionHeader title="About Hassle" />
         <View style={[styles.card, styles.aboutCard]}>
           <Text style={styles.aboutText}>
-            {"Hassle is a daily planner built for bodies that don't cooperate."}
+            {"Hassle is a daily planner built for bodies that don't\ncooperate."}
           </Text>
           <Text style={styles.aboutText}>
             It helps you track your energy, understand what things actually cost
