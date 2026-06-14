@@ -23,6 +23,7 @@ import {
   ScheduledTask,
 } from '@/constants/types';
 import { symptomTagsForConditions } from '@/constants/conditions';
+import { buildWidgetSnapshot, updateWidget } from '@/services/widgetData';
 import {
   loadTodayState,
   saveTodayState,
@@ -700,6 +701,12 @@ export function DayProvider({ children }: { children: ReactNode }) {
     () => Math.max(0, (day?.energyLevel ?? 0) - energyUsed),
     [day?.energyLevel, energyUsed]
   );
+
+  // Keep the Home Screen widget's snapshot fresh (no-op until the native bridge
+  // is wired — see WIDGET_SETUP.md).
+  useEffect(() => {
+    updateWidget(buildWidgetSnapshot(day, energyRemaining));
+  }, [day, energyRemaining]);
 
   return (
     <DayContext.Provider

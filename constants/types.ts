@@ -80,7 +80,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   customTags: [],
   defaultDailyTasks: [],
   reminders: {
-    enabled: false,
+    enabled: true,
     frequency: 'low',
   },
   hasCompletedOnboarding: false,

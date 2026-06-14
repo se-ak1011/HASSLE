@@ -58,7 +58,7 @@ export default function OnboardingScreen() {
       prev.includes(condition) ? prev.filter((c) => c !== condition) : [...prev, condition]
     );
   }
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
   const [frequency, setFrequency] = useState<ReminderFrequency>('low');
   const [finishing, setFinishing] = useState(false);
 
@@ -361,8 +361,8 @@ export default function OnboardingScreen() {
           Gentle reminders?
         </Text>
         <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>
-          Optional. If you tend to forget to log your day, a small nudge can help.
-          Always off by default. You can change this anytime in Settings.
+          On by default — just one gentle evening nudge to help it become routine. No pressure, and
+          you can turn it off here or in Settings anytime.
         </Text>
 
         <View style={styles.reminderToggleCard}>
