@@ -8,4 +8,5 @@ export const Lola = {
   shrug: require('@/assets/images/lola-shrug.png'),
   books: require('@/assets/images/lola-books.png'), // research library
   explorer: require('@/assets/images/lola-explorer.png'), // doctor's directory
+  report: require('@/assets/images/lola-report.png'), // doctor-visit report
 };

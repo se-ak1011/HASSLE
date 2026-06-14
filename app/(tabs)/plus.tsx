@@ -139,13 +139,13 @@ export default function PlusScreen() {
           onPress={handleReport}
           disabled={exporting}
         >
-          <View style={styles.iconThumb}>
-            {exporting ? (
+          {exporting ? (
+            <View style={styles.iconThumb}>
               <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <MaterialIcons name="description" size={24} color={Colors.primary} />
-            )}
-          </View>
+            </View>
+          ) : (
+            <Image source={Lola.report} style={styles.thumb} resizeMode="contain" />
+          )}
           <View style={styles.cardText}>
             <View style={styles.cardTitleRow}>
               <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>

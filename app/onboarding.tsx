@@ -5,11 +5,12 @@
  * Shown once, then never again.
  *
  * Step 1: Welcome
- * Step 2: Pick default daily tasks (multi-select, tap only)
- * Step 3: Enable reminders (optional)
- * Step 4: All set
+ * Step 2: Name (optional)
+ * Step 3: Pick default daily tasks (multi-select, tap only)
+ * Step 4: Enable reminders (optional)
+ * Step 5: All set
  *
- * Completely tap-based — no typing required.
+ * Only the name is typed, and it's fully optional/skippable.
  * Designed for low-energy, brain fog, and ADHD users.
  */
 
@@ -22,7 +23,7 @@ import {
   Switch,
   Animated,
 } from 'react-native';
-import { Text } from '@/components/ui/AppText';
+import { Text, TextInput } from '@/components/ui/AppText';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -37,7 +38,7 @@ import {
 } from '@/constants/types';
 import { scheduleReminders } from '@/services/notificationService';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -45,6 +46,7 @@ export default function OnboardingScreen() {
   const { completeOnboarding } = useDay();
 
   const [step, setStep] = useState(1);
+  const [name, setName] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<DefaultDailyTask[]>([]);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [frequency, setFrequency] = useState<ReminderFrequency>('low');
@@ -64,10 +66,14 @@ export default function OnboardingScreen() {
 
     const finalFrequency: ReminderFrequency = remindersEnabled ? frequency : 'off';
 
-    await completeOnboarding(selectedTasks, {
-      enabled: remindersEnabled,
-      frequency: finalFrequency,
-    });
+    await completeOnboarding(
+      selectedTasks,
+      {
+        enabled: remindersEnabled,
+        frequency: finalFrequency,
+      },
+      name
+    );
 
     if (remindersEnabled && finalFrequency !== 'off') {
       await scheduleReminders(finalFrequency);
@@ -149,7 +155,52 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 2: Default daily tasks ────────────────────────────────────────────
+  // ── Step 2: Name (optional) ────────────────────────────────────────────────
+
+  function StepName() {
+    const hasName = name.trim().length > 0;
+    return (
+      <View style={styles.stepContent}>
+        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>
+          What should we call you?
+        </Text>
+        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>
+          Optional — just so Hassle can greet you. Skip it if you&apos;d rather, and you can always
+          add or change it later in Settings.
+        </Text>
+
+        <TextInput
+          style={[styles.nameInput, { fontFamily: ff.regular }]}
+          value={name}
+          onChangeText={setName}
+          placeholder="Your name or nickname"
+          placeholderTextColor={Colors.textSubtle}
+          autoCapitalize="words"
+          autoCorrect={false}
+          returnKeyType="done"
+          maxLength={40}
+          onSubmitEditing={nextStep}
+        />
+
+        <View style={styles.navRow}>
+          <Pressable style={styles.backBtn} onPress={prevStep}>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.textMuted} />
+            <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
+            onPress={nextStep}
+          >
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>
+              {hasName ? 'Continue' : 'Skip'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Step 3: Default daily tasks ────────────────────────────────────────────
 
   function StepDefaultTasks() {
     return (
@@ -226,7 +277,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 3: Reminders ──────────────────────────────────────────────────────
+  // ── Step 4: Reminders ──────────────────────────────────────────────────────
 
   const FREQ_OPTIONS: { value: Exclude<ReminderFrequency, 'off'>; desc: string }[] = [
     { value: 'low', desc: 'Once a day at 10am' },
@@ -326,7 +377,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 4: All set ────────────────────────────────────────────────────────
+  // ── Step 5: All set ────────────────────────────────────────────────────────
 
   function StepAllSet() {
     return (
@@ -394,9 +445,10 @@ export default function OnboardingScreen() {
         <ProgressDots />
 
         {step === 1 ? <StepWelcome /> : null}
-        {step === 2 ? <StepDefaultTasks /> : null}
-        {step === 3 ? <StepReminders /> : null}
-        {step === 4 ? <StepAllSet /> : null}
+        {step === 2 ? <StepName /> : null}
+        {step === 3 ? <StepDefaultTasks /> : null}
+        {step === 4 ? <StepReminders /> : null}
+        {step === 5 ? <StepAllSet /> : null}
       </ScrollView>
     </View>
   );
@@ -487,6 +539,17 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
     lineHeight: 22,
+  },
+  // ── Name ───────────────────────────────────────────────────────────────────
+  nameInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    fontSize: FontSizes.base,
+    color: Colors.text,
   },
   // ── Task selection ─────────────────────────────────────────────────────────
   taskGrid: {

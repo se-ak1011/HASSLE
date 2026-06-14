@@ -129,7 +129,8 @@ export interface DayContextType {
    */
   completeOnboarding(
     defaultTasks: DefaultDailyTask[],
-    reminders: ReminderSettings
+    reminders: ReminderSettings,
+    name?: string
   ): Promise<void>;
 
   /** Update reminder settings (called from Settings screen). */
@@ -594,13 +595,15 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // settings, and marks onboarding complete.
 
   const completeOnboarding = useCallback(
-    async (defaultTasks: DefaultDailyTask[], reminders: ReminderSettings) => {
+    async (defaultTasks: DefaultDailyTask[], reminders: ReminderSettings, name?: string) => {
       const current = await loadPreferences();
+      const trimmed = name?.trim();
       const updated: UserPreferences = {
         ...current,
         defaultDailyTasks: defaultTasks,
         reminders,
         hasCompletedOnboarding: true,
+        ...(trimmed ? { name: trimmed } : {}),
       };
       setPrefs(updated);
     },

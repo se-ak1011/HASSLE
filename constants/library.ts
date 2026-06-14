@@ -112,4 +112,80 @@ export const LIBRARY: LibraryArticle[] = [
       },
     ],
   },
+  {
+    id: 'autistic-burnout',
+    tag: 'Autism',
+    title: 'Autistic burnout is real',
+    body: 'Autistic burnout is the deep, full-body exhaustion that builds from masking, sensory load, and a world that asks for more than your supports allow. It can bring brain fog, a temporary loss of skills, and heavier sensory overwhelm — and it is not laziness or “giving up.” What helps most isn’t pushing harder; it’s rest, lighter demands, and people who accept you without asking you to perform.',
+    note: 'Defined largely from autistic people’s own accounts — recognised in research, though still being formally studied.',
+    sources: [
+      {
+        label: 'Raymaker et al. (2020) — Defining Autistic Burnout. Autism in Adulthood.',
+        url: 'https://doi.org/10.1089/aut.2019.0079',
+        kind: 'study',
+      },
+    ],
+  },
+  {
+    id: 'audhd',
+    tag: 'AuDHD',
+    title: 'When autism and ADHD travel together',
+    body: 'Autism and ADHD overlap far more often than people once assumed — ADHD is among the most common companions to autism, found in roughly a third of autistic people in clinical samples. (Clinicians weren’t even allowed to diagnose both together until 2013.) If you feel pulled between needing routine and craving novelty, you’re not contradictory or “doing it wrong” — that push–pull is a recognised part of being AuDHD.',
+    sources: [
+      {
+        label:
+          'Rong et al. (2021) — Prevalence of ADHD in individuals with ASD: a meta-analysis. Research in Autism Spectrum Disorders.',
+        url: 'https://www.sciencedirect.com/science/article/abs/pii/S1750946721000349',
+        kind: 'study',
+      },
+    ],
+  },
+  {
+    id: 'fibro-neurodivergence',
+    tag: 'Fibromyalgia',
+    title: 'Fibro and neurodivergence often overlap',
+    body: 'Chronic pain and fatigue conditions like fibromyalgia show up much more often in neurodivergent people. In recent research, adults with chronic pain or fatigue were several times more likely to meet criteria for autism or ADHD, with hypermobile, bendy joints offered as one possible biological thread. If you’re living with fibro and AuDHD at once, that combination is a known pattern — not a coincidence you imagined.',
+    note: 'This link is an emerging area of research — the strongest figures come from early case-control work, so it shows association, not proven cause.',
+    sources: [
+      {
+        label:
+          'Likely neurodivergence and variant connective tissue in chronic pain/fatigue: a case-control study (2026).',
+        url: 'https://www.sciencedirect.com/science/article/abs/pii/S0022395626001202',
+        kind: 'study',
+      },
+      {
+        label: 'Brighton & Sussex Medical School — plain-language summary.',
+        url: 'https://www.bsms.ac.uk/about/news/2026/new-study-reveals-high-rates-of-likely-undiagnosed-autism-and-adhd-in-people-with-chronic-pain-and-fatigue.aspx',
+        kind: 'essay',
+      },
+    ],
+  },
+  {
+    id: 'adhd-time',
+    tag: 'ADHD',
+    title: 'Time blindness and the “task wall”',
+    body: 'For ADHD brains, struggling to sense time and to get started isn’t a character flaw — it’s a core part of how the condition works. Judging how long something takes, and finding the very first step, lean on executive functions that ADHD makes genuinely harder. That’s exactly why breaking the day into small, visible, low-cost pieces — which is what Hassle tries to do — tends to work better than willpower.',
+    sources: [
+      {
+        label: 'Time Perception in Adult ADHD: Findings from a Decade — A Review (2023).',
+        url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9962130/',
+        kind: 'study',
+      },
+    ],
+  },
+  {
+    id: 'giftedness-2e',
+    tag: 'Giftedness',
+    title: 'Intensity, giftedness, and being “2e”',
+    body: 'Many gifted and twice-exceptional people (gifted plus something like autism, ADHD, or chronic illness) describe living turned up to eleven — intense focus, deep feelings, senses that notice everything. Dąbrowski called these “overexcitabilities.” It can be a genuine strength and genuinely tiring, especially alongside neurodivergence. Naming it can help you plan for rest instead of wondering why everything lands so hard.',
+    note: 'Worth knowing: the science on giftedness and “overexcitabilities” is debated and the evidence is mixed — treat it as a useful lens, not a hard fact.',
+    sources: [
+      {
+        label:
+          'Mendaglio & Tillier (2006) — Dąbrowski’s theory & giftedness: overexcitability research findings. J. for the Education of the Gifted.',
+        url: 'https://journals.sagepub.com/doi/abs/10.1177/016235320603000104',
+        kind: 'study',
+      },
+    ],
+  },
 ];
