@@ -1,54 +1,32 @@
 /**
- * Hassle — Billing seam (RevenueCat).
+ * Hassle — Billing (web / default stub).
  *
- * NOT wired yet: `react-native-purchases` isn't installed, and StoreKit IAP
- * requires a dev/standalone build (it can't run in Expo Go). This stub keeps the
- * app building and returns "not configured" everywhere, so the rest of the
- * entitlement logic (PlusContext) works today via the local unlock + Supabase
- * comp grant.
+ * This file is used on web (and anywhere the native store SDK isn't available).
+ * It NEVER imports `react-native-purchases`, so the Expo Router web/SSR preview
+ * bundles cleanly with no native dependency.
  *
- * To go live (see REVENUECAT_SETUP.md):
- *   1. `npx expo install react-native-purchases`
- *   2. Configure the SDK once at startup with your public API key + (optionally)
- *      the Supabase user id as the RevenueCat app-user-id.
- *   3. Flip `isConfigured` to true and uncomment the SDK calls below.
- *   4. Point the paywall's primary button at `billing.purchasePlus()`.
- *
- * Entitlement identifier expected in RevenueCat: "plus".
+ * The real implementation lives in `billing.native.ts`, which Metro picks
+ * automatically on iOS/Android via the `.native` platform extension. Consumers
+ * just `import { billing } from '@/services/billing'`.
  */
 
-// import Purchases from 'react-native-purchases';
+import { Billing, PLUS_ENTITLEMENT } from './billing.types';
 
-export const PLUS_ENTITLEMENT = 'plus';
+export { PLUS_ENTITLEMENT };
+export type { PurchaseResult } from './billing.types';
 
-export const billing = {
-  /** Flip to true once react-native-purchases is installed + configured. */
+export const billing: Billing = {
   isConfigured: false,
-
-  /** True if the user currently holds the "plus" entitlement. */
-  async hasPlusEntitlement(): Promise<boolean> {
-    if (!this.isConfigured) return false;
-    // const info = await Purchases.getCustomerInfo();
-    // return typeof info.entitlements.active[PLUS_ENTITLEMENT] !== 'undefined';
+  async configure() {
+    /* no store on web */
+  },
+  async hasPlusEntitlement() {
     return false;
   },
-
-  /** Starts the purchase flow (incl. the 14-day intro trial). */
-  async purchasePlus(): Promise<{ ok: boolean; error?: string }> {
-    if (!this.isConfigured) return { ok: false, error: 'not_configured' };
-    // const offerings = await Purchases.getOfferings();
-    // const pkg = offerings.current?.availablePackages?.[0];
-    // if (!pkg) return { ok: false, error: 'no_offering' };
-    // const { customerInfo } = await Purchases.purchasePackage(pkg);
-    // return { ok: typeof customerInfo.entitlements.active[PLUS_ENTITLEMENT] !== 'undefined' };
+  async purchasePlus() {
     return { ok: false, error: 'not_configured' };
   },
-
-  /** Restores prior purchases (App Store "Restore"). */
-  async restore(): Promise<boolean> {
-    if (!this.isConfigured) return false;
-    // const info = await Purchases.restorePurchases();
-    // return typeof info.entitlements.active[PLUS_ENTITLEMENT] !== 'undefined';
+  async restore() {
     return false;
   },
 };

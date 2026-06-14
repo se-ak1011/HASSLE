@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Modal, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius, Shadow } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { usePlus } from '@/contexts/PlusContext';
+import { billing } from '@/services/billing';
 import { PLUS_PRICE_LABEL, PLUS_PRICE_USD, PLUS_TRIAL_DAYS } from '@/constants/pricing';
 
 interface Props {
@@ -40,10 +41,33 @@ const BENEFITS: Benefit[] = [
 
 export function PaywallModal({ visible, onClose }: Props) {
   const ff = useFontFamily();
-  const { isPlus, unlock } = usePlus();
+  const { isPlus, unlock, restore } = usePlus();
+  const [busy, setBusy] = useState(false);
 
   async function handleUnlock() {
-    await unlock();
+    setBusy(true);
+    try {
+      const res = await billing.purchasePlus();
+      if (res.ok) {
+        await restore();
+        return;
+      }
+      if (res.error === 'cancelled') return;
+      // No products yet / not configured (web + beta): keep the free unlock so
+      // testers aren't blocked while billing is being set up.
+      await unlock();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRestore() {
+    setBusy(true);
+    try {
+      await restore();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -102,20 +126,27 @@ export function PaywallModal({ visible, onClose }: Props) {
                 <Pressable
                   style={({ pressed }) => [styles.unlockBtn, pressed && { opacity: 0.85 }]}
                   onPress={handleUnlock}
+                  disabled={busy}
                   accessibilityRole="button"
                   accessibilityLabel={`Start ${PLUS_TRIAL_DAYS}-day free trial`}
                 >
-                  <Text style={[styles.unlockText, { fontFamily: ff.semibold }]}>
-                    Start {PLUS_TRIAL_DAYS}-day free trial
-                  </Text>
+                  {busy ? (
+                    <ActivityIndicator size="small" color={Colors.background} />
+                  ) : (
+                    <Text style={[styles.unlockText, { fontFamily: ff.semibold }]}>
+                      Start {PLUS_TRIAL_DAYS}-day free trial
+                    </Text>
+                  )}
                 </Pressable>
                 <Text style={[styles.priceNote, { fontFamily: ff.regular }]}>
                   {PLUS_TRIAL_DAYS} days free, then {PLUS_PRICE_LABEL} (≈ {PLUS_PRICE_USD}). Cancel
                   anytime. A hardship option will always exist.
                 </Text>
-                <Text style={[styles.betaNote, { fontFamily: ff.regular }]}>
-                  Billing isn't live yet — as an early tester, Plus unlocks free for now.
-                </Text>
+                <Pressable onPress={handleRestore} disabled={busy} hitSlop={8}>
+                  <Text style={[styles.restoreLink, { fontFamily: ff.medium }]}>
+                    Restore purchases
+                  </Text>
+                </Pressable>
               </>
             )}
           </ScrollView>
@@ -254,13 +285,11 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     lineHeight: 16,
   },
-  betaNote: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSubtle,
+  restoreLink: {
+    fontSize: FontSizes.sm,
+    color: Colors.accent,
     textAlign: 'center',
-    marginTop: Spacing.xs,
-    lineHeight: 16,
-    opacity: 0.75,
+    marginTop: Spacing.md,
   },
   activeRow: {
     flexDirection: 'row',

@@ -65,6 +65,7 @@
     "react-native-markdown-display": "^7.0.2",
     "@stripe/stripe-react-native": "0.45.0",
     "expo-modules-autolinking": "*",
+    "react-native-purchases": "^8.5.0",
     "react-native-url-polyfill": "^2.0.0",
     "@privacyresearch/libsignal-protocol-typescript": "0.0.16",
     "@react-native-picker/picker": "2.11.0",

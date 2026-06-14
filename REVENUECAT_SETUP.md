@@ -5,8 +5,30 @@ iOS app to use StoreKit (In-App Purchase). Stripe-in-app would be rejected.
 RevenueCat wraps StoreKit (and Google Play Billing) behind one SDK + dashboard,
 handles the free trial, restores, and entitlements, and is free under ~$2.5k/mo.
 
-The app already has the seam: `services/billing.ts` and `contexts/PlusContext.tsx`.
-You only need to install the SDK, create the products, and flip `isConfigured`.
+## ✅ Already wired in the app (June 2026)
+- `react-native-purchases` declared in package.json (run `npx expo install
+  react-native-purchases` to lock the exact version, or let the build install it).
+- Native integration: `services/billing.native.ts` (real RevenueCat) +
+  `services/billing.ts` (web stub) — split by platform so the **web preview never
+  bundles the native module**.
+- SDK configured at startup (`app/_layout.tsx`), entitlement id **`plus`**.
+- Our **own paywall** (`PaywallModal`) is wired: "Start free trial" →
+  `billing.purchasePlus()`, plus a **Restore purchases** link. The RC key is in
+  `.env` as `EXPO_PUBLIC_RC_IOS_KEY` (currently the Test Store key).
+
+## What YOU still do (dashboard only — no code)
+- **Skip** RevenueCat's Paywall templates and Customer Center — we use our own.
+- **Do NOT** install `react-native-purchases-ui`.
+- Create **one product** (Monthly £4.99 / 14-day trial) in App Store Connect.
+- In RevenueCat: an **Offering marked "current"** with that product + an
+  **entitlement named exactly `plus`**.
+- For free-forever testers, use the **Supabase comp-list** (already built) or a
+  RevenueCat **Promotional Entitlement** — no "Lifetime product" needed.
+- For the real launch, swap `EXPO_PUBLIC_RC_IOS_KEY` to your `appl_…` key.
+
+Beta behaviour: until an Offering exists, the paywall button falls back to
+granting Plus free (so testers aren't blocked). A cancelled purchase grants
+nothing.
 
 ## 1. App Store Connect — create the subscription
 1. **Apps → Hassle → Subscriptions** → create a Subscription Group (e.g. "Hassle Plus").
