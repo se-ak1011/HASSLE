@@ -777,3 +777,82 @@ export async function exportClinicalReport(daysBack: number = 30): Promise<Expor
     return { success: false, error: message, daysFound: 0 };
   }
 }
+
+/**
+ * Opens the native print dialog for the clinical report (lets the user print
+ * or "Save to PDF" directly).
+ */
+export async function printClinicalReport(daysBack: number = 30): Promise<ExportResult> {
+  try {
+    const history = await loadHistory();
+    const cutoff = getDateString(daysBack);
+    const recent = history.filter((d) => d.date >= cutoff);
+    if (recent.length === 0) {
+      return { success: false, error: 'no_data', daysFound: 0 };
+    }
+    const stats = computeStats(recent);
+    const html = buildClinicalHTML(stats, recent, daysBack);
+    await Print.printAsync({ html });
+    return { success: true, daysFound: recent.length };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false, error: message, daysFound: 0 };
+  }
+}
+
+// ─── Report preview (for the in-app report page) ──────────────────────────────
+
+export interface ClinicalSummary {
+  daysFound: number;
+  daysBack: number;
+  dateRange: string;
+  energyMode: EnergyMode;
+  avgEnergyStarted: number;
+  avgEnergyUsed: number;
+  totalFlareDays: number;
+  flarePercent: number;
+  totalTasksCompleted: number;
+  mostDemandingTask: string | null;
+  topTags: { tag: string; count: number }[];
+  /** Days that have a symptom / reflection note attached. */
+  symptomNoteCount: number;
+}
+
+/** Formats an energy value for display (mirrors the PDF). */
+export function formatEnergyUnit(value: number, mode: EnergyMode): string {
+  return formatUnit(value, mode);
+}
+
+/** Computes the summary shown on the in-app report page. Null when no data. */
+export async function loadClinicalSummary(
+  daysBack: number = 30
+): Promise<ClinicalSummary | null> {
+  const history = await loadHistory();
+  const cutoff = getDateString(daysBack);
+  const recent = history.filter((d) => d.date >= cutoff);
+  if (recent.length === 0) return null;
+
+  const stats = computeStats(recent);
+  const symptomNoteCount = recent.filter((d) => {
+    const gp = d.guidedPrompts ?? {};
+    return Boolean(gp.symptoms || gp.drained || gp.helped || d.journalEntry);
+  }).length;
+
+  return {
+    daysFound: recent.length,
+    daysBack,
+    dateRange: stats.dateRange,
+    energyMode: stats.dominantMode,
+    avgEnergyStarted: stats.avgEnergyStarted,
+    avgEnergyUsed: stats.avgEnergyUsed,
+    totalFlareDays: stats.totalFlareDays,
+    flarePercent:
+      stats.days.length > 0
+        ? Math.round((stats.totalFlareDays / stats.days.length) * 100)
+        : 0,
+    totalTasksCompleted: stats.totalTasksCompleted,
+    mostDemandingTask: stats.mostDemandingTask,
+    topTags: stats.topTags,
+    symptomNoteCount,
+  };
+}

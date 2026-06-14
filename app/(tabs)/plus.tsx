@@ -1,26 +1,22 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { useAlert } from '@/template';
 import { usePlus } from '@/contexts/PlusContext';
 import { Lola } from '@/constants/lola';
 import { PaywallModal } from '@/components/ui/PaywallModal';
-import { exportClinicalReport } from '@/services/exportService';
 import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
 
 export default function PlusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
-  const { showAlert } = useAlert();
   const { isPlus } = usePlus();
   const [showPaywall, setShowPaywall] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   function openFeature(path: string) {
     if (!isPlus) {
@@ -28,32 +24,6 @@ export default function PlusScreen() {
       return;
     }
     router.push(path as any);
-  }
-
-  async function handleReport() {
-    if (!isPlus) {
-      setShowPaywall(true);
-      return;
-    }
-    if (exporting) return;
-    setExporting(true);
-    try {
-      const result = await exportClinicalReport(30);
-      if (!result.success) {
-        if (result.error === 'no_data') {
-          showAlert(
-            'Nothing to export yet',
-            'Complete at least one day first. Once you end a day, it will appear in your report.'
-          );
-        } else if (result.error === 'sharing_unavailable') {
-          showAlert('Sharing not available', 'Your device does not support file sharing.');
-        } else {
-          showAlert('Export failed', 'Something went wrong generating the report. Please try again.');
-        }
-      }
-    } finally {
-      setExporting(false);
-    }
   }
 
   return (
@@ -136,30 +106,19 @@ export default function PlusScreen() {
         {/* Doctor-visit report */}
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-          onPress={handleReport}
-          disabled={exporting}
+          onPress={() => openFeature('/report')}
         >
-          {exporting ? (
-            <View style={styles.iconThumb}>
-              <ActivityIndicator size="small" color={Colors.primary} />
-            </View>
-          ) : (
-            <Image source={Lola.report} style={styles.thumb} resizeMode="contain" />
-          )}
+          <Image source={Lola.report} style={styles.thumb} resizeMode="contain" />
           <View style={styles.cardText}>
             <View style={styles.cardTitleRow}>
-              <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>
-                {exporting ? 'Generating report…' : 'Doctor-visit report'}
-              </Text>
+              <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Doctor-visit report</Text>
               {!isPlus ? <LockTag ff={ff} /> : null}
             </View>
             <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>
               A 30-day clinical PDF — trends plus a symptom log for appointments.
             </Text>
           </View>
-          {!exporting ? (
-            <MaterialIcons name={isPlus ? 'share' : 'lock'} size={isPlus ? 20 : 16} color={Colors.textSubtle} />
-          ) : null}
+          <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 22 : 16} color={Colors.textSubtle} />
         </Pressable>
 
         <Text style={[styles.footnote, { fontFamily: ff.regular }]}>
