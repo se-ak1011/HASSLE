@@ -38,49 +38,35 @@ The RN side already computes everything (`services/widgetData.ts → WidgetSnaps
 - **Medium** → energy + tasks left + last reflection ✓ (`pendingTasks`, `reflection`)
 - **Lola** → pose by `energyPercent` ✓ (best one)
 
-### Lola pose mapping
-| Energy | Pose | Asset |
-|---|---|---|
-| ≥ 80% | standing | `lola-standing` ✅ have |
-| 40–79% | sitting | `lola-sitting` ✅ have |
-| 15–39% | lying on sofa | ⚠️ **new asset needed** |
-| < 15% | face down on floor | ⚠️ **new asset needed** (or reuse `lola-xeyes`) |
+### Lola assets — DELIVERED ✅
+A full set of 16 Lola poses is staged in **`assets/widget/`** (the energy label is
+baked into each image, so the Lola widget just shows the selected image full-bleed
+— no dynamic text needed):
 
-So the Lola widget needs **2 new Lola drawings** (lying on sofa, face-down) to
-fully land — when you make them, drop them in `assets/images/` and I'll add them
-to the widget's asset catalog. Until then it can fall back to standing/sitting +
-`xeyes` for the lowest.
+- **Battery (8):** `battery-100, battery-80, battery-60, battery-40, battery-30,
+  battery-20, battery-10, battery-0`
+- **Spoon (8):** `spoon-12, spoon-10, spoon-8, spoon-6, spoon-4, spoon-2, spoon-1,
+  spoon-0`
 
-### Battery vs Spoon asset sets
-The snapshot carries `energyMode` *and* `energyPercent`, so the widget can show a
-whole **different set of designs** depending on the measure the user picked, and
-the right image for their current level. All images live in the widget's asset
-catalog; the Swift selects by name.
+The widget shows the **battery** set or the **spoon** set based on `energyMode`,
+and picks the nearest tier from `energyRemaining` (a % in battery mode, a spoon
+count in spoon mode). At build time these go into the widget's asset catalog.
 
-Suggested file naming (flexible — tell me how many levels you drew per mode and
-I'll match the buckets):
-```
-widget-battery-full   widget-spoon-full
-widget-battery-high   widget-spoon-high
-widget-battery-mid    widget-spoon-mid
-widget-battery-low    widget-spoon-low
-widget-battery-empty  widget-spoon-empty
-```
 Selector:
 ```swift
-func widgetAsset(mode: String, pct: Int) -> String {
-  let level: String
-  switch pct {
-  case 80...:    level = "full"
-  case 60..<80:  level = "high"
-  case 40..<60:  level = "mid"
-  case 15..<40:  level = "low"
-  default:       level = "empty"
-  }
-  return "widget-\(mode)-\(level)"   // e.g. widget-battery-mid, widget-spoon-low
+func widgetAsset(mode: String, value: Int) -> String {
+  let tiers = mode == "spoon" ? [12,10,8,6,4,2,1,0] : [100,80,60,40,30,20,10,0]
+  let nearest = tiers.min(by: { abs($0 - value) < abs($1 - value) }) ?? tiers.last!
+  return "\(mode)-\(nearest)"   // e.g. battery-40, spoon-6
 }
+// value = snapshot.energyRemaining; mode = snapshot.energyMode
 ```
-(`mode` is `"battery"` or `"spoon"` straight from the snapshot.)
+(So `battery-100`…`battery-0` and `spoon-12`…`spoon-0` are the asset-catalog names.)
+
+> Note: these source PNGs are sticker-style (~300–480px with a white outline). For
+> a clean widget we may want full-bleed/transparent re-exports at a consistent,
+> higher resolution — but they're perfectly fine to build a first version with.
+
 
 
 ## Steps (when the main app is on TestFlight)
