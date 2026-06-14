@@ -522,6 +522,9 @@ export default function TodayScreen() {
         {/* Header — quote on the left, Lola alongside on the right */}
         <View style={styles.headerRow}>
           <View style={styles.headerTextCol}>
+            {prefs?.name ? (
+              <Text style={[styles.greeting, { fontFamily: ff.semibold }]}>Hi, {prefs.name}</Text>
+            ) : null}
             <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
               {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
             </Text>
@@ -1103,6 +1106,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-start',
     gap: Spacing.sm,
+  },
+  greeting: {
+    fontSize: FontSizes.xl,
+    fontWeight: Fonts.semibold,
+    color: Colors.text,
+    letterSpacing: -0.3,
+    marginBottom: Spacing.xs,
   },
   headerText: {
     fontSize: FontSizes.lg,

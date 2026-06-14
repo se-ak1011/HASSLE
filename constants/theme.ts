@@ -63,14 +63,14 @@ export const FontFamily = {
 };
 
 export const FontSizes = {
-  xs: 12,
-  sm: 14,
-  base: 17,
-  md: 20,
-  lg: 22,
-  xl: 26,
-  xxl: 33,
-  xxxl: 42,
+  xs: 13,
+  sm: 15,
+  base: 18,
+  md: 22,
+  lg: 24,
+  xl: 28,
+  xxl: 36,
+  xxxl: 46,
 };
 
 export const Spacing = {
