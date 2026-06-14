@@ -16,6 +16,11 @@ interface OptionMeta {
   tag: string;
 }
 
+// Flip to true once Sign in with Apple is configured in the Supabase + Apple
+// dashboards. Apple requires this before App Store submission if Google is
+// offered (guideline 4.8) — so re-enable it before you ship to the store.
+const APPLE_SIGNIN_ENABLED = false;
+
 // Deliberately parallel: same length, same structure, same visual weight.
 // Neither is framed as the "real" or "better" option.
 const OPTIONS: OptionMeta[] = [
@@ -176,22 +181,24 @@ export default function AccountScreen() {
 
           {intent === 'cloud' && mode === 'local' ? (
             <>
-              <Pressable
-                style={({ pressed }) => [styles.appleBtn, pressed && { opacity: 0.85 }]}
-                onPress={() => handleSignIn('apple')}
-                disabled={busy === 'apple'}
-              >
-                {busy === 'apple' ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                  <>
-                    <MaterialCommunityIcons name="apple" size={20} color={Colors.white} />
-                    <Text style={[styles.appleBtnText, { fontFamily: ff.semibold }]}>
-                      Continue with Apple
-                    </Text>
-                  </>
-                )}
-              </Pressable>
+              {APPLE_SIGNIN_ENABLED ? (
+                <Pressable
+                  style={({ pressed }) => [styles.appleBtn, pressed && { opacity: 0.85 }]}
+                  onPress={() => handleSignIn('apple')}
+                  disabled={busy === 'apple'}
+                >
+                  {busy === 'apple' ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons name="apple" size={20} color={Colors.white} />
+                      <Text style={[styles.appleBtnText, { fontFamily: ff.semibold }]}>
+                        Continue with Apple
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              ) : null}
               <Pressable
                 style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.85 }]}
                 onPress={() => handleSignIn('google')}
