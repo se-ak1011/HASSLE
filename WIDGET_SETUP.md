@@ -51,6 +51,38 @@ fully land — when you make them, drop them in `assets/images/` and I'll add th
 to the widget's asset catalog. Until then it can fall back to standing/sitting +
 `xeyes` for the lowest.
 
+### Battery vs Spoon asset sets
+The snapshot carries `energyMode` *and* `energyPercent`, so the widget can show a
+whole **different set of designs** depending on the measure the user picked, and
+the right image for their current level. All images live in the widget's asset
+catalog; the Swift selects by name.
+
+Suggested file naming (flexible — tell me how many levels you drew per mode and
+I'll match the buckets):
+```
+widget-battery-full   widget-spoon-full
+widget-battery-high   widget-spoon-high
+widget-battery-mid    widget-spoon-mid
+widget-battery-low    widget-spoon-low
+widget-battery-empty  widget-spoon-empty
+```
+Selector:
+```swift
+func widgetAsset(mode: String, pct: Int) -> String {
+  let level: String
+  switch pct {
+  case 80...:    level = "full"
+  case 60..<80:  level = "high"
+  case 40..<60:  level = "mid"
+  case 15..<40:  level = "low"
+  default:       level = "empty"
+  }
+  return "widget-\(mode)-\(level)"   // e.g. widget-battery-mid, widget-spoon-low
+}
+```
+(`mode` is `"battery"` or `"spoon"` straight from the snapshot.)
+
+
 ## Steps (when the main app is on TestFlight)
 1. **App Group** — in the Apple Developer portal add `group.com.hassle.app` to the
    app id, and to both the app and widget entitlements.
