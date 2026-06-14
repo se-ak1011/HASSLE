@@ -60,3 +60,35 @@ Status legend: ✅ done in code · 🟡 needs you (dashboard/console) · ⬜ not
 - ⬜ Upload build, internal/external TestFlight testers.
 - ⬜ Address review notes (health apps: don't make medical claims — the library's
   "information, not medical advice" framing already helps here).
+
+## 8. Legal & required paperwork
+- ✅ `PRIVACY_POLICY.md` + `TERMS_OF_SERVICE.md` drafted (fill the [brackets]).
+- 🟡 **Host both** at `yourdomain.com/privacy` + `/terms` (see `LEGAL_HOSTING.md`).
+- 🟡 Put the URLs in: App Store Connect (Privacy Policy URL), Play Console, and the
+  Google OAuth consent screen (privacy + terms links).
+- 🔴 **Account deletion (required for App Store, guideline 5.1.1(v)):** because we
+  offer sign-in, the app must let users delete their account in-app. Today we have
+  "Clear all app data" (local) + sign-out, but **not** account deletion. Needs a
+  small Supabase **Edge Function** (service_role) to delete the auth user + their
+  rows, plus a "Delete account" button. Not blocking for TestFlight; **blocking for
+  public launch.** (Ask me to build it when you're ready.)
+- ⬜ EULA: Apple's standard EULA applies by default; our Terms cover the rest. No
+  action unless you want a custom EULA.
+- ⬜ (Optional) Add in-app Privacy/Terms links in Settings once URLs are live.
+
+## 9. Quick reference — the two gates
+**READY FOR TESTING (free TestFlight beta):**
+1. `npx tsc --noEmit` clean (after `expo install react-native-purchases`)
+2. Supabase migrations 0001 + 0002 run; Google sign-in works on a dev build
+3. `eas build` dev/preview → smoke-test every feature on a real device
+4. Comp yourself via the `comps` table → confirm Plus
+(Subscriptions can stay in beta-free mode. Apple sign-in optional for internal testers.)
+
+**READY FOR LAUNCH (public App Store) — all of the above plus:**
+1. Apple Sign In enabled + flip `APPLE_SIGNIN_ENABLED = true`
+2. Account deletion shipped (Edge Function) — §8
+3. RevenueCat: Monthly product + `plus` entitlement + current Offering; swap to the
+   `appl_…` key; test a sandbox purchase
+4. Privacy + Terms hosted; URLs in ASC / Play / Google consent; App Privacy labels
+5. Listing copy (`STORE_LISTINGS.md`) + screenshots; Paid Apps agreement
+6. Production build → submit (Android later)

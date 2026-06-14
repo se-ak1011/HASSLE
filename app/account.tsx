@@ -4,7 +4,7 @@ import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
+import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAccount, AccountMode, AuthProvider } from '@/contexts/AccountContext';
 
