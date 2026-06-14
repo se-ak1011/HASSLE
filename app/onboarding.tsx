@@ -349,9 +349,9 @@ export default function OnboardingScreen() {
   // ── Step 5: Reminders ──────────────────────────────────────────────────────
 
   const FREQ_OPTIONS: { value: Exclude<ReminderFrequency, 'off'>; desc: string }[] = [
-    { value: 'low', desc: 'Once a day at 10am' },
-    { value: 'medium', desc: 'Twice a day — 10am and 3pm' },
-    { value: 'high', desc: 'Three times — 9am, 12pm, 4pm' },
+    { value: 'low', desc: 'A gentle evening wind-down (7:30pm)' },
+    { value: 'medium', desc: 'Morning and evening (10am & 7:30pm)' },
+    { value: 'high', desc: 'Morning, midday and evening (9am, 2pm, 7:30pm)' },
   ];
 
   function StepReminders() {

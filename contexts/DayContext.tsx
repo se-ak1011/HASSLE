@@ -109,6 +109,8 @@ export interface DayContextType {
 
   /** Add a user-created custom tag and persist it. Returns false if duplicate. */
   addCustomTag(tag: string): boolean;
+  /** Add several custom tags at once (deduped vs built-ins + existing). Returns the number added. */
+  addCustomTags(tags: string[]): number;
 
   /**
    * End the current day: archives today's full snapshot to history,
@@ -567,6 +569,30 @@ export function DayProvider({ children }: { children: ReactNode }) {
     [prefs, setPrefs]
   );
 
+  const addCustomTags = useCallback(
+    (raws: string[]): number => {
+      const currentCustom = prefs?.customTags ?? [];
+      const seen = new Set([...BUILT_IN_TAGS, ...currentCustom].map((t) => t.toLowerCase()));
+      const toAdd: string[] = [];
+      for (const raw of raws) {
+        const tag = raw.trim().slice(0, 30);
+        if (!tag) continue;
+        const lower = tag.toLowerCase();
+        if (seen.has(lower)) continue;
+        seen.add(lower);
+        toAdd.push(tag);
+      }
+      if (toAdd.length === 0) return 0;
+      const updated: UserPreferences = {
+        ...(prefs ?? { energyMode: 'spoon', taskDefaults: {}, customTags: [] }),
+        customTags: [...currentCustom, ...toAdd],
+      };
+      setPrefs(updated);
+      return toAdd.length;
+    },
+    [prefs, setPrefs]
+  );
+
   // ── End Day ───────────────────────────────────────────────────────────────────
   // Archives today's full snapshot to history (energy, tasks, reflection, flare,
   // symptoms, tags, learned costs). Then clears the active day so the user is
@@ -695,6 +721,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
         updateTaskDefault,
         saveJournal,
         addCustomTag,
+        addCustomTags,
         endDay,
         resetAllData,
         completeOnboarding,

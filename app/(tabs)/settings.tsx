@@ -27,7 +27,9 @@ import {
   ONBOARDING_TASK_OPTIONS,
   DefaultDailyTask,
   PRESET_CONDITIONS,
+  BUILT_IN_TAGS,
 } from '@/constants/types';
+import { CONDITION_SYMPTOM_TAGS } from '@/constants/conditions';
 import {
   scheduleReminders,
   cancelAllReminders,
@@ -286,16 +288,32 @@ function DefaultTasksPanel() {
 // ─── Profile Panel (name + conditions) ───────────────────────────────────────
 
 function ProfilePanel() {
-  const { prefs, updateProfile } = useDay();
+  const { prefs, updateProfile, addCustomTags } = useDay();
+  const { showAlert } = useAlert();
   const ff = useFontFamily();
   const [name, setName] = useState(prefs?.name ?? '');
   const conditions = prefs?.conditions ?? [];
 
   function toggleCondition(c: string) {
-    const next = conditions.includes(c)
-      ? conditions.filter((x) => x !== c)
-      : [...conditions, c];
+    const adding = !conditions.includes(c);
+    const next = adding ? [...conditions, c] : conditions.filter((x) => x !== c);
     updateProfile({ conditions: next });
+
+    if (!adding) return;
+    // Offer to pre-load this condition's symptom tags (only the ones not already present).
+    const suggested = CONDITION_SYMPTOM_TAGS[c] ?? [];
+    const have = new Set([...BUILT_IN_TAGS, ...(prefs?.customTags ?? [])].map((t) => t.toLowerCase()));
+    const novel = suggested.filter((t) => !have.has(t.toLowerCase()));
+    if (novel.length === 0) return;
+
+    showAlert(
+      `Add tags for ${c}?`,
+      `Want me to add a few suggested symptom tags? ${novel.join(', ')}`,
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Add tags', onPress: () => addCustomTags(suggested) },
+      ]
+    );
   }
 
   return (

@@ -21,16 +21,31 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const REMINDER_MESSAGES = [
-  { title: 'Quick check-in', body: 'Want to log anything from today?' },
-  { title: 'Hey there', body: 'Just checking in. How are you doing?' },
-  { title: 'No pressure', body: 'Tap to log today if you have a moment.' },
-  { title: 'Gentle reminder', body: 'You started your day. Want to add a task or two?' },
-  { title: 'Still here', body: 'Open Hassle for a quick check-in whenever you are ready.' },
-];
+// Time-of-day message pools. Evening leans into "wrap up your day" — the nudge
+// that brings people back to close the loop — and reassures that even logging
+// just your energy counts (no typing required).
+type Slot = 'morning' | 'midday' | 'evening';
 
-function randomMessage() {
-  return REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
+const REMINDER_MESSAGES: Record<Slot, { title: string; body: string }[]> = {
+  morning: [
+    { title: 'Morning 💜', body: "Whenever you're ready — set today's energy." },
+    { title: 'New day', body: 'No pressure. A quick check-in when you can.' },
+    { title: 'Hey there', body: "How's your energy today? Tap to start." },
+  ],
+  midday: [
+    { title: 'Quick check-in', body: 'How’s it going? Tick anything off if you like.' },
+    { title: 'Still here', body: 'A gentle nudge — no need to do much.' },
+  ],
+  evening: [
+    { title: 'Winding down', body: 'How did today go? Tap to wrap up your day.' },
+    { title: 'Before bed', body: 'Want to close out today? Even just your energy counts.' },
+    { title: 'End of day', body: 'Whatever got done, got done. Tap to log it.' },
+  ],
+};
+
+function messageFor(slot: Slot) {
+  const pool = REMINDER_MESSAGES[slot];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 /**
@@ -75,11 +90,12 @@ export async function cancelAllReminders(): Promise<void> {
 }
 
 /**
- * Schedule daily reminders based on the chosen frequency.
+ * Schedule daily reminders based on the chosen frequency. Every level includes
+ * an evening wind-down — the nudge that helps people come back and close the day.
  *
- * low    → once at 10:00
- * medium → 10:00 and 15:00
- * high   → 09:00, 12:00, and 16:00
+ * low    → evening wind-down (19:30)
+ * medium → morning (10:00) + evening (19:30)
+ * high   → morning (09:00) + midday (14:00) + evening (19:30)
  */
 export async function scheduleReminders(frequency: ReminderFrequency): Promise<boolean> {
   if (frequency === 'off') {
@@ -92,22 +108,22 @@ export async function scheduleReminders(frequency: ReminderFrequency): Promise<b
 
   await cancelAllReminders();
 
-  const schedules: { hour: number; minute: number }[] = [];
+  const schedules: { hour: number; minute: number; slot: Slot }[] = [];
 
   if (frequency === 'low') {
-    schedules.push({ hour: 10, minute: 0 });
+    schedules.push({ hour: 19, minute: 30, slot: 'evening' });
   } else if (frequency === 'medium') {
-    schedules.push({ hour: 10, minute: 0 });
-    schedules.push({ hour: 15, minute: 0 });
+    schedules.push({ hour: 10, minute: 0, slot: 'morning' });
+    schedules.push({ hour: 19, minute: 30, slot: 'evening' });
   } else if (frequency === 'high') {
-    schedules.push({ hour: 9, minute: 0 });
-    schedules.push({ hour: 12, minute: 0 });
-    schedules.push({ hour: 16, minute: 0 });
+    schedules.push({ hour: 9, minute: 0, slot: 'morning' });
+    schedules.push({ hour: 14, minute: 0, slot: 'midday' });
+    schedules.push({ hour: 19, minute: 30, slot: 'evening' });
   }
 
   try {
     for (const time of schedules) {
-      const msg = randomMessage();
+      const msg = messageFor(time.slot);
       await Notifications.scheduleNotificationAsync({
         content: {
           title: msg.title,

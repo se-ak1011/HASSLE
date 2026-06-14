@@ -182,7 +182,7 @@ export const ONBOARDING_TASK_OPTIONS: DefaultDailyTask[] = [
 /** Reminder frequency descriptions */
 export const REMINDER_FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
   off: 'Off',
-  low: 'Low — once a day',
-  medium: 'Medium — twice a day',
-  high: 'High — three times a day',
+  low: 'Once a day — evening',
+  medium: 'Twice a day — morning & evening',
+  high: 'Three times — morning, midday & evening',
 };
