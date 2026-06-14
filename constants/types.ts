@@ -139,17 +139,17 @@ export const HEADER_QUOTES: string[] = [
 export const PRESET_CONDITIONS: string[] = [
   'Fibromyalgia',
   'ME/CFS',
-  'EDS/Hypermobility',
+  'EDS / Hypermobility',
   'POTS',
-  'Lupus',
-  'MS',
-  'Endometriosis',
-  'Long COVID',
-  'Chronic migraine',
-  'Depression',
-  'Anxiety',
   'ADHD',
   'Autism',
+  'Anxiety',
+  'Depression',
+  'Endometriosis',
+  'Chronic Migraine',
+  'Long COVID',
+  'Lupus',
+  'MS',
 ];
 
 export const PREMADE_TASKS: { name: string; baseCost: number; category: string }[] = [

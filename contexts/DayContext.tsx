@@ -22,6 +22,7 @@ import {
   ReminderSettings,
   ScheduledTask,
 } from '@/constants/types';
+import { symptomTagsForConditions } from '@/constants/conditions';
 import {
   loadTodayState,
   saveTodayState,
@@ -130,7 +131,7 @@ export interface DayContextType {
   completeOnboarding(
     defaultTasks: DefaultDailyTask[],
     reminders: ReminderSettings,
-    name?: string
+    profile?: { name?: string; conditions?: string[] }
   ): Promise<void>;
 
   /** Update reminder settings (called from Settings screen). */
@@ -595,14 +596,24 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // settings, and marks onboarding complete.
 
   const completeOnboarding = useCallback(
-    async (defaultTasks: DefaultDailyTask[], reminders: ReminderSettings, name?: string) => {
+    async (
+      defaultTasks: DefaultDailyTask[],
+      reminders: ReminderSettings,
+      profile?: { name?: string; conditions?: string[] }
+    ) => {
       const current = await loadPreferences();
-      const trimmed = name?.trim();
+      const trimmed = profile?.name?.trim();
+      const conditions = profile?.conditions ?? current.conditions ?? [];
+      // Pre-load condition-aware symptom tags (built-ins are stripped by dedupe).
+      const symptomTags = symptomTagsForConditions(conditions);
+      const customTags = dedupeCustomTags([...(current.customTags ?? []), ...symptomTags]);
       const updated: UserPreferences = {
         ...current,
         defaultDailyTasks: defaultTasks,
         reminders,
         hasCompletedOnboarding: true,
+        conditions,
+        customTags,
         ...(trimmed ? { name: trimmed } : {}),
       };
       setPrefs(updated);

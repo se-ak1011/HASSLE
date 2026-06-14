@@ -22,6 +22,7 @@ import {
   ScrollView,
   Switch,
   Animated,
+  Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { router } from 'expo-router';
@@ -35,10 +36,12 @@ import {
   DefaultDailyTask,
   ReminderFrequency,
   REMINDER_FREQUENCY_LABELS,
+  PRESET_CONDITIONS,
 } from '@/constants/types';
+import { Lola } from '@/constants/lola';
 import { scheduleReminders } from '@/services/notificationService';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -47,7 +50,14 @@ export default function OnboardingScreen() {
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [selectedTasks, setSelectedTasks] = useState<DefaultDailyTask[]>([]);
+
+  function toggleCondition(condition: string) {
+    setSelectedConditions((prev) =>
+      prev.includes(condition) ? prev.filter((c) => c !== condition) : [...prev, condition]
+    );
+  }
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [frequency, setFrequency] = useState<ReminderFrequency>('low');
   const [finishing, setFinishing] = useState(false);
@@ -72,7 +82,7 @@ export default function OnboardingScreen() {
         enabled: remindersEnabled,
         frequency: finalFrequency,
       },
-      name
+      { name, conditions: selectedConditions }
     );
 
     if (remindersEnabled && finalFrequency !== 'off') {
@@ -114,36 +124,20 @@ export default function OnboardingScreen() {
   function StepWelcome() {
     return (
       <View style={styles.stepContent}>
-        <View style={styles.welcomeLogoBlock}>
-          <Text style={[styles.welcomeLogo, { fontFamily: ff.bold }]}>HASSLE</Text>
+        <View style={styles.welcomeLolaBlock}>
+          <Image source={Lola.welcome} style={styles.welcomeLola} resizeMode="contain" />
         </View>
 
         <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>
-          Welcome.
+          Hi, I&apos;m Lola.
         </Text>
         <Text style={[styles.stepBody, { fontFamily: ff.regular }]}>
-          This app is for bodies that don&apos;t always cooperate.
-        </Text>
-        <Text style={[styles.stepBody, { fontFamily: ff.regular }]}>
-          It helps you track your energy honestly, plan only what you can realistically
-          do, and understand your patterns over time.
+          I&apos;ll help you track your energy, symptoms, and the things that take more out of you
+          than people realise.
         </Text>
         <Text style={[styles.stepBody, styles.stepBodyCalm, { fontFamily: ff.regular }]}>
-          No pressure. No judgment. Let&apos;s take just a minute to set things up.
+          Everything here is optional, and you can change it later.
         </Text>
-
-        <View style={styles.featureList}>
-          {[
-            { icon: 'bolt', text: 'Track energy in spoons or battery %' },
-            { icon: 'check-circle-outline', text: 'Add tasks and mark them done' },
-            { icon: 'show-chart', text: 'See your patterns over time' },
-          ].map(({ icon, text }) => (
-            <View key={text} style={styles.featureRow}>
-              <MaterialIcons name={icon as any} size={18} color={Colors.primary} />
-              <Text style={[styles.featureText, { fontFamily: ff.regular }]}>{text}</Text>
-            </View>
-          ))}
-        </View>
 
         <Pressable
           style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.7 }]}
@@ -162,11 +156,10 @@ export default function OnboardingScreen() {
     return (
       <View style={styles.stepContent}>
         <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>
-          What should we call you?
+          What should I call you?
         </Text>
         <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>
-          Optional — just so Hassle can greet you. Skip it if you&apos;d rather, and you can always
-          add or change it later in Settings.
+          Optional — just so I can greet you. You can always change this later.
         </Text>
 
         <TextInput
@@ -200,7 +193,83 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 3: Default daily tasks ────────────────────────────────────────────
+  // ── Step 3: Conditions (optional) ──────────────────────────────────────────
+
+  function StepConditions() {
+    return (
+      <View style={styles.stepContent}>
+        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>
+          Do any of these sound like you?
+        </Text>
+        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>
+          Optional. These simply help me suggest useful symptom tags and defaults. You can change
+          them later.
+        </Text>
+
+        <View style={styles.taskGrid}>
+          {PRESET_CONDITIONS.map((condition) => {
+            const selected = selectedConditions.includes(condition);
+            return (
+              <Pressable
+                key={condition}
+                style={({ pressed }) => [
+                  styles.taskChip,
+                  selected && styles.taskChipSelected,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => toggleCondition(condition)}
+              >
+                <View style={styles.taskChipInner}>
+                  {selected ? (
+                    <MaterialIcons name="check" size={15} color={Colors.background} />
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.taskChipText,
+                      selected && styles.taskChipTextSelected,
+                      { fontFamily: ff.medium },
+                    ]}
+                  >
+                    {condition}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.selectionNote}>
+          <MaterialIcons
+            name={selectedConditions.length > 0 ? 'check-circle' : 'info-outline'}
+            size={14}
+            color={selectedConditions.length > 0 ? Colors.success : Colors.textSubtle}
+          />
+          <Text style={[styles.selectionNoteText, { fontFamily: ff.regular }]}>
+            {selectedConditions.length > 0
+              ? `${selectedConditions.length} selected — I'll suggest matching symptom tags`
+              : "Nothing selected — that's completely fine"}
+          </Text>
+        </View>
+
+        <View style={styles.navRow}>
+          <Pressable style={styles.backBtn} onPress={prevStep}>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.textMuted} />
+            <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
+            onPress={nextStep}
+          >
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>
+              {selectedConditions.length > 0 ? 'Continue' : 'Skip'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Step 4: Default daily tasks ────────────────────────────────────────────
 
   function StepDefaultTasks() {
     return (
@@ -277,7 +346,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 4: Reminders ──────────────────────────────────────────────────────
+  // ── Step 5: Reminders ──────────────────────────────────────────────────────
 
   const FREQ_OPTIONS: { value: Exclude<ReminderFrequency, 'off'>; desc: string }[] = [
     { value: 'low', desc: 'Once a day at 10am' },
@@ -377,7 +446,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 5: All set ────────────────────────────────────────────────────────
+  // ── Step 6: All set ────────────────────────────────────────────────────────
 
   function StepAllSet() {
     return (
@@ -446,9 +515,10 @@ export default function OnboardingScreen() {
 
         {step === 1 ? <StepWelcome /> : null}
         {step === 2 ? <StepName /> : null}
-        {step === 3 ? <StepDefaultTasks /> : null}
-        {step === 4 ? <StepReminders /> : null}
-        {step === 5 ? <StepAllSet /> : null}
+        {step === 3 ? <StepConditions /> : null}
+        {step === 4 ? <StepDefaultTasks /> : null}
+        {step === 5 ? <StepReminders /> : null}
+        {step === 6 ? <StepAllSet /> : null}
       </ScrollView>
     </View>
   );
@@ -490,15 +560,14 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   // ── Welcome ────────────────────────────────────────────────────────────────
-  welcomeLogoBlock: {
+  welcomeLolaBlock: {
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
-  welcomeLogo: {
-    fontSize: 48,
-    fontWeight: '900' as const,
-    color: Colors.text,
-    letterSpacing: 14,
+  welcomeLola: {
+    width: 180,
+    height: 180,
   },
   stepTitle: {
     fontSize: FontSizes.xxl,
