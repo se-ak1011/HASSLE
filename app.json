@@ -8,6 +8,11 @@
     "scheme": "hassle",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "31f156fa-08f1-4bf8-b707-c02b55fe2168"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hassle.app"
