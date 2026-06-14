@@ -1,134 +1,199 @@
 # Home Screen widget (iOS) — setup plan
 
-A small widget showing today's **energy left**, **tasks done**, and a **flare**
-marker, tapping through to the app. For the feedback person ("make it part of my
-routine seamlessly") this is the strongest single feature: it's *visible* without
-remembering to open the app.
+Small widget showing today's **energy + symptom tags**, a medium with **tasks
+left + last reflection**, and the star of the show: a **Lola widget** where she
+changes pose based on your energy. For the "make it part of my routine
+seamlessly" feedback, this is the strongest single feature — it's *visible*
+without remembering to open the app.
 
-> ⚠️ **This is a Mac + Xcode task.** iOS widgets are native (WidgetKit / SwiftUI).
-> They can't be built in the cloud editor or run in Expo Go — they need a dev/
-> standalone build. The RN side is already done (`services/widgetData.ts` computes
-> the snapshot on every day change); what's left is native.
+## ✅ You do NOT need a Mac
+iOS widgets are native (WidgetKit / SwiftUI) and need a macOS compile — but
+**EAS Build runs on Expo's cloud Macs**, so you build everything from your iPad:
 
-## How the data gets to the widget
-The app and the widget share an **App Group** container. The RN app writes a tiny
-JSON snapshot to the group's `UserDefaults`; the widget reads it and renders.
+1. The Swift + config live in the repo (I write them).
+2. You run `eas build -p ios --profile development` (or production).
+3. EAS compiles on a cloud Mac and gives you an install link; you test on iPhone.
 
-Snapshot shape (already produced by `buildWidgetSnapshot`):
+No Mac to buy, no Xcode to install. The only trade-off: you can't live-preview
+the Swift design in Xcode, so each visual tweak means another cloud build
+(slower iteration). There is no JS-only iOS widget — native is unavoidable —
+but the Mac requirement is solved by EAS. (Android widgets can be written in JS
+via `react-native-android-widget`, but you're iOS-first.)
+
+> ⚠️ I can't compile/test native widget code from the cloud editor, and adding a
+> native target touches `app.json` (a place that can break EAS builds). So the
+> safe order is: **get the plain app building on EAS/TestFlight first**, then add
+> the widget as a follow-on — if a build breaks, we know it's the widget.
+
+## The three designs — all possible
+The RN side already computes everything (`services/widgetData.ts → WidgetSnapshot`):
 ```json
-{ "date": "2026-06-14", "checkedIn": true, "energyMode": "spoon",
-  "energyRemaining": 6, "energyMax": 12, "tasksDone": 2, "tasksTotal": 5,
-  "isFlareDay": false, "updatedAt": 1750000000000 }
+{ "checkedIn": true, "energyMode": "battery", "energyRemaining": 58,
+  "energyMax": 100, "energyPercent": 58, "tasksDone": 2, "tasksTotal": 5,
+  "pendingTasks": ["Eat lunch", "Shower"], "isFlareDay": false,
+  "tags": ["pain","fatigue","brain fog"], "reflection": "Harder than expected",
+  "updatedAt": 1750000000000 }
 ```
+- **Small** → energy + top symptom tags ✓ (`energyRemaining`, `energyMode`, `tags`)
+- **Medium** → energy + tasks left + last reflection ✓ (`pendingTasks`, `reflection`)
+- **Lola** → pose by `energyPercent` ✓ (best one)
 
-## Recommended approach
-Use **`@bacons/apple-targets`** (Evan Bacon's Expo config plugin for native
-targets) — it lets you add a WidgetKit extension to an Expo app and wires the App
-Group. Alternative: `react-native-widget-extension`.
+### Lola pose mapping
+| Energy | Pose | Asset |
+|---|---|---|
+| ≥ 80% | standing | `lola-standing` ✅ have |
+| 40–79% | sitting | `lola-sitting` ✅ have |
+| 15–39% | lying on sofa | ⚠️ **new asset needed** |
+| < 15% | face down on floor | ⚠️ **new asset needed** (or reuse `lola-xeyes`) |
 
-### Steps
-1. **App Group** — in the Apple Developer portal, add `group.com.hassle.app` to
-   the app's identifier, and add the entitlement to both the app and the widget.
-2. **Install + configure** the plugin:
+So the Lola widget needs **2 new Lola drawings** (lying on sofa, face-down) to
+fully land — when you make them, drop them in `assets/images/` and I'll add them
+to the widget's asset catalog. Until then it can fall back to standing/sitting +
+`xeyes` for the lowest.
+
+## Steps (when the main app is on TestFlight)
+1. **App Group** — in the Apple Developer portal add `group.com.hassle.app` to the
+   app id, and to both the app and widget entitlements.
+2. **Install + configure** `@bacons/apple-targets`:
    ```
    npx expo install @bacons/apple-targets
    ```
-   Add it to `app.json` plugins with the App Group, and create a `targets/widget`
-   folder with the Swift below.
-3. **Implement the bridge** — in `services/widgetData.ts`, fill in `updateWidget`
-   to write the JSON to the App Group `UserDefaults(suiteName: "group.com.hassle.app")`
-   and call `WidgetCenter.shared.reloadAllTimelines()`. (`@bacons/apple-targets`
-   exposes a shared-defaults helper; or a 10-line native module.)
-4. **Build** with `eas build` (dev or production) and add the widget on a device.
+   Add it to `app.json` plugins with the App Group; create `targets/widget/` with
+   the Swift below + the Lola images in its asset catalog.
+3. **Implement the bridge** — fill in `updateWidget()` in `services/widgetData.ts`
+   to write the JSON to `UserDefaults(suiteName: "group.com.hassle.app")` and call
+   `WidgetCenter.shared.reloadAllTimelines()`.
+4. **Build** with EAS and add the widget on your iPhone.
 
-### SwiftUI widget (starter)
+### SwiftUI (starter — symptom, tasks, and Lola)
 ```swift
 import WidgetKit
 import SwiftUI
 
-struct HassleEntry: TimelineEntry {
+struct Entry: TimelineEntry {
   let date: Date
-  let energyRemaining: Int
-  let energyMax: Int
-  let energyMode: String
-  let tasksDone: Int
-  let tasksTotal: Int
-  let isFlareDay: Bool
-  let checkedIn: Bool
+  let checkedIn: Bool; let energyMode: String
+  let energyRemaining: Int; let energyPercent: Int
+  let tasksDone: Int; let tasksTotal: Int
+  let pendingTasks: [String]; let tags: [String]
+  let reflection: String; let isFlareDay: Bool
+}
+
+func lolaAsset(for pct: Int) -> String {
+  switch pct {
+  case 80...: return "lola-standing"
+  case 40..<80: return "lola-sitting"
+  case 15..<40: return "lola-sofa"        // new asset
+  default: return "lola-facedown"          // new asset (or "lola-xeyes")
+  }
 }
 
 struct Provider: TimelineProvider {
   let suite = UserDefaults(suiteName: "group.com.hassle.app")
-
-  func placeholder(in: Context) -> HassleEntry { sample }
-  func getSnapshot(in: Context, completion: @escaping (HassleEntry) -> Void) { completion(load()) }
-  func getTimeline(in: Context, completion: @escaping (Timeline<HassleEntry>) -> Void) {
-    // Refresh roughly hourly; the app also pushes reloads on changes.
+  func placeholder(in: Context) -> Entry { sample }
+  func getSnapshot(in: Context, completion: @escaping (Entry) -> Void) { completion(load()) }
+  func getTimeline(in: Context, completion: @escaping (Timeline<Entry>) -> Void) {
     let next = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
     completion(Timeline(entries: [load()], policy: .after(next)))
   }
-
-  private func load() -> HassleEntry {
+  private func load() -> Entry {
     guard let raw = suite?.string(forKey: "today"),
-          let data = raw.data(using: .utf8),
-          let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+          let d = raw.data(using: .utf8),
+          let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any]
     else { return sample }
-    return HassleEntry(
-      date: Date(),
-      energyRemaining: j["energyRemaining"] as? Int ?? 0,
-      energyMax: j["energyMax"] as? Int ?? 0,
+    return Entry(date: Date(),
+      checkedIn: j["checkedIn"] as? Bool ?? false,
       energyMode: j["energyMode"] as? String ?? "spoon",
+      energyRemaining: j["energyRemaining"] as? Int ?? 0,
+      energyPercent: j["energyPercent"] as? Int ?? 0,
       tasksDone: j["tasksDone"] as? Int ?? 0,
       tasksTotal: j["tasksTotal"] as? Int ?? 0,
-      isFlareDay: j["isFlareDay"] as? Bool ?? false,
-      checkedIn: j["checkedIn"] as? Bool ?? false)
+      pendingTasks: j["pendingTasks"] as? [String] ?? [],
+      tags: j["tags"] as? [String] ?? [],
+      reflection: j["reflection"] as? String ?? "",
+      isFlareDay: j["isFlareDay"] as? Bool ?? false)
   }
-  private var sample: HassleEntry {
-    HassleEntry(date: Date(), energyRemaining: 6, energyMax: 12, energyMode: "spoon",
-                tasksDone: 2, tasksTotal: 5, isFlareDay: false, checkedIn: true)
+  private var sample: Entry {
+    Entry(date: Date(), checkedIn: true, energyMode: "battery", energyRemaining: 58,
+      energyPercent: 58, tasksDone: 2, tasksTotal: 5,
+      pendingTasks: ["Eat lunch","Shower"], tags: ["pain","fatigue","brain fog"],
+      reflection: "Harder than expected", isFlareDay: false)
+  }
+}
+
+func energyText(_ e: Entry) -> String {
+  e.energyMode == "battery" ? "\(e.energyRemaining)% battery"
+                            : "\(e.energyRemaining) spoons left"
+}
+
+// Small — energy + symptom tags
+struct SmallView: View { var e: Entry
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text(energyText(e)).font(.headline)
+      ForEach(e.tags.prefix(3), id: \.self) { Text($0).font(.subheadline).foregroundStyle(.secondary) }
+    }.padding().containerBackground(.fill.tertiary, for: .widget).widgetURL(URL(string: "hassle://"))
+  }
+}
+
+// Medium — tasks left + last reflection
+struct MediumView: View { var e: Entry
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text("Today's \(e.energyMode == "battery" ? "battery" : "energy"): \(energyText(e))").font(.subheadline)
+      Text("Tasks left:").font(.caption).foregroundStyle(.secondary)
+      ForEach(e.pendingTasks.prefix(2), id: \.self) { Text("◻︎ \($0)") }
+      if !e.reflection.isEmpty {
+        Text("Last reflection:").font(.caption).foregroundStyle(.secondary).padding(.top, 2)
+        Text("\"\(e.reflection)\"").font(.footnote).italic()
+      }
+    }.padding().containerBackground(.fill.tertiary, for: .widget).widgetURL(URL(string: "hassle://"))
+  }
+}
+
+// Lola — pose by energy
+struct LolaView: View { var e: Entry
+  var body: some View {
+    VStack { Image(lolaAsset(for: e.energyPercent)).resizable().scaledToFit() }
+      .padding().containerBackground(.fill.tertiary, for: .widget).widgetURL(URL(string: "hassle://"))
   }
 }
 
 struct HassleWidgetView: View {
-  var entry: HassleEntry
+  @Environment(\.widgetFamily) var family
+  var entry: Entry
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      Text(entry.isFlareDay ? "Flare day" : "Today")
-        .font(.caption).foregroundStyle(entry.isFlareDay ? .pink : .secondary)
-      if entry.checkedIn {
-        Text(entry.energyMode == "battery"
-             ? "\(entry.energyRemaining)% left"
-             : "\(entry.energyRemaining) spoons left")
-          .font(.headline)
-        Text("\(entry.tasksDone)/\(entry.tasksTotal) done")
-          .font(.subheadline).foregroundStyle(.secondary)
-      } else {
-        Text("Tap to start your day").font(.subheadline)
-      }
+    switch family {
+    case .systemSmall: SmallView(e: entry)
+    default: MediumView(e: entry)
     }
-    .padding()
-    .containerBackground(.fill.tertiary, for: .widget)
-    .widgetURL(URL(string: "hassle://"))
   }
 }
 
 @main
+struct HassleWidgets: WidgetBundle {
+  var body: some Widget { HassleWidget(); LolaWidget() }
+}
 struct HassleWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "HassleWidget", provider: Provider()) { entry in
-      HassleWidgetView(entry: entry)
-    }
-    .configurationDisplayName("Hassle")
-    .description("Today's energy and tasks at a glance.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    StaticConfiguration(kind: "HassleWidget", provider: Provider()) { HassleWidgetView(entry: $0) }
+      .configurationDisplayName("Hassle").description("Energy, tasks, and how today's going.")
+      .supportedFamilies([.systemSmall, .systemMedium])
+  }
+}
+struct LolaWidget: Widget {
+  var body: some WidgetConfiguration {
+    StaticConfiguration(kind: "LolaWidget", provider: Provider()) { LolaView(entry: $0) }
+      .configurationDisplayName("Lola").description("Lola mirrors your energy.")
+      .supportedFamilies([.systemSmall])
   }
 }
 ```
 
 ## Phasing
-1. **v1** (above): read-only status widget, small + medium, taps into the app.
-2. **v2**: deep-link straight to check-in if not yet started; lock-screen widget.
-3. **Android** later: separate effort (Glance / Kotlin) — iOS first.
+1. **v1**: the three widgets above (Lola can start with standing/sitting + xeyes).
+2. **v2**: deep-link straight to check-in if not started; lock-screen widget.
+3. **Android** later: `react-native-android-widget` (JS) — separate effort.
 
-When you're at a Mac with Xcode and ready to do a dev build, ping me — I'll fill
-in `updateWidget` and the plugin config to match whichever library you pick.
+When the main app is on TestFlight and you're ready, ping me — I'll wire the
+plugin + `updateWidget()` and we kick a cloud build.
