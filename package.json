@@ -152,6 +152,9 @@
     "react-dev-inspector": "^2.0.1",
     "typescript": "~5.8.3"
   },
+  "overrides": {
+    "ajv": "^8.17.1"
+  },
   "pnpm": {
     "overrides": {
       "ajv": "^8.17.1"
