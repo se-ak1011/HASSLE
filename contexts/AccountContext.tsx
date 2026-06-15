@@ -44,7 +44,13 @@ interface AccountContextType {
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
-WebBrowser.maybeCompleteAuthSession();
+// Runs at module load (Expo Router eagerly requires every screen at startup).
+// Guarded so a throw here can never abort the app before React even mounts.
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch {
+  // no pending auth session / native not ready — safe to ignore
+}
 
 function accountFromSession(session: Session | null): Account | null {
   const u = session?.user;

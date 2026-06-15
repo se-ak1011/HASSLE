@@ -9,6 +9,7 @@ import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 import { Colors } from '@/constants/theme';
 import { billing } from '@/services/billing';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -30,25 +31,27 @@ export default function RootLayout() {
   }
 
   return (
-    <AlertProvider>
-      <SafeAreaProvider>
-        <DayProvider>
-          <PlusProvider>
-            <AccountProvider>
-              <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="onboarding" />
-                <Stack.Screen name="checkin" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="account" />
-                <Stack.Screen name="library" />
-                <Stack.Screen name="directory" />
-                <Stack.Screen name="report" />
-              </Stack>
-            </AccountProvider>
-          </PlusProvider>
-        </DayProvider>
-      </SafeAreaProvider>
-    </AlertProvider>
+    <ErrorBoundary>
+      <AlertProvider>
+        <SafeAreaProvider>
+          <DayProvider>
+            <PlusProvider>
+              <AccountProvider>
+                <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="onboarding" />
+                  <Stack.Screen name="checkin" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="account" />
+                  <Stack.Screen name="library" />
+                  <Stack.Screen name="directory" />
+                  <Stack.Screen name="report" />
+                </Stack>
+              </AccountProvider>
+            </PlusProvider>
+          </DayProvider>
+        </SafeAreaProvider>
+      </AlertProvider>
+    </ErrorBoundary>
   );
 }
