@@ -513,12 +513,15 @@ export default function OnboardingScreen() {
       >
         <ProgressDots />
 
-        {step === 1 ? <StepWelcome /> : null}
-        {step === 2 ? <StepName /> : null}
-        {step === 3 ? <StepConditions /> : null}
-        {step === 4 ? <StepDefaultTasks /> : null}
-        {step === 5 ? <StepReminders /> : null}
-        {step === 6 ? <StepAllSet /> : null}
+        {/* Render as function calls (not <StepName/>) so the step isn't treated
+            as a new component every keystroke — which would remount the TextInput
+            and drop keyboard focus after each letter. */}
+        {step === 1 ? StepWelcome() : null}
+        {step === 2 ? StepName() : null}
+        {step === 3 ? StepConditions() : null}
+        {step === 4 ? StepDefaultTasks() : null}
+        {step === 5 ? StepReminders() : null}
+        {step === 6 ? StepAllSet() : null}
       </ScrollView>
     </View>
   );
