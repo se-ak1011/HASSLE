@@ -11,7 +11,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hassle.app"
+      "bundleIdentifier": "com.hassle.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,6 +45,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "31f1567a-e0f1-4bf8-b7b7-cd2b55fe2168"
+      }
     }
   }
 }
