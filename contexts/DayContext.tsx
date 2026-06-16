@@ -228,14 +228,10 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // Load on mount — hydrate tasks immediately with stored flare state
   useEffect(() => {
     (async () => {
-      // eslint-disable-next-line no-console
-      console.log('[HSTART] DayProvider effect: start (loading day + prefs)');
       const [savedDay, savedPrefs] = await Promise.all([
         loadTodayState(),
         loadPreferences(),
       ]);
-      // eslint-disable-next-line no-console
-      console.log('[HSTART] DayProvider effect: loaded day + prefs');
 
       if (savedDay) {
         const archived = await autoArchivePastDay(savedDay);
@@ -274,8 +270,6 @@ export function DayProvider({ children }: { children: ReactNode }) {
         setPrefsRaw(savedPrefs);
       }
       setIsLoading(false);
-      // eslint-disable-next-line no-console
-      console.log('[HSTART] DayProvider effect: done');
     })();
   }, [autoArchivePastDay]);
 

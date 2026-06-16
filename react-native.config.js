@@ -13,10 +13,10 @@
  * The JS packages stay installed but dormant. If any of these is genuinely
  * needed later, delete its line here and rebuild.
  *
- * Verified unused in app source before excluding (see commit history). Notably
- * `react-native-purchases` (RevenueCat) is only referenced in comments — its
- * JavaScript was already stubbed out, but the NATIVE module was still linked and
- * initialising at launch, which is the most likely source of the startup crash.
+ * Verified unused in app source before excluding (see commit history). The real
+ * startup crash turned out to be a missing iOS calendar permission, not any of
+ * these — but they're still dead weight, so they stay excluded. The one
+ * exception is `react-native-purchases` (RevenueCat), now re-enabled for IAP.
  */
 const off = { platforms: { ios: null, android: null } };
 
@@ -30,8 +30,7 @@ module.exports = {
     'react-native-keyboard-controller': off,
     'react-native-webview': off,
 
-    // Background-queue / classic-bridge modules the app never calls (round 2).
-    'react-native-purchases': off,
+    // Classic-bridge modules the app never calls.
     'lottie-react-native': off,
     '@react-native-community/netinfo': off,
     '@react-native-community/datetimepicker': off,

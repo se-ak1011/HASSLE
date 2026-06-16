@@ -70,22 +70,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[HSTART] AccountProvider effect: start — creating client + getSession');
     supabase.auth.getSession().then(({ data }) => {
-      // eslint-disable-next-line no-console
-      console.log('[HSTART] AccountProvider: getSession resolved');
       setAccount(accountFromSession(data.session));
       setIsLoading(false);
     });
-    // eslint-disable-next-line no-console
-    console.log('[HSTART] AccountProvider: getSession called, registering auth listener');
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setAccount(accountFromSession(session));
     });
-    // eslint-disable-next-line no-console
-    console.log('[HSTART] AccountProvider effect: setup done');
     return () => sub.subscription.unsubscribe();
   }, []);
 

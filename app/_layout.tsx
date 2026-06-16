@@ -4,7 +4,7 @@ import { AlertProvider } from '@/template';
 import { DayProvider } from '@/contexts/DayContext';
 import { PlusProvider } from '@/contexts/PlusContext';
 import { AccountProvider } from '@/contexts/AccountContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,6 +17,31 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 // hideAsync() below, this means a font hiccup can never strand us on the splash.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+/** Brief loading screen shown while fonts settle (usually a blink). */
+function LoadingScreen() {
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 28,
+      }}
+    >
+      <Image
+        source={require('@/assets/images/splash.png')}
+        style={{ width: 180, height: 180, resizeMode: 'contain' }}
+      />
+      <Text style={{ color: Colors.text, fontSize: 22, fontWeight: '700', marginTop: 18 }}>
+        Loading… 🦴
+      </Text>
+      <Text style={{ color: Colors.textSubtle, fontSize: 15, marginTop: 4 }}>(maybe)</Text>
+      <ActivityIndicator color={Colors.primary} style={{ marginTop: 16 }} />
+    </View>
+  );
+}
+
 export default function RootLayout() {
   // Proceed even if a custom font fails to load — a missing font just falls back
   // to the system font and must never block the whole app from starting.
@@ -26,22 +51,17 @@ export default function RootLayout() {
   });
   const ready = fontsLoaded || !!fontError;
 
-  // eslint-disable-next-line no-console
-  console.log('[HSTART] RootLayout render; ready=', ready, 'fontError=', !!fontError);
-
   // Always hide the splash shortly after mount, regardless of fonts, so we can
   // never get stuck on it. Once it's down, the ErrorBoundary can surface any
   // captured startup error instead of an endless splash.
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[HSTART] RootLayout mounted, hiding splash');
     const t = setTimeout(() => {
       SplashScreen.hideAsync().catch(() => {});
     }, 50);
     return () => clearTimeout(t);
   }, []);
 
-  // Initialise the billing SDK once (no-op on web / in the beta stub).
+  // Initialise the billing SDK once (RevenueCat on native, no-op on web).
   useEffect(() => {
     billing.configure();
   }, []);
@@ -49,16 +69,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       {!ready ? (
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: Colors.background,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <ActivityIndicator color={Colors.primary} size="small" />
-        </View>
+        <LoadingScreen />
       ) : (
         <AlertProvider>
           <SafeAreaProvider>
