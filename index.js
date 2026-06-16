@@ -1,15 +1,15 @@
-// Hassle — TEMPORARY mount probe entry.
+// Hassle — TEMPORARY progressive mount probe.
 //
-// The load probe showed every module imports cleanly, so the startup failure is
-// a RUNTIME/MOUNT error: a component throws while rendering, or in a startup
-// effect (the providers do async supabase / AsyncStorage work on mount).
+// No crash report + stuck on splash = a HANG (deadlock), not a throw: mounting
+// the provider stack blocks the JS thread before anything can render. React runs
+// child effects before the root's splash-hide effect, so a blocking provider
+// effect strands us on the splash.
 //
-// This probe mounts the REAL provider stack (the same order as app/_layout)
-// around a small child, wrapped so we capture whichever path throws:
-//   • render / effect errors  -> the <Catch> error boundary
-//   • async (promise) errors  -> the early guard, surfaced via subscription
-// Whichever fires is printed with its message + stack. Restore the real entry
-// (commented line) once we know.
+// This probe hides the splash FIRST, then mounts the providers ONE AT A TIME
+// (~1.2s apart) with a live checklist. Each provider shows ◦ waiting → ⏳
+// mounting → ✅ ok. If the app FREEZES, exactly one stays ⏳ — that's the
+// culprit. Render/async errors are still surfaced too. Restore the real entry
+// (commented line) after diagnosis.
 import './services/earlyErrorGuard';
 import React, { useEffect, useState, Component } from 'react';
 import { View, Text, ScrollView } from 'react-native';
@@ -17,18 +17,26 @@ import * as SplashScreen from 'expo-splash-screen';
 import { registerRootComponent } from 'expo';
 import { getLastStartupError, subscribeStartupError } from './services/earlyErrorGuard';
 
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertProvider } from './template';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DayProvider } from './contexts/DayContext';
 import { PlusProvider } from './contexts/PlusContext';
 import { AccountProvider } from './contexts/AccountContext';
-import { useDay } from './hooks/useDay';
 
 // import 'expo-router/entry'; // <- real app entry (restore after diagnosis)
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-function ErrorView({ title, error, extra }) {
+// Same order as app/_layout.
+const PROVIDERS = [
+  ['AlertProvider', AlertProvider],
+  ['SafeAreaProvider', SafeAreaProvider],
+  ['DayProvider', DayProvider],
+  ['PlusProvider', PlusProvider],
+  ['AccountProvider', AccountProvider],
+];
+
+function ErrorView({ title, error }) {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: '#1A1916' }}
@@ -43,85 +51,90 @@ function ErrorView({ title, error, extra }) {
           {error.stack}
         </Text>
       ) : null}
-      {extra ? (
-        <Text style={{ color: '#9A9097', marginTop: 12, fontSize: 10, fontFamily: 'Courier' }}>
-          {extra}
-        </Text>
-      ) : null}
     </ScrollView>
   );
 }
 
 class Catch extends Component {
-  state = { error: null, stack: null };
+  state = { error: null };
   static getDerivedStateFromError(error) {
     return { error };
   }
-  componentDidCatch(_error, info) {
-    this.setState({ stack: info && info.componentStack });
+  componentDidCatch(error) {
+    if (this.props.onError) this.props.onError(error);
   }
   render() {
-    if (this.state.error) {
-      return <ErrorView title="Render / mount error" error={this.state.error} extra={this.state.stack} />;
-    }
-    return this.props.children;
+    return this.state.error ? null : this.props.children;
   }
 }
 
-function Inner() {
-  const day = useDay();
+function ProgressiveProbe() {
+  const [count, setCount] = useState(0);
+  const [splashHidden, setSplashHidden] = useState(false);
+  const [err, setErr] = useState(getLastStartupError());
+
+  useEffect(() => {
+    SplashScreen.hideAsync()
+      .catch(() => {})
+      .finally(() => setSplashHidden(true));
+    const unsub = subscribeStartupError((e) => setErr(e));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!splashHidden) return;
+    if (count > PROVIDERS.length) return;
+    const t = setTimeout(() => setCount((c) => c + 1), 1200);
+    return () => clearTimeout(t);
+  }, [splashHidden, count]);
+
+  if (err) return <ErrorView title="Error caught during mount" error={err} />;
+
+  const n = Math.min(count, PROVIDERS.length);
+  let tree = <View />;
+  for (let i = n - 1; i >= 0; i--) {
+    const P = PROVIDERS[i][1];
+    tree = <P>{tree}</P>;
+  }
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: '#1A1916',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 28,
-      }}
-    >
-      <Text style={{ color: '#7A5478', fontSize: 22, fontWeight: '700' }}>✅ Providers mounted</Text>
-      <Text style={{ color: '#9A9097', fontSize: 14, marginTop: 12 }}>
-        day.isLoading: {String(day && day.isLoading)}
+    <View style={{ flex: 1, backgroundColor: '#1A1916', padding: 20, paddingTop: 64 }}>
+      <Text style={{ color: '#F2ECE4', fontSize: 20, fontWeight: '700' }}>Provider mount probe 🦴</Text>
+      <Text style={{ color: '#9A9097', fontSize: 13, marginTop: 6, marginBottom: 18 }}>
+        Mounts providers one by one. If it FREEZES, the one stuck on ⏳ is the
+        culprit. Screenshot it.
       </Text>
-      <Text style={{ color: '#9A9097', fontSize: 13, marginTop: 16, textAlign: 'center', lineHeight: 19 }}>
-        If you can read this, the providers are healthy — {'\n'}the fault is in the router / screens. 🦴
-      </Text>
+
+      {PROVIDERS.map(([name], i) => {
+        let mark = '◦';
+        let color = '#6B6B6B';
+        if (count > i + 1) {
+          mark = '✅';
+          color = '#9A9097';
+        } else if (count === i + 1) {
+          mark = '⏳';
+          color = '#E7A0C0';
+        }
+        return (
+          <Text key={name} style={{ color, fontSize: 16, marginBottom: 8 }}>
+            {mark}  {name}
+          </Text>
+        );
+      })}
+
+      {count > PROVIDERS.length ? (
+        <Text style={{ color: '#7A5478', fontSize: 16, marginTop: 16 }}>
+          ✅ All providers mounted — the fault is in the router / screens.
+        </Text>
+      ) : null}
+
+      {/* Providers mount here (off-screen) so their effects run while the
+          checklist above stays visible. */}
+      <View style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} pointerEvents="none">
+        <Catch onError={setErr}>{tree}</Catch>
+      </View>
     </View>
   );
 }
 
-function MountProbe() {
-  const [asyncErr, setAsyncErr] = useState(getLastStartupError());
-
-  useEffect(() => {
-    const t = setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 50);
-    const unsub = subscribeStartupError((e) => setAsyncErr(e));
-    return () => {
-      clearTimeout(t);
-      unsub();
-    };
-  }, []);
-
-  if (asyncErr) {
-    return <ErrorView title="Async startup error (caught by guard)" error={asyncErr} />;
-  }
-
-  return (
-    <Catch>
-      <SafeAreaProvider>
-        <AlertProvider>
-          <DayProvider>
-            <PlusProvider>
-              <AccountProvider>
-                <Inner />
-              </AccountProvider>
-            </PlusProvider>
-          </DayProvider>
-        </AlertProvider>
-      </SafeAreaProvider>
-    </Catch>
-  );
-}
-
-registerRootComponent(MountProbe);
+registerRootComponent(ProgressiveProbe);
