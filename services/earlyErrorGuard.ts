@@ -64,6 +64,12 @@ function hideSplashSafely(): void {
   const EU = (globalThis as any)?.ErrorUtils;
   if (!EU || typeof EU.setGlobalHandler !== 'function') return;
 
+  // Keep the default handler so we can delegate to it in development (that's the
+  // one that shows React Native's red error overlay / LogBox). In production we
+  // do NOT call it — it triggers RCTFatal and aborts the process.
+  const prevHandler =
+    typeof EU.getGlobalHandler === 'function' ? EU.getGlobalHandler() : undefined;
+
   EU.setGlobalHandler((error: any, isFatal?: boolean) => {
     const err = toError(error);
     lastError = err;
@@ -81,7 +87,14 @@ function hideSplashSafely(): void {
         // a listener throwing must never re-trigger the handler
       }
     });
-    // NOTE: intentionally not calling the previous handler — that is the one
-    // that calls RCTFatal and aborts the process in release builds.
+    // In development, delegate to the default handler so the red error overlay
+    // shows the full message + stack. In production we stop here (no abort).
+    if (typeof __DEV__ !== 'undefined' && __DEV__ && typeof prevHandler === 'function') {
+      try {
+        prevHandler(error, isFatal);
+      } catch {
+        // ignore
+      }
+    }
   });
 })();
