@@ -1,9 +1,14 @@
 import React, { Component, ReactNode } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { Colors } from '@/constants/theme';
+import {
+  getLastStartupError,
+  subscribeStartupError,
+  clearStartupError,
+} from '@/services/earlyErrorGuard';
 
 /**
- * Hassle — top-level error + global crash guard.
+ * Hassle — top-level error + global crash guard (UI side).
  *
  * In a release/preview build an uncaught error does NOT show React Native's red
  * box — React Native reports it to the native ExceptionsManager, which calls
@@ -13,18 +18,18 @@ import { Colors } from '@/constants/theme';
  *
  * React error boundaries only catch errors thrown during *render / lifecycle*.
  * The startup crash is an error thrown in *async* code (a promise/callback in a
- * provider's effect), which a boundary can't see. So this component does TWO
- * things:
+ * provider's effect), or even before the UI mounts — which a boundary can't see.
  *
- *   1. componentDidCatch — catches render/lifecycle errors (boundary behaviour).
- *   2. ErrorUtils.setGlobalHandler — installs a global JS error handler that
- *      catches EVERYTHING else (async throws, the ones that were aborting the
- *      app). Instead of letting RN call RCTFatal, we show the real message on
- *      screen. That turns the silent abort into a readable, screenshot-able
- *      error — and if the error was non-critical, the app simply keeps running.
+ * The global JS error handler is installed at the app entry point, as early as
+ * possible (see services/earlyErrorGuard.ts + index.js). This component is the
+ * *display* half: it
  *
- * This is intentionally a "show, don't die" net while we stabilise the beta. The
- * real message it surfaces tells us exactly what to fix.
+ *   1. catches render/lifecycle errors via componentDidCatch (boundary), and
+ *   2. shows any error the early guard captured (async / pre-mount errors),
+ *      reading the last one on mount and subscribing for new ones.
+ *
+ * "Show, don't die" net for the beta — the message it surfaces tells us exactly
+ * what to fix.
  */
 
 interface Props {
@@ -37,20 +42,10 @@ interface State {
   source: 'render' | 'global' | null;
 }
 
-// React Native exposes ErrorUtils as a global; it isn't in the TS lib types.
-type GlobalErrorHandler = (error: any, isFatal?: boolean) => void;
-interface ErrorUtilsShape {
-  getGlobalHandler?: () => GlobalErrorHandler | undefined;
-  setGlobalHandler?: (handler: GlobalErrorHandler) => void;
-}
-function getErrorUtils(): ErrorUtilsShape | undefined {
-  return (globalThis as any)?.ErrorUtils as ErrorUtilsShape | undefined;
-}
-
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, info: null, source: null };
   private mounted = false;
-  private prevHandler: GlobalErrorHandler | undefined;
+  private unsubscribe?: () => void;
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { error, source: 'render' };
@@ -58,31 +53,24 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidMount() {
     this.mounted = true;
-    const EU = getErrorUtils();
-    if (EU?.setGlobalHandler) {
-      this.prevHandler = EU.getGlobalHandler?.();
-      EU.setGlobalHandler((error: any, isFatal?: boolean) => {
-        // Log first, in case anything below throws.
-        // eslint-disable-next-line no-console
-        console.error('Hassle global error:', isFatal ? '(fatal)' : '', error);
-        // Show it instead of letting RN call RCTFatal and abort. We deliberately
-        // do NOT call the previous (default) handler — that's the one that aborts.
-        const err =
-          error instanceof Error ? error : new Error(String(error?.message ?? error));
-        if (this.mounted) {
-          this.setState({ error: err, source: 'global', info: null });
-        }
-      });
+    // Show anything the early guard already captured before the UI mounted.
+    const existing = getLastStartupError();
+    if (existing) {
+      this.setState({ error: existing, source: 'global', info: null });
     }
+    // And subscribe for any that arrive later (async startup errors).
+    this.unsubscribe = subscribeStartupError((err) => {
+      if (this.mounted) {
+        this.setState((prev) =>
+          prev.error ? prev : { error: err, source: 'global', info: null }
+        );
+      }
+    });
   }
 
   componentWillUnmount() {
     this.mounted = false;
-    // Restore the original handler if we replaced it.
-    const EU = getErrorUtils();
-    if (this.prevHandler && EU?.setGlobalHandler) {
-      EU.setGlobalHandler(this.prevHandler);
-    }
+    this.unsubscribe?.();
   }
 
   componentDidCatch(error: Error, info: { componentStack?: string }) {
@@ -93,6 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
+    clearStartupError();
     this.setState({ error: null, info: null, source: null });
   };
 
