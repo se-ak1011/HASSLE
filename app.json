@@ -13,7 +13,21 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.hassle.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "Hassle uses your calendar so you can add tasks you reschedule to the day you move them to.",
+        "NSCalendarsFullAccessUsageDescription": "Hassle uses your calendar so you can add tasks you reschedule to the day you move them to.",
+        "NSCalendarsWriteOnlyAccessUsageDescription": "Hassle adds tasks you reschedule to your calendar.",
+        "NSRemindersUsageDescription": "Hassle can add gentle reminders to your Reminders app if you turn that on.",
+        "NSRemindersFullAccessUsageDescription": "Hassle can add gentle reminders to your Reminders app if you turn that on.",
+        "NSCameraUsageDescription": "Hassle only uses the camera if you choose to add a photo.",
+        "NSMicrophoneUsageDescription": "Hassle only uses the microphone if you choose to record something.",
+        "NSContactsUsageDescription": "Hassle only uses your contacts if you choose to share with someone.",
+        "NSLocationWhenInUseUsageDescription": "Hassle only uses your location if you turn on a location-based feature.",
+        "NSPhotoLibraryUsageDescription": "Hassle only opens your photos if you choose to add an image.",
+        "NSPhotoLibraryAddUsageDescription": "Hassle only saves to your photos if you choose to.",
+        "NSFaceIDUsageDescription": "Hassle can use Face ID to keep your entries private, if you enable it.",
+        "NSMotionUsageDescription": "Hassle only uses motion data if you turn on a related feature.",
+        "NSSpeechRecognitionUsageDescription": "Hassle only uses speech recognition if you choose to."
       }
     },
     "android": {
