@@ -47,6 +47,18 @@ function toError(value: any): Error {
   }
 }
 
+// Best-effort: drop the native splash so a very-early error (before any React
+// component mounts) can't leave the app frozen on the splash screen. Safe to
+// call even if the splash is already hidden.
+function hideSplashSafely(): void {
+  try {
+    const Splash = require('expo-splash-screen');
+    Splash?.hideAsync?.().catch(() => {});
+  } catch {
+    // expo-splash-screen not available — ignore
+  }
+}
+
 // Install immediately on import.
 (() => {
   const EU = (globalThis as any)?.ErrorUtils;
@@ -61,6 +73,7 @@ function toError(value: any): Error {
     } catch {
       // ignore logging failures
     }
+    hideSplashSafely();
     listeners.forEach((l) => {
       try {
         l(err);
