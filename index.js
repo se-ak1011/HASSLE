@@ -1,135 +1,127 @@
-// Hassle — TEMPORARY startup probe entry.
+// Hassle — TEMPORARY mount probe entry.
 //
-// The standalone diagnostic proved the RN shell, bundle and splash all work, so
-// the startup fault is a module that throws the moment it's loaded (before any
-// screen renders — which is why expo-router never mounts and the splash sticks).
+// The load probe showed every module imports cleanly, so the startup failure is
+// a RUNTIME/MOUNT error: a component throws while rendering, or in a startup
+// effect (the providers do async supabase / AsyncStorage work on mount).
 //
-// This probe loads each module in dependency order (leaves first) inside a
-// try/catch and shows ✅/❌ per module. The FIRST ❌ is the culprit, and its
-// error message is printed right there. Once we know it, we fix that file and
-// restore the real entry (the commented line below).
+// This probe mounts the REAL provider stack (the same order as app/_layout)
+// around a small child, wrapped so we capture whichever path throws:
+//   • render / effect errors  -> the <Catch> error boundary
+//   • async (promise) errors  -> the early guard, surfaced via subscription
+// Whichever fires is printed with its message + stack. Restore the real entry
+// (commented line) once we know.
 import './services/earlyErrorGuard';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Component } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { registerRootComponent } from 'expo';
+import { getLastStartupError, subscribeStartupError } from './services/earlyErrorGuard';
+
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AlertProvider } from './template';
+import { DayProvider } from './contexts/DayContext';
+import { PlusProvider } from './contexts/PlusContext';
+import { AccountProvider } from './contexts/AccountContext';
+import { useDay } from './hooks/useDay';
 
 // import 'expo-router/entry'; // <- real app entry (restore after diagnosis)
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Ordered leaves -> up. require() runs a module's top-level code (and its
-// imports'), so the first one that throws localises the failure.
-const PROBES = [
-  ['constants/Colors', () => require('./constants/Colors')],
-  ['constants/theme', () => require('./constants/theme')],
-  ['constants/types', () => require('./constants/types')],
-  ['constants/lola', () => require('./constants/lola')],
-  ['constants/pricing', () => require('./constants/pricing')],
-  ['constants/conditions', () => require('./constants/conditions')],
-  ['constants/library', () => require('./constants/library')],
-  ['services/dates', () => require('./services/dates')],
-  ['services/formatCost', () => require('./services/formatCost')],
-  ['services/storage', () => require('./services/storage')],
-  ['services/supabase', () => require('./services/supabase')],
-  ['services/billing', () => require('./services/billing')],
-  ['services/widgetData', () => require('./services/widgetData')],
-  ['services/syncService', () => require('./services/syncService')],
-  ['services/notificationService', () => require('./services/notificationService')],
-  ['services/exportService', () => require('./services/exportService')],
-  ['hooks/useFontFamily', () => require('./hooks/useFontFamily')],
-  ['hooks/useDay', () => require('./hooks/useDay')],
-  ['template', () => require('./template')],
-  ['components/ErrorBoundary', () => require('./components/ErrorBoundary')],
-  ['contexts/DayContext', () => require('./contexts/DayContext')],
-  ['contexts/PlusContext', () => require('./contexts/PlusContext')],
-  ['contexts/AccountContext', () => require('./contexts/AccountContext')],
-  ['app/_layout', () => require('./app/_layout')],
-  ['app/index', () => require('./app/index')],
-  ['app/onboarding', () => require('./app/onboarding')],
-  ['app/checkin', () => require('./app/checkin')],
-  ['app/account', () => require('./app/account')],
-  ['app/library', () => require('./app/library')],
-  ['app/directory', () => require('./app/directory')],
-  ['app/report', () => require('./app/report')],
-  ['app/+not-found', () => require('./app/+not-found')],
-  ['app/(tabs)/_layout', () => require('./app/(tabs)/_layout')],
-  ['app/(tabs)/index', () => require('./app/(tabs)/index')],
-  ['app/(tabs)/patterns', () => require('./app/(tabs)/patterns')],
-  ['app/(tabs)/plus', () => require('./app/(tabs)/plus')],
-  ['app/(tabs)/reflect', () => require('./app/(tabs)/reflect')],
-  ['app/(tabs)/settings', () => require('./app/(tabs)/settings')],
-];
-
-function Probe() {
-  const [results, setResults] = useState([]);
-  const [firstFail, setFirstFail] = useState(null);
-
-  useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
-    const out = [];
-    let failed = null;
-    for (const [name, fn] of PROBES) {
-      try {
-        fn();
-        out.push({ name, ok: true });
-      } catch (e) {
-        const msg = (e && e.message) || String(e);
-        out.push({ name, ok: false, msg });
-        if (!failed) failed = { name, msg, stack: e && e.stack };
-      }
-    }
-    setResults(out);
-    setFirstFail(failed);
-  }, []);
-
+function ErrorView({ title, error, extra }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#1A1916' }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 64 }}>
-        <Text style={{ color: '#F2ECE4', fontSize: 20, fontWeight: '700' }}>
-          Hassle startup probe 🦴
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#1A1916' }}
+      contentContainerStyle={{ padding: 20, paddingTop: 64 }}
+    >
+      <Text style={{ color: '#F2ECE4', fontSize: 20, fontWeight: '700' }}>❌ {title}</Text>
+      <Text style={{ color: '#E7A0C0', marginTop: 10, fontSize: 14 }}>
+        {(error && error.name) || 'Error'}: {(error && error.message) || String(error)}
+      </Text>
+      {error && error.stack ? (
+        <Text style={{ color: '#D2CCC3', marginTop: 12, fontSize: 10, fontFamily: 'Courier' }}>
+          {error.stack}
         </Text>
-        <Text style={{ color: '#9A9097', fontSize: 13, marginTop: 6, marginBottom: 16 }}>
-          The first ❌ is the module that breaks startup. Screenshot this.
+      ) : null}
+      {extra ? (
+        <Text style={{ color: '#9A9097', marginTop: 12, fontSize: 10, fontFamily: 'Courier' }}>
+          {extra}
         </Text>
+      ) : null}
+    </ScrollView>
+  );
+}
 
-        {firstFail ? (
-          <View
-            style={{
-              backgroundColor: '#3D2638',
-              borderRadius: 12,
-              padding: 14,
-              marginBottom: 18,
-            }}
-          >
-            <Text style={{ color: '#F2ECE4', fontWeight: '700', fontSize: 15 }}>
-              ❌ First failure: {firstFail.name}
-            </Text>
-            <Text style={{ color: '#F2ECE4', marginTop: 8, fontSize: 13 }}>
-              {firstFail.msg}
-            </Text>
-            {firstFail.stack ? (
-              <Text style={{ color: '#D2CCC3', marginTop: 8, fontSize: 10, fontFamily: 'Courier' }}>
-                {firstFail.stack}
-              </Text>
-            ) : null}
-          </View>
-        ) : results.length ? (
-          <Text style={{ color: '#7A5478', marginBottom: 18, fontSize: 15 }}>
-            ✅ All modules loaded cleanly — the fault is a runtime/mount error, not
-            a load-time one. Tell me and I&apos;ll switch to the mount probe.
-          </Text>
-        ) : null}
+class Catch extends Component {
+  state = { error: null, stack: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(_error, info) {
+    this.setState({ stack: info && info.componentStack });
+  }
+  render() {
+    if (this.state.error) {
+      return <ErrorView title="Render / mount error" error={this.state.error} extra={this.state.stack} />;
+    }
+    return this.props.children;
+  }
+}
 
-        {results.map((r) => (
-          <Text key={r.name} style={{ color: r.ok ? '#9A9097' : '#E7A0C0', fontSize: 13, marginBottom: 3 }}>
-            {r.ok ? '✅' : '❌'} {r.name}
-            {r.ok ? '' : ` — ${r.msg}`}
-          </Text>
-        ))}
-      </ScrollView>
+function Inner() {
+  const day = useDay();
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#1A1916',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 28,
+      }}
+    >
+      <Text style={{ color: '#7A5478', fontSize: 22, fontWeight: '700' }}>✅ Providers mounted</Text>
+      <Text style={{ color: '#9A9097', fontSize: 14, marginTop: 12 }}>
+        day.isLoading: {String(day && day.isLoading)}
+      </Text>
+      <Text style={{ color: '#9A9097', fontSize: 13, marginTop: 16, textAlign: 'center', lineHeight: 19 }}>
+        If you can read this, the providers are healthy — {'\n'}the fault is in the router / screens. 🦴
+      </Text>
     </View>
   );
 }
 
-registerRootComponent(Probe);
+function MountProbe() {
+  const [asyncErr, setAsyncErr] = useState(getLastStartupError());
+
+  useEffect(() => {
+    const t = setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 50);
+    const unsub = subscribeStartupError((e) => setAsyncErr(e));
+    return () => {
+      clearTimeout(t);
+      unsub();
+    };
+  }, []);
+
+  if (asyncErr) {
+    return <ErrorView title="Async startup error (caught by guard)" error={asyncErr} />;
+  }
+
+  return (
+    <Catch>
+      <SafeAreaProvider>
+        <AlertProvider>
+          <DayProvider>
+            <PlusProvider>
+              <AccountProvider>
+                <Inner />
+              </AccountProvider>
+            </PlusProvider>
+          </DayProvider>
+        </AlertProvider>
+      </SafeAreaProvider>
+    </Catch>
+  );
+}
+
+registerRootComponent(MountProbe);
