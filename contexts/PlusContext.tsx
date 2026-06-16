@@ -72,16 +72,22 @@ export function PlusProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      // eslint-disable-next-line no-console
+      console.log('[HSTART] PlusProvider effect: start');
       try {
         const raw = await AsyncStorage.getItem(PLUS_KEY);
         setLocalUnlock(raw === 'true');
       } catch {
         // silent — default to free
       }
+      // eslint-disable-next-line no-console
+      console.log('[HSTART] PlusProvider effect: got local flag, checking billing/comp');
       // These are best-effort; failures just leave the user on the free tier.
       setPurchased(await billing.hasPlusEntitlement());
       setComped(await fetchComped());
       setIsLoading(false);
+      // eslint-disable-next-line no-console
+      console.log('[HSTART] PlusProvider effect: done');
     })();
 
     // Re-check the comp grant whenever auth changes (sign in / out).

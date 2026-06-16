@@ -26,10 +26,15 @@ export default function RootLayout() {
   });
   const ready = fontsLoaded || !!fontError;
 
+  // eslint-disable-next-line no-console
+  console.log('[HSTART] RootLayout render; ready=', ready, 'fontError=', !!fontError);
+
   // Always hide the splash shortly after mount, regardless of fonts, so we can
   // never get stuck on it. Once it's down, the ErrorBoundary can surface any
   // captured startup error instead of an endless splash.
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[HSTART] RootLayout mounted, hiding splash');
     const t = setTimeout(() => {
       SplashScreen.hideAsync().catch(() => {});
     }, 50);
