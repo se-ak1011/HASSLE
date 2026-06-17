@@ -12,6 +12,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hassle.app",
+      "appleTeamId": "6R7SGGG57X",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.hassle.app"]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCalendarsUsageDescription": "Hassle uses your calendar so you can add tasks you reschedule to the day you move them to.",
@@ -55,7 +59,8 @@
           "backgroundColor": "#1A1916"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true
