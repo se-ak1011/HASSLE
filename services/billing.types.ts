@@ -4,8 +4,11 @@
  * import between the two platform files.
  */
 
-/** RevenueCat entitlement identifier. Name the entitlement this in the dashboard. */
-export const PLUS_ENTITLEMENT = 'plus';
+/**
+ * RevenueCat entitlement identifier — must match the entitlement's *Identifier*
+ * in the RevenueCat dashboard exactly (its display name is "plus").
+ */
+export const PLUS_ENTITLEMENT = 'Hassle Pro';
 
 export interface PurchaseResult {
   ok: boolean;
