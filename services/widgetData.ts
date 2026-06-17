@@ -2,15 +2,41 @@
  * Hassle — Home Screen widget data (RN side).
  *
  * Builds the snapshot the iOS widget shows and pushes it to the shared App Group
- * so WidgetKit can read it. Supports the small (energy + symptom tags), medium
- * (energy + tasks + last reflection), and Lola-pose (by energy %) designs.
+ * (group.com.hassle.app) so WidgetKit can read it. The RN side owns all the
+ * logic — including which Lola "pose" image to show for the current energy — so
+ * the SwiftUI widget stays dumb (just reads + draws).
  *
- * `updateWidget` is a SEAM: a no-op until the native bridge is wired (see
- * WIDGET_SETUP.md). The RN side already computes everything here, so the
- * remaining work is purely native. No native imports — safe for web/SSR bundles.
+ * The actual write uses `ExtensionStorage` from `@bacons/apple-targets`, loaded
+ * lazily so this module is safe to import on web / before the native widget is
+ * enabled (e.g. on `main`, where the package isn't installed). See
+ * WIDGET_SETUP.md and targets/widget/.
  */
 
 import { DayState, EnergyMode } from '@/constants/types';
+
+/** App Group shared between the app and the widget extension. */
+export const WIDGET_APP_GROUP = 'group.com.hassle.app';
+/** Key the snapshot JSON is stored under in the App Group. */
+export const WIDGET_SNAPSHOT_KEY = 'snapshot';
+
+// The Lola pose assets we actually shipped (assets/widget/). The widget picks
+// the nearest one for the current energy, so we never reference a missing image.
+const BATTERY_LEVELS = [0, 10, 20, 30, 40, 60, 80, 100];
+const SPOON_LEVELS = [0, 1, 2, 4, 6, 8, 10, 12];
+
+function nearest(value: number, levels: number[]): number {
+  return levels.reduce((best, lvl) =>
+    Math.abs(lvl - value) < Math.abs(best - value) ? lvl : best
+  );
+}
+
+/** Image name (no extension) for the current energy — matches assets/widget/. */
+function poseFor(mode: EnergyMode, energyPercent: number, energyRemaining: number): string {
+  if (mode === 'battery') {
+    return `battery-${nearest(Math.max(0, Math.min(100, energyPercent)), BATTERY_LEVELS)}`;
+  }
+  return `spoon-${nearest(Math.max(0, energyRemaining), SPOON_LEVELS)}`;
+}
 
 export interface WidgetSnapshot {
   date: string;
@@ -20,6 +46,8 @@ export interface WidgetSnapshot {
   energyMax: number;
   /** 0–100, used to pick Lola's pose. */
   energyPercent: number;
+  /** Image name for Lola's current pose (e.g. "battery-80" / "spoon-6"). */
+  pose: string;
   tasksDone: number;
   tasksTotal: number;
   /** Names of the next few pending tasks (for the medium "tasks left" layout). */
@@ -55,6 +83,7 @@ export function buildWidgetSnapshot(
     energyRemaining,
     energyMax,
     energyPercent,
+    pose: poseFor(day.energyMode, energyPercent, energyRemaining),
     tasksDone,
     tasksTotal,
     pendingTasks,
@@ -66,11 +95,23 @@ export function buildWidgetSnapshot(
 }
 
 /**
- * Push the snapshot to the iOS App Group so the Home Screen widget can read it.
- * No-op until the native bridge exists — see WIDGET_SETUP.md. When wired, this
- * should JSON-serialise to the shared App Group (group.com.hassle.app) and call
- * WidgetCenter.reloadAllTimelines().
+ * Push the snapshot to the iOS App Group and reload the widget timelines.
+ *
+ * Lazily loads `@bacons/apple-targets` so this is a safe no-op anywhere the
+ * native widget isn't present (web, or builds without the widget target).
  */
-export async function updateWidget(_snapshot: WidgetSnapshot | null): Promise<void> {
-  // TODO (native): write to the shared App Group + reload widget timelines.
+export async function updateWidget(snapshot: WidgetSnapshot | null): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ExtensionStorage } = require('@bacons/apple-targets');
+    const storage = new ExtensionStorage(WIDGET_APP_GROUP);
+    if (snapshot) {
+      storage.set(WIDGET_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    } else {
+      storage.remove(WIDGET_SNAPSHOT_KEY);
+    }
+    ExtensionStorage.reloadWidget();
+  } catch {
+    // Package not installed / not on iOS / widget not enabled — no-op.
+  }
 }
