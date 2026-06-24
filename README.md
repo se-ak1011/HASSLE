@@ -35,6 +35,24 @@ npm run reset-project
 npm run lint
 ```
 
+## iOS native workspace setup
+
+This repository is Expo-managed, so the native iOS project is generated on demand.
+
+- There is no committed `/ios` folder on `main`.
+- Generate it when needed:
+
+```bash
+npm run ios:prebuild
+```
+
+After prebuild, open the generated workspace (for example `ios/HASSLE.xcworkspace`) in Xcode.
+
+### Widget target status
+
+Widget groundwork exists in `/targets/widget`, and setup notes are in [WIDGET_SETUP.md](./WIDGET_SETUP.md).
+The full widget scaffold is documented on branch `claude/ios-widget-groundwork` in that file.
+
 ## Main Dependencies
 
 - React Native: 0.79.4
