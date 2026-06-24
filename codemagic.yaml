@@ -10,14 +10,14 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.hassle.app
+        bundle_identifier: 6R7SGGG57X.com.hassle.app
       groups:
         - Ios_signing
       node: latest
       xcode: latest
       cocoapods: default
       vars:
-        IOS_BUNDLE_IDENTIFIER: com.hassle.app
+        IOS_BUNDLE_IDENTIFIER: 6R7SGGG57X.com.hassle.app
         # SDK 54 / RN 0.81 default. Reanimated 4 requires the New Architecture.
         RCT_NEW_ARCH_ENABLED: "1"
 
