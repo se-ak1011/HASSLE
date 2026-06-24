@@ -105,7 +105,7 @@ workflows:
         script: |
           xcode-project build-ipa \
             --workspace ios/*.xcworkspace \
-            --scheme PAI \
+            --scheme HASSLE \
             --config Release
 
     artifacts:
