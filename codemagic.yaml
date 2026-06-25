@@ -104,7 +104,7 @@ workflows:
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/hassle.xcworkspace \
+            --workspace ios/*.xcworkspace \
             --scheme HASSLE \
             --config Release
 
