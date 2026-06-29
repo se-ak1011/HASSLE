@@ -90,10 +90,24 @@ workflows:
         script: |
           export APP_STORE_CONNECT_KEY_IDENTIFIER="${APP_STORE_CONNECT_KEY_IDENTIFIER:-${APP_STORE_CONNECT_KEY_ID:-}}"
           keychain initialize
-          app-store-connect fetch-signing-files "$IOS_BUNDLE_IDENTIFIER" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key-password "${CERTIFICATE_PRIVATE_KEY_PASSWORD:-}" || true
+
+          # Auto-discover EVERY bundle id in the prebuilt project — the main app
+          # AND the widget extension (com.hassle.app + com.hassle.app.widget) —
+          # so we fetch a provisioning profile for each. No hard-coded widget id.
+          BUNDLE_IDS=$(grep -hoE "PRODUCT_BUNDLE_IDENTIFIER = [^;]+;" ios/*.xcodeproj/project.pbxproj \
+            | sed -E 's/PRODUCT_BUNDLE_IDENTIFIER = //; s/;//' | tr -d '"' \
+            | grep -v '[$()]' | sort -u)
+          echo "Bundle identifiers detected for signing:"
+          echo "$BUNDLE_IDS"
+
+          for BID in $BUNDLE_IDS; do
+            echo "== Fetching signing files for $BID =="
+            app-store-connect fetch-signing-files "$BID" \
+              --type IOS_APP_STORE \
+              --create \
+              --certificate-key-password "${CERTIFICATE_PRIVATE_KEY_PASSWORD:-}" || true
+          done
+
           keychain add-certificates
 
           echo "== Certificates in keychain after setup =="
