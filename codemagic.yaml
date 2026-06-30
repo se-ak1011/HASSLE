@@ -48,8 +48,10 @@ workflows:
       - name: Install dependencies (pnpm)
         script: |
           # Hassle is a pnpm project (pnpm-lock.yaml + .npmrc node-linker=hoisted),
-          # NOT npm like the trades app. Install pnpm, then install deps.
-          npm install -g pnpm
+          # NOT npm like the trades app. Use corepack (bundled with Node) to get
+          # pnpm reliably on CI — no global npm install / PATH issues — then install.
+          corepack enable
+          corepack prepare pnpm@latest --activate
           pnpm install --no-frozen-lockfile
 
       - name: Set unique build number
