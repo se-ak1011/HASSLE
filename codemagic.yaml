@@ -8,9 +8,18 @@ workflows:
       app_store_connect: codemagicFlutter
 
     environment:
+      # MANUAL code signing — use the certificate + provisioning profiles that
+      # were uploaded to Codemagic (Teams → Code signing identities), referenced
+      # here by their Reference names. This replaces the automatic
+      # `fetch-signing-files` approach, which was pulling a stale profile from
+      # Apple that lacked the App Groups capability. With references you must NOT
+      # set distribution_type / bundle_identifier.
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.hassle.app
+        provisioning_profiles:
+          - profile: "Hassle"           # com.hassle.app
+          - profile: "Hassle Widget"    # com.hassle.app.widget
+        certificates:
+          - certificate: "codemagicFlutter"
       groups:
         - Ios_signing
       node: latest
@@ -20,7 +29,6 @@ workflows:
         IOS_BUNDLE_IDENTIFIER: com.hassle.app
         # Hassle is SDK 53 / RN 0.79 on the OLD architecture (app.json has
         # newArchEnabled:false — required after the New-Arch splash-hang fix).
-        # Keep New Arch OFF (the trades-app config had this at "1").
         RCT_NEW_ARCH_ENABLED: "0"
 
     scripts:
@@ -72,56 +80,12 @@ workflows:
           cd ios
           agvtool new-version -all "$HASSLE_BUILD_NUMBER"
 
-      - name: Validate App Store Connect secrets
+      - name: Apply provisioning profiles to the project
         script: |
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="${APP_STORE_CONNECT_KEY_IDENTIFIER:-${APP_STORE_CONNECT_KEY_ID:-}}"
-          REQUIRED_VARS=(
-            APP_STORE_CONNECT_KEY_IDENTIFIER
-            APP_STORE_CONNECT_ISSUER_ID
-            APP_STORE_CONNECT_PRIVATE_KEY
-            IOS_BUNDLE_IDENTIFIER
-          )
-          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
-            if [[ -z "${!VAR_NAME:-}" ]]; then
-              echo "Missing required Codemagic secret: $VAR_NAME"
-              exit 1
-            fi
-          done
-          echo "App Store Connect secrets detected."
-
-      - name: Set up code signing
-        script: |
-          export APP_STORE_CONNECT_KEY_IDENTIFIER="${APP_STORE_CONNECT_KEY_IDENTIFIER:-${APP_STORE_CONNECT_KEY_ID:-}}"
-          keychain initialize
-
-          # Auto-discover EVERY bundle id in the prebuilt project — the main app
-          # AND the widget extension (com.hassle.app + com.hassle.app.widget) —
-          # so we fetch a provisioning profile for each. No hard-coded widget id.
-          BUNDLE_IDS=$(grep -hoE "PRODUCT_BUNDLE_IDENTIFIER = [^;]+;" ios/*.xcodeproj/project.pbxproj \
-            | sed -E 's/PRODUCT_BUNDLE_IDENTIFIER = //; s/;//' | tr -d '"' \
-            | grep -v '[$()]' | sort -u)
-          echo "Bundle identifiers detected for signing:"
-          echo "$BUNDLE_IDS"
-
-          for BID in $BUNDLE_IDS; do
-            echo "== Fetching signing files for $BID =="
-            app-store-connect fetch-signing-files "$BID" \
-              --type IOS_APP_STORE \
-              --create \
-              --certificate-key-password "${CERTIFICATE_PRIVATE_KEY_PASSWORD:-}" || true
-          done
-
-          keychain add-certificates
-
-          echo "== Certificates in keychain after setup =="
-          security find-identity -v -p codesigning || true
-
-          echo "== Provisioning profiles installed =="
-          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          ls -1 "$PROFILE_DIR" 2>/dev/null || echo "No profiles directory found"
-
+          # The certificate + profiles come from the ios_signing references above
+          # (Codemagic installs them automatically). Just point the Xcode project
+          # at them for manual signing.
           cd ios
-          # Apply profiles — without --warn-only so the build fails loudly if no profile is found
           xcode-project use-profiles
 
       - name: Install iOS pods
