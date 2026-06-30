@@ -22,7 +22,12 @@ const images = fs
 
 module.exports = {
   type: 'widget',
-  name: 'Hassle',
+  // Distinct from the app target ("Hassle") so Xcode gives the widget its own
+  // build folder — same-name targets collide ("Multiple commands produce
+  // conflicting outputs"). The bundle id is derived from the type, not this
+  // name, so it stays com.hassle.app.widget; the user-facing name is in
+  // Info.plist (CFBundleDisplayName = "Hassle").
+  name: 'HassleWidget',
   // Matches the app's dark, plum palette (constants/theme.ts).
   colors: {
     $widgetBackground: '#191A1C',
