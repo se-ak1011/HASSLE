@@ -47,11 +47,12 @@ workflows:
 
       - name: Install dependencies (pnpm)
         script: |
-          # Hassle is a pnpm project (pnpm-lock.yaml + .npmrc node-linker=hoisted),
-          # NOT npm like the trades app. Use corepack (bundled with Node) to get
-          # pnpm reliably on CI — no global npm install / PATH issues — then install.
+          # Hassle is a pnpm project. The "packageManager": "pnpm@..." field in
+          # package.json tells corepack to use pnpm — so it stops searching upward
+          # and picking up the CI machine's yarn config (/Users/builder/package.json).
+          # COREPACK_ENABLE_STRICT=0 is a belt-and-braces guard against that too.
+          export COREPACK_ENABLE_STRICT=0
           corepack enable
-          corepack prepare pnpm@latest --activate
           pnpm install --no-frozen-lockfile
 
       - name: Set unique build number
