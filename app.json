@@ -60,7 +60,8 @@
         }
       ],
       "expo-web-browser",
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      "./plugins/withFmtConsteval"
     ],
     "experiments": {
       "typedRoutes": true
