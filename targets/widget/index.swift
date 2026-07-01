@@ -68,10 +68,10 @@ extension Color {
     }
 }
 
-private let bgColor = Color(hexString: "#191A1C")
-private let textColor = Color(hexString: "#F2ECE4")
-private let mutedColor = Color(hexString: "#9A9097")
-private let accentColor = Color(hexString: "#7A5478")
+private let hassleBg = Color(hexString: "#191A1C")
+private let hassleText = Color(hexString: "#F2ECE4")
+private let hassleMuted = Color(hexString: "#9A9097")
+private let hassleAccent = Color(hexString: "#7A5478")
 
 // MARK: - View
 
@@ -108,10 +108,10 @@ struct HassleWidgetView: View {
                 .frame(maxHeight: 72)
             Text(energyLabel(s))
                 .font(.system(size: 15, weight: .bold))
-                .foregroundColor(textColor)
+                .foregroundColor(hassleText)
             Text("\(s.tasksDone)/\(s.tasksTotal) done")
                 .font(.system(size: 12))
-                .foregroundColor(mutedColor)
+                .foregroundColor(hassleMuted)
         }
         .padding(12)
     }
@@ -125,19 +125,19 @@ struct HassleWidgetView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(energyLabel(s))
                     .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(textColor)
+                    .foregroundColor(hassleText)
                 if s.isFlareDay {
                     Text("Flare day — be gentle 💜")
                         .font(.system(size: 12))
-                        .foregroundColor(accentColor)
+                        .foregroundColor(hassleAccent)
                 }
                 Text("\(s.tasksDone)/\(s.tasksTotal) done")
                     .font(.system(size: 13))
-                    .foregroundColor(mutedColor)
+                    .foregroundColor(hassleMuted)
                 if let first = s.pendingTasks.first {
                     Text("Next: \(first)")
                         .font(.system(size: 12))
-                        .foregroundColor(mutedColor)
+                        .foregroundColor(hassleMuted)
                         .lineLimit(1)
                 }
             }
@@ -150,10 +150,10 @@ struct HassleWidgetView: View {
         VStack(spacing: 6) {
             Text("Hassle")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(textColor)
+                .foregroundColor(hassleText)
             Text("Open the app to check in")
                 .font(.system(size: 12))
-                .foregroundColor(mutedColor)
+                .foregroundColor(hassleMuted)
                 .multilineTextAlignment(.center)
         }
         .padding(12)
@@ -169,10 +169,10 @@ struct HassleWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 HassleWidgetView(entry: entry)
-                    .containerBackground(for: .widget) { bgColor }
+                    .containerBackground(for: .widget) { hassleBg }
             } else {
                 HassleWidgetView(entry: entry)
-                    .background(bgColor)
+                    .background(hassleBg)
             }
         }
         .configurationDisplayName("Hassle")
