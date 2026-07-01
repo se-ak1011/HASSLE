@@ -23,7 +23,10 @@ workflows:
       groups:
         - Ios_signing
       node: latest
-      xcode: latest
+      # Pin Xcode to the version Expo SDK 53 / RN 0.79 is built with. "latest"
+      # (Xcode 26) is too new — its compiler rejects the older `fmt` C++ lib RN
+      # 0.79 ships ("call to consteval function ... is not a constant expression").
+      xcode: "16.2"
       cocoapods: default
       vars:
         IOS_BUNDLE_IDENTIFIER: com.hassle.app
