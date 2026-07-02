@@ -10,11 +10,17 @@
  *
  * We used to dodge this by pinning Xcode 16.2, but that ships the iOS 18 SDK
  * and Apple now rejects App Store uploads not built against the iOS 26 SDK.
- * So we're back on the latest Xcode and fix `fmt` directly instead: predefine
- * `FMT_CONSTEVAL` to empty. `fmt` guards the macro with `#ifndef`, so an empty
- * definition makes it take the same non-consteval fallback path it already
- * uses on any compiler that lacks `consteval` — format-string checking just
- * happens at runtime instead of compile time. Harmless for a release build.
+ * So we're back on the latest Xcode and fix `fmt` directly instead: define
+ * `FMT_USE_CONSTEVAL=0`.
+ *
+ * NOTE: the macro to override is FMT_USE_CONSTEVAL, *not* FMT_CONSTEVAL. fmt
+ * redefines FMT_CONSTEVAL unconditionally (no #ifndef guard), so a command-line
+ * `-DFMT_CONSTEVAL=` gets clobbered by the header — which is exactly why the
+ * first attempt still failed. FMT_USE_CONSTEVAL, by contrast, IS #ifndef-
+ * guarded, so forcing it to 0 sticks and makes fmt define FMT_CONSTEVAL empty
+ * itself — the same non-consteval fallback path it uses on compilers without
+ * `consteval`. Format-string checking just happens at runtime instead of
+ * compile time; harmless for a release build.
  *
  * Applied to every Pod target (fmt itself, plus RCT-Folly / React core, which
  * include fmt headers). Runs during `expo prebuild`, so it survives
@@ -27,12 +33,12 @@ const fs = require('fs');
 const path = require('path');
 
 const MARKER = 'post_install do |installer|';
-const GUARD = "FMT_CONSTEVAL=";
+const GUARD = "FMT_USE_CONSTEVAL=0";
 
 const INJECTION = `${MARKER}
-    # withFmtConsteval: neutralise fmt's consteval format-string checks so the
+    # withFmtConsteval: disable fmt's consteval format-string checks so the
     # project builds under Xcode 26's clang (needed for the iOS 26 SDK / App
-    # Store). Empty FMT_CONSTEVAL => fmt's non-consteval fallback path.
+    # Store). FMT_USE_CONSTEVAL=0 => fmt defines FMT_CONSTEVAL empty itself.
     installer.pods_project.targets.each do |__fmt_target|
       __fmt_target.build_configurations.each do |__fmt_config|
         __fmt_defs = __fmt_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
