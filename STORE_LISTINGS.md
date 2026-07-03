@@ -65,9 +65,9 @@ Hello 💜 This is Hassle's first release. Track your energy, plan kindly, notic
 your patterns, and bring a clear summary to appointments. Thank you for being here.
 
 ## URLs
-- Support URL:  [your support page or mailto landing]
-- Marketing URL (optional): [your site]
-- Privacy Policy URL: [hosted PRIVACY_POLICY.md]
+- Support URL:  https://se-ak1011.github.io/HASSLE/
+- Marketing URL (optional): https://se-ak1011.github.io/HASSLE/
+- Privacy Policy URL: https://se-ak1011.github.io/HASSLE/privacy/
 
 ═══════════════════════════════════════════════════════════════════════════════
 # GOOGLE — Play Console

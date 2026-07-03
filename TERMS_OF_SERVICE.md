@@ -1,15 +1,17 @@
 # Hassle — Terms of Service
 
-_Last updated: [EFFECTIVE DATE]_
+_Last updated: July 3, 2026_
 
+> Hosted GitHub Pages URL:
+> https://se-ak1011.github.io/HASSLE/terms/
+>
 > Template to get you started — **not legal advice**. Because Hassle handles
-> health-related information, it's worth a quick review by a solicitor familiar
-> with apps/health data before launch. Fill the [bracketed] placeholders and host
-> alongside the Privacy Policy.
+> health-related information, it's still worth a quick review by a solicitor
+> familiar with apps/health data before launch.
 
 ## 1. Who we are
-Hassle ("the app", "we", "us") is operated by [YOUR NAME / COMPANY], [LOCATION].
-By downloading or using Hassle you agree to these Terms. If you don't agree,
+Hassle ("the app", "we", "us") is operated under the Hassle brand. By
+downloading or using Hassle you agree to these Terms. If you don't agree,
 please don't use the app.
 
 ## 2. What Hassle is — and isn't
@@ -65,10 +67,5 @@ Terms are breached.
 We may update these Terms; we'll update the date above and, for significant
 changes, give reasonable notice in the app.
 
-## 11. Governing law
-These Terms are governed by the laws of [ENGLAND & WALES / YOUR JURISDICTION], and
-disputes are subject to its courts, except where local consumer law gives you
-additional rights.
-
-## 12. Contact
-[YOUR NAME / COMPANY] — [SUPPORT EMAIL]
+## 11. Contact
+Hassle — drainedstore@gmail.com
