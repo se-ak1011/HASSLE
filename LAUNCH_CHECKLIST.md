@@ -33,7 +33,8 @@ Status legend: ✅ done in code · 🟡 needs you (dashboard/console) · ⬜ not
 
 ## 4. Privacy & App Store data
 - ✅ `PRIVACY_POLICY.md` drafted (local-first, optional sync, no tracking).
-- 🟡 Fill placeholders, **host it at a public URL**, put that URL in App Store Connect.
+- ✅ GitHub Pages URLs prepared in `/docs`.
+- 🟡 Enable GitHub Pages deployment, then put the live privacy URL in App Store Connect.
 - 🟡 **App Privacy "nutrition labels"** in App Store Connect. With sync enabled, declare:
   - **Health & Fitness** — *App Functionality*, linked to user, **not** used for tracking.
   - **User Content** (notes/tasks) — App Functionality, linked, not for tracking.
@@ -50,7 +51,8 @@ Status legend: ✅ done in code · 🟡 needs you (dashboard/console) · ⬜ not
   Plus tab → library/directory/report, **PDF save + print**, sign-in, sync.
 
 ## 6. App Store Connect listing
-- ⬜ App name, subtitle, description, keywords, support URL, marketing URL.
+- 🟡 App name, subtitle, description, keywords done in `STORE_LISTINGS.md`; support,
+  marketing, and privacy URLs now point to GitHub Pages.
 - ⬜ Screenshots (the Lola pages photograph well).
 - ⬜ Age rating questionnaire; category (Health & Fitness or Medical — Health &
   Fitness is usually the safer/faster review).
@@ -62,8 +64,12 @@ Status legend: ✅ done in code · 🟡 needs you (dashboard/console) · ⬜ not
   "information, not medical advice" framing already helps here).
 
 ## 8. Legal & required paperwork
-- ✅ `PRIVACY_POLICY.md` + `TERMS_OF_SERVICE.md` drafted (fill the [brackets]).
-- 🟡 **Host both** at `yourdomain.com/privacy` + `/terms` (see `LEGAL_HOSTING.md`).
+- ✅ `PRIVACY_POLICY.md` + `TERMS_OF_SERVICE.md` drafted.
+- ✅ GitHub Pages files added under `/docs` for `/`, `/privacy/`, and `/terms/`.
+- 🟡 Enable Pages so these URLs go live:
+  - `https://se-ak1011.github.io/HASSLE/`
+  - `https://se-ak1011.github.io/HASSLE/privacy/`
+  - `https://se-ak1011.github.io/HASSLE/terms/`
 - 🟡 Put the URLs in: App Store Connect (Privacy Policy URL), Play Console, and the
   Google OAuth consent screen (privacy + terms links).
 - 🔴 **Account deletion (required for App Store, guideline 5.1.1(v)):** because we
@@ -89,6 +95,6 @@ Status legend: ✅ done in code · 🟡 needs you (dashboard/console) · ⬜ not
 2. Account deletion shipped (Edge Function) — §8
 3. RevenueCat: Monthly product + `plus` entitlement + current Offering; swap to the
    `appl_…` key; test a sandbox purchase
-4. Privacy + Terms hosted; URLs in ASC / Play / Google consent; App Privacy labels
+4. Privacy + Terms live on GitHub Pages (or your own domain); URLs in ASC / Play / Google consent; App Privacy labels
 5. Listing copy (`STORE_LISTINGS.md`) + screenshots; Paid Apps agreement
 6. Production build → submit (Android later)

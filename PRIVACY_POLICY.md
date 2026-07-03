@@ -1,16 +1,16 @@
 # Hassle — Privacy Policy
 
-_Last updated: [EFFECTIVE DATE]_
+_Last updated: July 3, 2026_
 
-> Fill the [bracketed] placeholders, then host this at a public URL (e.g.
-> https://yourdomain.com/privacy). The App Store and Play Store both require a
-> privacy policy URL. **Not legal advice** — given this app touches health-related
-> data, a quick professional review before launch is wise.
+> Hosted GitHub Pages URL:
+> https://se-ak1011.github.io/HASSLE/privacy/
+>
+> **Not legal advice** — given this app touches health-related data, a quick
+> professional review before launch is still wise.
 
 Hassle ("the app", "we") is a daily planner for people living with chronic
-illness and neurodivergence, operated by [YOUR NAME / COMPANY], [LOCATION]. We
-built it to be private by default. This policy explains what we collect — and
-mostly don't.
+illness and neurodivergence. We built it to be private by default. This policy
+explains what we collect — and mostly don't.
 
 ## The short version
 - The app works **fully on your device with no account**. By default, your data
@@ -28,9 +28,8 @@ category and never use for advertising or profiling.
 ## Where it's stored, and who processes it
 - **On your device (default):** saved locally. Uninstalling removes it.
 - **In your account (only if you enable sync):** mirrored to our backend
-  provider, **Supabase** (our processor), encrypted in transit and at rest, in
-  the **[REGION, e.g. EU (Frankfurt)]** region. Row-level security means **only
-  your signed-in account can read your data.**
+  provider, **Supabase** (our processor), encrypted in transit and at rest.
+  Row-level security means **only your signed-in account can read your data.**
 
 ## Accounts & sign-in
 Sign-in is optional, via **Sign in with Apple** or **Google**. If you sign in we
@@ -68,4 +67,4 @@ do not knowingly collect their data.
 We'll update this page and the "last updated" date when this policy changes.
 
 ## Contact
-[YOUR NAME / COMPANY] — [SUPPORT EMAIL]
+Hassle — drainedstore@gmail.com

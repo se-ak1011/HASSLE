@@ -25,6 +25,19 @@ Pick whichever matches your site setup:
 - A public Notion page also works in a pinch, but your own domain looks far more
   trustworthy in store review.
 
+## GitHub Pages setup in this repo
+This repo now includes a ready-to-ship GitHub Pages site in `/docs` plus a
+deployment workflow at `.github/workflows/pages.yml`.
+
+Once GitHub Pages is enabled for this repository, the URLs are:
+
+- Marketing / support: `https://se-ak1011.github.io/HASSLE/`
+- Privacy Policy: `https://se-ak1011.github.io/HASSLE/privacy/`
+- Terms of Service: `https://se-ak1011.github.io/HASSLE/terms/`
+
+If the Pages source is not already configured, set **Settings → Pages** to use
+**GitHub Actions**.
+
 ## Where these URLs go (this is the important part)
 Once hosted, paste them here:
 
