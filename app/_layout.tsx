@@ -6,7 +6,7 @@ import { PlusProvider } from '@/contexts/PlusContext';
 import { AccountProvider } from '@/contexts/AccountContext';
 import { View, Text, Image, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { Colors } from '@/constants/theme';
 import { billing } from '@/services/billing';
@@ -27,6 +27,9 @@ function LoadingScreen() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 28,
+        // Extra bottom padding shifts the centred content (sticker + text) up
+        // the screen so Lola sits higher rather than dead-centre.
+        paddingBottom: 160,
       }}
     >
       <Image
@@ -36,7 +39,7 @@ function LoadingScreen() {
       <Text style={{ color: Colors.text, fontSize: 22, fontWeight: '700', marginTop: 18 }}>
         Loading… 🦴
       </Text>
-      <Text style={{ color: Colors.textSubtle, fontSize: 15, marginTop: 4 }}>(maybe)</Text>
+      <Text style={{ color: Colors.textSubtle, fontSize: 15, marginTop: 14 }}>(Maybe)</Text>
       <ActivityIndicator color={Colors.primary} style={{ marginTop: 16 }} />
     </View>
   );
@@ -49,7 +52,17 @@ export default function RootLayout() {
     ChronicSans: require('@/assets/fonts/ChronicSans.otf'),
     ChronicSansFlare: require('@/assets/fonts/ChronicSansFlare.otf'),
   });
-  const ready = fontsLoaded || !!fontError;
+
+  // Hold the loading screen for at least half a second so "Loading… 🦴 (Maybe)"
+  // is actually readable — fonts usually load in a blink, which would otherwise
+  // flash the screen past too fast to see.
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeElapsed(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const ready = (fontsLoaded || !!fontError) && minTimeElapsed;
 
   // Always hide the splash shortly after mount, regardless of fonts, so we can
   // never get stuck on it. Once it's down, the ErrorBoundary can surface any
