@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { useDay } from '@/hooks/useDay';
+import { useRegion } from '@/localization/RegionContext';
 
 const SPOON_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const BATTERY_VALUES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -22,6 +23,7 @@ export default function CheckInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeCheckIn, prefs, addCustomTag } = useDay();
+  const { t } = useRegion();
 
   const [mode, setMode] = useState<EnergyMode>(prefs?.energyMode ?? 'spoon');
   const [energyLevel, setEnergyLevel] = useState(mode === 'spoon' ? 6 : 50);
@@ -90,7 +92,7 @@ export default function CheckInScreen() {
             {prefs?.name ? `How are you today, ${prefs.name}?` : 'How are you today?'}
           </Text>
           <Text style={styles.subtitle}>
-            No judgement. Just where you are right now.
+            {t('checkin.noJudgement')}
           </Text>
         </View>
 

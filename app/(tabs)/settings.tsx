@@ -35,6 +35,8 @@ import {
   cancelAllReminders,
   requestNotificationPermissions,
 } from '@/services/notificationService';
+import { useRegion } from '@/localization/RegionContext';
+import { REGIONS } from '@/localization/region';
 
 const SUPPORT_EMAIL = 'drainedstore@gmail.com';
 const APP_VERSION = '1.0.0';
@@ -105,6 +107,51 @@ function SectionHeader({ title }: { title: string }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return <View style={styles.card}>{children}</View>;
+}
+
+// ─── Country / Region Panel ───────────────────────────────────────────────────
+// Selecting a country immediately updates region-specific content and wording
+// (currency, healthcare terminology, spelling, dates) across the whole app.
+
+function RegionPanel() {
+  const { region, setRegion } = useRegion();
+  const ff = useFontFamily();
+  return (
+    <Card>
+      <View style={styles.freqBlock}>
+        <Text style={[styles.freqLabel, { fontFamily: ff.medium }]}>
+          Content, wording, and formatting adapt to your country.
+        </Text>
+        {REGIONS.map((r) => {
+          const selected = region === r.code;
+          return (
+            <Pressable
+              key={r.code}
+              style={({ pressed }) => [
+                styles.freqOption,
+                selected && styles.freqOptionSelected,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => setRegion(r.code)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+            >
+              <View style={[styles.freqRadio, selected && styles.freqRadioSelected]} />
+              <Text
+                style={[
+                  styles.freqOptionText,
+                  selected && styles.freqOptionTextSelected,
+                  { fontFamily: ff.medium },
+                ]}
+              >
+                {r.flag}  {r.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </Card>
+  );
 }
 
 // ─── Reminder Settings Panel ──────────────────────────────────────────────────
@@ -475,6 +522,10 @@ export default function SettingsScreen() {
         {/* Profile */}
         <SectionHeader title="You" />
         <ProfilePanel />
+
+        {/* Country / Region */}
+        <SectionHeader title="Country / Region" />
+        <RegionPanel />
 
         {/* Data storage info */}
         <SectionHeader title="Your data" />

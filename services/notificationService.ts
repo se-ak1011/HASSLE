@@ -11,6 +11,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { ReminderFrequency } from '@/constants/types';
+import { t } from '@/localization/strings';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -26,25 +27,29 @@ Notifications.setNotificationHandler({
 // just your energy counts (no typing required).
 type Slot = 'morning' | 'midday' | 'evening';
 
-const REMINDER_MESSAGES: Record<Slot, { title: string; body: string }[]> = {
-  morning: [
-    { title: 'Morning 💜', body: "Whenever you're ready — set today's energy." },
-    { title: 'New day', body: 'No pressure. A quick check-in when you can.' },
-    { title: 'Hey there', body: "How's your energy today? Tap to start." },
-  ],
-  midday: [
-    { title: 'Quick check-in', body: 'How’s it going? Tick anything off if you like.' },
-    { title: 'Still here', body: 'A gentle nudge — no need to do much.' },
-  ],
-  evening: [
-    { title: 'Winding down', body: 'How did today go? Tap to wrap up your day.' },
-    { title: 'Before bed', body: 'Want to close out today? Even just your energy counts.' },
-    { title: 'End of day', body: 'Whatever got done, got done. Tap to log it.' },
-  ],
-};
+// Built as a function (not a module const) so region-specific bodies resolve
+// with the user's active region at schedule time, not at import time.
+function reminderMessages(): Record<Slot, { title: string; body: string }[]> {
+  return {
+    morning: [
+      { title: 'Morning 💜', body: "Whenever you're ready — set today's energy." },
+      { title: 'New day', body: 'No pressure. A quick check-in when you can.' },
+      { title: 'Hey there', body: "How's your energy today? Tap to start." },
+    ],
+    midday: [
+      { title: 'Quick check-in', body: t('notif.midday.checkOff') },
+      { title: 'Still here', body: 'A gentle nudge — no need to do much.' },
+    ],
+    evening: [
+      { title: 'Winding down', body: 'How did today go? Tap to wrap up your day.' },
+      { title: 'Before bed', body: 'Want to close out today? Even just your energy counts.' },
+      { title: 'End of day', body: 'Whatever got done, got done. Tap to log it.' },
+    ],
+  };
+}
 
 function messageFor(slot: Slot) {
-  const pool = REMINDER_MESSAGES[slot];
+  const pool = reminderMessages()[slot];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 

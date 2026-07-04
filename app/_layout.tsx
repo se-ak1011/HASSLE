@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Colors } from '@/constants/theme';
 import { billing } from '@/services/billing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { RegionProvider } from '@/localization/RegionContext';
 
 // Keep the native splash up until we explicitly hide it, so we control when it
 // goes away (rather than racing the router). Paired with the unconditional
@@ -84,7 +85,8 @@ export default function RootLayout() {
       {!ready ? (
         <LoadingScreen />
       ) : (
-        <AlertProvider>
+        <RegionProvider>
+          <AlertProvider>
           <SafeAreaProvider>
             <DayProvider>
               <PlusProvider>
@@ -103,7 +105,8 @@ export default function RootLayout() {
               </PlusProvider>
             </DayProvider>
           </SafeAreaProvider>
-        </AlertProvider>
+          </AlertProvider>
+        </RegionProvider>
       )}
     </ErrorBoundary>
   );

@@ -1,0 +1,37 @@
+{
+  "region": "GB",
+  "locale": "en-GB",
+  "currency": {
+    "code": "GBP",
+    "symbol": "£",
+    "fallbackPriceLabel": "£4.99/month"
+  },
+  "calendar": {
+    "firstDay": 1
+  },
+  "terminology": {
+    "primaryCareDoctor": "GP",
+    "primaryCareShort": "GP",
+    "emergencyRoom": "A&E",
+    "emergencyRoomShort": "A&E",
+    "pharmacy": "Chemist",
+    "counselor": "Counsellor",
+    "healthSystem": "the NHS"
+  },
+  "emergency": {
+    "emergencyNumber": "999",
+    "mentalHealthCrisis": "116 123",
+    "mentalHealthCrisisName": "Samaritans",
+    "nonEmergencyHealth": "Call NHS 111 for urgent but non-emergency help"
+  },
+  "clinicalSources": {
+    "mecfs": {
+      "label": "NICE Guideline NG206 — ME/CFS",
+      "url": "https://www.nice.org.uk/guidance/ng206"
+    },
+    "fibroNeuro": {
+      "label": "Brighton & Sussex Medical School",
+      "url": "https://www.bsms.ac.uk/"
+    }
+  }
+}

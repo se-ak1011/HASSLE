@@ -17,6 +17,7 @@ import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
+import { useRegion } from '@/localization/RegionContext';
 import { EnergyBar } from '@/components/ui/EnergyBar';
 import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
@@ -35,6 +36,7 @@ function CheckInView() {
   const insets = useSafeAreaInsets();
   const { completeCheckIn, prefs, addCustomTag, setFlarePreview } = useDay();
   const ff = useFontFamily();
+  const { t } = useRegion();
 
   const [mode, setMode] = useState<EnergyMode>(prefs?.energyMode ?? 'spoon');
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
@@ -140,7 +142,7 @@ function CheckInView() {
             {prefs?.name ? `How are you today, ${prefs.name}?` : 'How are you today?'}
           </Text>
           <Text style={[checkInStyles.subtitle, { fontFamily: ff.regular }]}>
-            No judgement. Just where you are right now.
+            {t('checkin.noJudgement')}
           </Text>
         </View>
 
