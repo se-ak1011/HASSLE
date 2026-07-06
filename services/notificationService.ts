@@ -11,7 +11,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { ReminderFrequency } from '@/constants/types';
-import { t } from '@/localization/strings';
+import { getActiveRegionConfig } from '@/localization/RegionContext';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -37,7 +37,7 @@ function reminderMessages(): Record<Slot, { title: string; body: string }[]> {
       { title: 'Hey there', body: "How's your energy today? Tap to start." },
     ],
     midday: [
-      { title: 'Quick check-in', body: t('notif.midday.checkOff') },
+      { title: 'Quick check-in', body: getActiveRegionConfig().copy.middayCheckOff },
       { title: 'Still here', body: 'A gentle nudge — no need to do much.' },
     ],
     evening: [

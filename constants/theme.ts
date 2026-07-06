@@ -17,15 +17,22 @@ export const Colors = {
 
   flare: '#7A5268',         // plum flare accent (web --flare-foreground)
   flareFaint: '#3D2638',    // very dark faint flare (web --flare)
+  warning: '#B08A5B',
+  warningFaint: '#332719',
+  danger: '#B46A75',
+  dangerFaint: '#3B2027',
 
   success: '#7A5478',       // mauve — palette is monochrome, no green
   successFaint: '#261F2A',
 
   text: '#F2ECE4',
+  textPrimary: '#F2ECE4',
+  textSecondary: '#D2CCC3',
   textMuted: '#D2CCC3',
   textSubtle: '#9A9097',
 
   border: '#353239',
+  hairline: '#2F2C31',
   borderLight: '#3F3B42',
 
   white: '#E7E0D8',
@@ -107,3 +114,47 @@ export const Shadow = {
     elevation: 6,
   },
 };
+
+
+export const SemanticColors = {
+  background: Colors.background,
+  surface: Colors.surface,
+  surfaceElevated: Colors.surfaceElevated,
+  border: Colors.border,
+  hairline: Colors.hairline,
+  textPrimary: Colors.textPrimary,
+  textSecondary: Colors.textSecondary,
+  textMuted: Colors.textSubtle,
+  accent: Colors.primary,
+  success: Colors.success,
+  warning: Colors.warning,
+  danger: Colors.danger,
+};
+
+export const Elevation = {
+  none: {},
+  soft: Shadow.soft,
+  medium: Shadow.medium,
+};
+
+export const Animation = {
+  fast: 120,
+  base: 180,
+  slow: 240,
+  pressScale: 0.985,
+  pressOpacity: 0.92,
+};
+
+export const TouchTarget = {
+  minHeight: 44,
+  minWidth: 44,
+};
+
+export const Haptics = {
+  none: 'none',
+  light: 'light',
+  medium: 'medium',
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+} as const;

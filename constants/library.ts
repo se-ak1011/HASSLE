@@ -3,7 +3,7 @@
  *
  * Article-style entries for the in-app reading library (a Hassle Plus feature).
  * Every entry links out to a REAL, verified source — peer-reviewed studies,
- * clinical guidelines, or, where labelled, lived-experience essays.
+ * clinical guidelines, or, where labeled, lived-experience essays.
  *
  * Editorial rules:
  *  - Information, not medical advice. Articles inform and link out; they never
@@ -54,7 +54,7 @@ export const LIBRARY: LibraryArticle[] = [
     tag: 'ME/CFS',
     title: 'Why “pushing through” backfires',
     body: 'In ME/CFS, overdoing it on a good day can trigger a delayed crash — post-exertional malaise (PEM) — that can last days. That’s why “push through it” so often makes things worse. In 2021 the UK’s NICE guideline stopped recommending graded exercise therapy (GET) for ME/CFS, and now advises staying within your energy limits rather than climbing a fixed exercise ladder.',
-    note: 'Important: any programme based on fixed, incremental exercise increases (GET) is no longer recommended for ME/CFS. Be cautious of older advice that still promotes it.',
+    note: 'Important: any program based on fixed, incremental exercise increases (GET) is no longer recommended for ME/CFS. Be cautious of older advice that still promotes it.',
     sources: [
       {
         label: 'NICE Guideline NG206 — ME/CFS: diagnosis and management (2021)',
@@ -117,7 +117,7 @@ export const LIBRARY: LibraryArticle[] = [
     tag: 'Autism',
     title: 'Autistic burnout is real',
     body: 'Autistic burnout is the deep, full-body exhaustion that builds from masking, sensory load, and a world that asks for more than your supports allow. It can bring brain fog, a temporary loss of skills, and heavier sensory overwhelm — and it is not laziness or “giving up.” What helps most isn’t pushing harder; it’s rest, lighter demands, and people who accept you without asking you to perform.',
-    note: 'Defined largely from autistic people’s own accounts — recognised in research, though still being formally studied.',
+    note: 'Defined largely from autistic people’s own accounts — recognized in research, though still being formally studied.',
     sources: [
       {
         label: 'Raymaker et al. (2020) — Defining Autistic Burnout. Autism in Adulthood.',
@@ -130,7 +130,7 @@ export const LIBRARY: LibraryArticle[] = [
     id: 'audhd',
     tag: 'AuDHD',
     title: 'When autism and ADHD travel together',
-    body: 'Autism and ADHD overlap far more often than people once assumed — ADHD is among the most common companions to autism, found in roughly a third of autistic people in clinical samples. (Clinicians weren’t even allowed to diagnose both together until 2013.) If you feel pulled between needing routine and craving novelty, you’re not contradictory or “doing it wrong” — that push–pull is a recognised part of being AuDHD.',
+    body: 'Autism and ADHD overlap far more often than people once assumed — ADHD is among the most common companions to autism, found in roughly a third of autistic people in clinical samples. (Clinicians weren’t even allowed to diagnose both together until 2013.) If you feel pulled between needing routine and craving novelty, you’re not contradictory or “doing it wrong” — that push–pull is a recognized part of being AuDHD.',
     sources: [
       {
         label:

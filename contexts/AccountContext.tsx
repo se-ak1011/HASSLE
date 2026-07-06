@@ -104,7 +104,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
         const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         if (res.type !== 'success' || !res.url) {
-          return { ok: false, error: 'Sign-in was cancelled.' };
+          return { ok: false, error: 'Sign-in was canceled.' };
         }
 
         // Establish the session from the redirect. Supports both the PKCE
