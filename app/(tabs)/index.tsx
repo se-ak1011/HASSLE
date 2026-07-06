@@ -27,6 +27,10 @@ import { formatShortDate } from '@/services/dates';
 import { CompletionModal } from '@/components/ui/CompletionModal';
 import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
+import { AssistantHero } from '@/components/ui/AssistantHero';
+import { ActionTile } from '@/components/ui/ActionTile';
+import { ObservationCard } from '@/components/ui/ObservationCard';
+import { SectionBlock } from '@/components/ui/SectionBlock';
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -475,61 +479,37 @@ export default function TodayScreen() {
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.assistantHero}>
-            <View style={styles.heroCopy}>
-              <Text style={[styles.heroKicker, { fontFamily: ff.medium }]}>Today, together.</Text>
-              <Text style={[styles.heroTitle, { fontFamily: ff.bold }]}>Morning.</Text>
-              <Text style={[styles.heroSentence, { fontFamily: ff.regular }]}>What would help today?</Text>
-            </View>
-            <Image source={Lola.sitting} style={styles.heroLola} resizeMode="contain" />
-          </View>
+          <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
 
           <View style={styles.actionGrid}>
-            <Pressable
-              style={({ pressed }) => [styles.actionCard, styles.actionCardPrimary, pressed && styles.cardPressed]}
+            <ActionTile
+              primary
+              title="Plan today"
+              body="A small shape for the day."
+              icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
               onPress={() => setShowCheckIn(true)}
-              accessibilityRole="button"
-            >
-              <MaterialIcons name="event-note" size={22} color={Colors.background} />
-              <Text style={[styles.actionTitle, styles.actionTitlePrimary, { fontFamily: ff.semibold }]}>Plan today</Text>
-              <Text style={[styles.actionBody, styles.actionBodyPrimary, { fontFamily: ff.regular }]}>A small shape for the day.</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            />
+            <ActionTile
+              title="I’m struggling"
+              body="This can be smaller."
+              icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
               onPress={() => setShowCheckIn(true)}
-              accessibilityRole="button"
-            >
-              <MaterialIcons name="bedtime" size={22} color={Colors.flare} />
-              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>I’m struggling</Text>
-              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>This can be smaller.</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            />
+            <ActionTile
+              title="Doctor report"
+              body="Preview appointment notes."
+              icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
               onPress={openReport}
-              accessibilityRole="button"
-            >
-              <MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />
-              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>Doctor report</Text>
-              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Preview appointment notes.</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            />
+            <ActionTile
+              title="What changed?"
+              body="Look for patterns, gently."
+              icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
               onPress={openPatterns}
-              accessibilityRole="button"
-            >
-              <MaterialIcons name="auto-graph" size={22} color={Colors.primary} />
-              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>What changed?</Text>
-              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Look for patterns, gently.</Text>
-            </Pressable>
+            />
           </View>
 
-          <View style={styles.observationCard}>
-            <Text style={[styles.observationLabel, { fontFamily: ff.medium }]}>Hassle remembers</Text>
-            <Text style={[styles.observationText, { fontFamily: ff.regular }]}>You can start with one useful thing. The details can wait.</Text>
-          </View>
+          <ObservationCard label="Hassle remembers" text="You can start with one useful thing. The details can wait." />
         </ScrollView>
       </View>
     );
@@ -617,70 +597,48 @@ export default function TodayScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Ambient assistant hero — Today, together */}
-        <View style={styles.assistantHero}>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.heroKicker, { fontFamily: ff.medium }]}>Today, together.</Text>
-            <Text style={[styles.heroTitle, { fontFamily: ff.bold }]}>
-              {prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
-            </Text>
-            <Text style={[styles.heroSentence, { fontFamily: ff.regular }]}>{heroSentence}</Text>
-            {day.isFlareDay ? (
+        <AssistantHero
+          title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
+          subtitle={heroSentence}
+          lola={heroImage}
+          badge={
+            day.isFlareDay ? (
               <View style={styles.flarePill}>
                 <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
               </View>
-            ) : null}
-          </View>
-          <Image source={heroImage} style={styles.heroLola} resizeMode="contain" />
-        </View>
+            ) : null
+          }
+        />
 
         <View style={styles.actionGrid}>
-          <Pressable
-            style={({ pressed }) => [styles.actionCard, styles.actionCardPrimary, pressed && styles.cardPressed]}
+          <ActionTile
+            primary
+            title="Plan today"
+            body="Add or choose one thing."
+            icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
             onPress={() => setShowAddModal(true)}
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="event-note" size={22} color={Colors.background} />
-            <Text style={[styles.actionTitle, styles.actionTitlePrimary, { fontFamily: ff.semibold }]}>Plan today</Text>
-            <Text style={[styles.actionBody, styles.actionBodyPrimary, { fontFamily: ff.regular }]}>Add or choose one thing.</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+          />
+          <ActionTile
+            title="I’m struggling"
+            body={day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
+            icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
             onPress={day.isFlareDay ? handleEndDay : () => toggleFlare(true)}
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="bedtime" size={22} color={Colors.flare} />
-            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>I’m struggling</Text>
-            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>
-              {day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+          />
+          <ActionTile
+            title="Doctor report"
+            body="Your 30-day summary."
+            icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
             onPress={openReport}
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />
-            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>Doctor report</Text>
-            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Your 30-day summary.</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+          />
+          <ActionTile
+            title="What changed?"
+            body="Hassle noticed…"
+            icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
             onPress={openPatterns}
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="auto-graph" size={22} color={Colors.primary} />
-            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>What changed?</Text>
-            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Hassle noticed…</Text>
-          </Pressable>
+          />
         </View>
 
-        <View style={styles.observationCard}>
-          <Text style={[styles.observationLabel, { fontFamily: ff.medium }]}>Hassle noticed</Text>
-          <Text style={[styles.observationText, { fontFamily: ff.regular }]}>{observationText}</Text>
-        </View>
+        <ObservationCard text={observationText} />
 
         {/* Tags */}
         {day.tags.length > 0 ? (
@@ -759,11 +717,7 @@ export default function TodayScreen() {
         ) : null}
 
         {/* Pending tasks */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Today&apos;s support</Text>
-            <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{pending.length}</Text>
-          </View>
+        <SectionBlock title="Today&apos;s support" count={pending.length}>
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
@@ -797,15 +751,11 @@ export default function TodayScreen() {
             <MaterialIcons name="add" size={20} color={Colors.primary} />
             <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add a task</Text>
           </Pressable>
-        </View>
+        </SectionBlock>
 
         {/* Done today */}
         {completed.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Done today</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{completed.length}</Text>
-            </View>
+          <SectionBlock title="Done today" count={completed.length}>
             <View style={styles.taskList}>
               {completed.map((task) => (
                 <TaskCard
@@ -817,16 +767,12 @@ export default function TodayScreen() {
                 />
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* Moved ahead */}
         {moved.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Moved ahead</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{moved.length}</Text>
-            </View>
+          <SectionBlock title="Moved ahead" count={moved.length}>
             <View style={styles.taskList}>
               {moved.map((task) => (
                 <TaskCard
@@ -839,16 +785,12 @@ export default function TodayScreen() {
                 />
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* Coming up — tasks rescheduled to a future day */}
         {upcoming.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Coming up</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{upcoming.length}</Text>
-            </View>
+          <SectionBlock title="Coming up" count={upcoming.length}>
             <View style={styles.taskList}>
               {upcoming.map((s) => (
                 <View key={s.task.id} style={styles.comingCard}>
@@ -872,7 +814,7 @@ export default function TodayScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* End day */}
@@ -1234,136 +1176,12 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: Spacing.xxxl,
   },
-  assistantHero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  heroCopy: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-  },
-  heroKicker: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSubtle,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  heroTitle: {
-    fontSize: FontSizes.xxl,
-    fontWeight: Fonts.bold,
-    color: Colors.text,
-    letterSpacing: -0.8,
-    lineHeight: 40,
-  },
-  heroSentence: {
-    fontSize: FontSizes.lg,
-    color: Colors.textMuted,
-    lineHeight: 30,
-  },
-  heroLola: {
-    width: 140,
-    height: 166,
-  },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
-  },
-  actionCard: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    minHeight: 132,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    justifyContent: 'space-between',
-  },
-  actionCardPrimary: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primaryLight,
-  },
-  cardPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.99 }],
-  },
-  actionTitle: {
-    fontSize: FontSizes.base,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    marginTop: Spacing.md,
-  },
-  actionTitlePrimary: {
-    color: Colors.background,
-  },
-  actionBody: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSubtle,
-    lineHeight: 20,
-    marginTop: Spacing.xs,
-  },
-  actionBodyPrimary: {
-    color: Colors.textSecondary,
-  },
-  observationCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    padding: Spacing.md,
-  },
-  observationLabel: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSubtle,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
-  },
-  observationText: {
-    fontSize: FontSizes.base,
-    color: Colors.textMuted,
-    lineHeight: 25,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  headerTextCol: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-  },
-  greeting: {
-    fontSize: FontSizes.xl,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    letterSpacing: -0.3,
-    marginBottom: Spacing.xs,
-  },
-  headerText: {
-    fontSize: FontSizes.lg,
-    fontWeight: Fonts.semibold,
-    color: Colors.textSubtle,
-    fontStyle: 'italic',
-    lineHeight: 28,
-  },
-  lolaSide: {
-    width: 112,
-    height: 132,
   },
   flarePill: {
     backgroundColor: Colors.flareFaint,
@@ -1450,31 +1268,6 @@ const styles = StyleSheet.create({
     color: Colors.flare,
     fontStyle: 'italic',
     lineHeight: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    letterSpacing: -0.2,
-  },
-  sectionCount: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSubtle,
-    fontWeight: Fonts.medium,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-    minWidth: 24,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   emptyState: {
     alignItems: 'center',
