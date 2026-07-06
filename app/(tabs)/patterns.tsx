@@ -19,6 +19,7 @@ import { loadHistory } from '@/services/storage';
 import { DayState, EnergyMode } from '@/constants/types';
 import { formatCost } from '@/services/formatCost';
 import { Lola } from '@/constants/lola';
+import { formatDateStringForRegion } from '@/services/regionFormat';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,12 +29,7 @@ function avg(nums: number[]): number {
 }
 
 function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch {
-    return dateStr;
-  }
+  return formatDateStringForRegion(dateStr, 'short');
 }
 
 interface ModeInsights {

@@ -7,11 +7,11 @@
  *  2. Apply a "faux bold" — the brand font ships a single (light) weight, so
  *     `fontWeight` has no effect. A same-color text shadow thickens the strokes
  *     for legibility on the dark UI, without changing size or layout. The shadow
- *     colour is taken from the element's own text colour so it reads as heavier
+ *     color is taken from the element's own text color so it reads as heavier
  *     ink rather than a glow.
  *
  * Defaults are applied first, so anything passed in `style` (a specific weight,
- * colour, or an explicit textShadow) still wins.
+ * color, or an explicit textShadow) still wins.
  */
 import React, { forwardRef } from 'react';
 import {

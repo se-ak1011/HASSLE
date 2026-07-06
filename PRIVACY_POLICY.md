@@ -43,7 +43,7 @@ health-related data, which you can withdraw at any time by signing out) and our
 **legitimate interests** in operating and securing the app.
 
 ## What we DON'T do
-No advertising or ad identifiers. No analytics SDKs or behavioural tracking. No
+No advertising or ad identifiers. No analytics SDKs or behavioral tracking. No
 data brokers. We never sell your data.
 
 ## Your rights & control

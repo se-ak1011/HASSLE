@@ -23,7 +23,7 @@ export default function CheckInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeCheckIn, prefs, addCustomTag } = useDay();
-  const { t } = useRegion();
+  const { config } = useRegion();
 
   const [mode, setMode] = useState<EnergyMode>(prefs?.energyMode ?? 'spoon');
   const [energyLevel, setEnergyLevel] = useState(mode === 'spoon' ? 6 : 50);
@@ -92,7 +92,7 @@ export default function CheckInScreen() {
             {prefs?.name ? `How are you today, ${prefs.name}?` : 'How are you today?'}
           </Text>
           <Text style={styles.subtitle}>
-            {t('checkin.noJudgement')}
+            {config.copy.noJudgment}
           </Text>
         </View>
 

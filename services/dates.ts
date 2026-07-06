@@ -15,11 +15,4 @@ export function addDays(n: number, from: Date = new Date()): string {
 }
 
 /** "Jun 27" style short label for a YYYY-MM-DD string. */
-export function formatShortDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  } catch {
-    return dateStr;
-  }
-}
+export { formatDateStringForRegion as formatShortDate } from '@/services/regionFormat';
