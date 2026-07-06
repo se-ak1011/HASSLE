@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
@@ -24,8 +25,12 @@ import { AddTaskModal } from '@/components/ui/AddTaskModal';
 import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
 import { formatShortDate } from '@/services/dates';
 import { CompletionModal } from '@/components/ui/CompletionModal';
-import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES, dedupeCustomTags } from '@/constants/types';
+import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
+import { AssistantHero } from '@/components/ui/AssistantHero';
+import { ActionTile } from '@/components/ui/ActionTile';
+import { ObservationCard } from '@/components/ui/ObservationCard';
+import { SectionBlock } from '@/components/ui/SectionBlock';
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -418,6 +423,7 @@ function CheckInView() {
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
   const {
@@ -435,6 +441,7 @@ export default function TodayScreen() {
   } = useDay();
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCheckIn, setShowCheckIn] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -449,10 +456,61 @@ export default function TodayScreen() {
     ]).start(() => setFeedbackMsg(null));
   }, [feedbackMsg]);
 
+  function openReport() {
+    router.push('/report' as any);
+  }
+
+  function openPatterns() {
+    router.push('/(tabs)/patterns' as any);
+  }
+
   if (!day || !day.checkedIn) {
+    if (showCheckIn) {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <CheckInView />
+        </View>
+      );
+    }
+
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <CheckInView />
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
+
+          <View style={styles.actionGrid}>
+            <ActionTile
+              primary
+              title="Plan today"
+              body="A small shape for the day."
+              icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
+              onPress={() => setShowCheckIn(true)}
+            />
+            <ActionTile
+              title="I’m struggling"
+              body="This can be smaller."
+              icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
+              onPress={() => setShowCheckIn(true)}
+            />
+            <ActionTile
+              title="Doctor report"
+              body="Preview appointment notes."
+              icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
+              onPress={openReport}
+            />
+            <ActionTile
+              title="What changed?"
+              body="Look for patterns, gently."
+              icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
+              onPress={openPatterns}
+            />
+          </View>
+
+          <ObservationCard label="Hassle remembers" text="You can start with one useful thing. The details can wait." />
+        </ScrollView>
       </View>
     );
   }
@@ -467,6 +525,23 @@ export default function TodayScreen() {
   const upcoming = scheduledTasks
     .filter((s) => !movedIds.has(s.task.id))
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
+
+  const isLowEnergy = energyRemaining <= 20;
+  const heroImage = day.isFlareDay || isLowEnergy ? Lola.xeyes : Lola.standing;
+  const heroSentence = day.isFlareDay
+    ? 'Let’s protect your energy.'
+    : isLowEnergy
+    ? 'Today can be smaller.'
+    : 'What would help today?';
+  const observationText = day.isFlareDay
+    ? 'Move one thing if you need to. That is still care.'
+    : moved.length > 0
+    ? 'You have already moved something out of today. That counts as planning.'
+    : pending.length === 0
+    ? 'Nothing urgent is waiting here.'
+    : pending.length === 1
+    ? 'There is one thing left. It can stay small.'
+    : `${pending.length} things are waiting. You only have to choose the next one.`;
 
   function handleCompletePress(task: Task) {
     setPendingCompletion(task);
@@ -521,28 +596,49 @@ export default function TodayScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header — quote on the left, Lola alongside on the right */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerTextCol}>
-            {prefs?.name ? (
-              <Text style={[styles.greeting, { fontFamily: ff.semibold }]}>Hi, {prefs.name}</Text>
-            ) : null}
-            <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
-              {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
-            </Text>
-            {day.isFlareDay ? (
+        {/* Ambient assistant hero — Today, together */}
+        <AssistantHero
+          title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
+          subtitle={heroSentence}
+          lola={heroImage}
+          badge={
+            day.isFlareDay ? (
               <View style={styles.flarePill}>
                 <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
               </View>
-            ) : null}
-          </View>
-          {/* Lola — looks worse the more drained you are, or on a flare day */}
-          <Image
-            source={day.isFlareDay || energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
-            style={styles.lolaSide}
-            resizeMode="contain"
+            ) : null
+          }
+        />
+
+        <View style={styles.actionGrid}>
+          <ActionTile
+            primary
+            title="Plan today"
+            body="Add or choose one thing."
+            icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
+            onPress={() => setShowAddModal(true)}
+          />
+          <ActionTile
+            title="I’m struggling"
+            body={day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
+            icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
+            onPress={day.isFlareDay ? handleEndDay : () => toggleFlare(true)}
+          />
+          <ActionTile
+            title="Doctor report"
+            body="Your 30-day summary."
+            icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
+            onPress={openReport}
+          />
+          <ActionTile
+            title="What changed?"
+            body="Hassle noticed…"
+            icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
+            onPress={openPatterns}
           />
         </View>
+
+        <ObservationCard text={observationText} />
 
         {/* Tags */}
         {day.tags.length > 0 ? (
@@ -615,24 +711,20 @@ export default function TodayScreen() {
         {day.isFlareDay ? (
           <View style={styles.flareMsgSection}>
             <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-              Be gentle with yourself today. This is enough.
+              That’s enough for today.
             </Text>
           </View>
         ) : null}
 
         {/* Pending tasks */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Today&apos;s tasks</Text>
-            <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{pending.length}</Text>
-          </View>
+        <SectionBlock title="Today&apos;s support" count={pending.length}>
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🌱</Text>
               <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>Nothing on your list yet.</Text>
               <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                Add only what you can realistically do today.
+                Nothing urgent. Add only what would help.
               </Text>
             </View>
           ) : (
@@ -659,15 +751,11 @@ export default function TodayScreen() {
             <MaterialIcons name="add" size={20} color={Colors.primary} />
             <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add a task</Text>
           </Pressable>
-        </View>
+        </SectionBlock>
 
         {/* Done today */}
         {completed.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Done today</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{completed.length}</Text>
-            </View>
+          <SectionBlock title="Done today" count={completed.length}>
             <View style={styles.taskList}>
               {completed.map((task) => (
                 <TaskCard
@@ -679,16 +767,12 @@ export default function TodayScreen() {
                 />
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* Moved ahead */}
         {moved.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Moved ahead</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{moved.length}</Text>
-            </View>
+          <SectionBlock title="Moved ahead" count={moved.length}>
             <View style={styles.taskList}>
               {moved.map((task) => (
                 <TaskCard
@@ -701,16 +785,12 @@ export default function TodayScreen() {
                 />
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* Coming up — tasks rescheduled to a future day */}
         {upcoming.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Coming up</Text>
-              <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{upcoming.length}</Text>
-            </View>
+          <SectionBlock title="Coming up" count={upcoming.length}>
             <View style={styles.taskList}>
               {upcoming.map((s) => (
                 <View key={s.task.id} style={styles.comingCard}>
@@ -734,7 +814,7 @@ export default function TodayScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </SectionBlock>
         ) : null}
 
         {/* End day */}
@@ -1096,36 +1176,12 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: Spacing.xxxl,
   },
-  headerRow: {
+  actionGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  headerTextCol: {
-    flex: 1,
-    alignItems: 'flex-start',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
-  },
-  greeting: {
-    fontSize: FontSizes.xl,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    letterSpacing: -0.3,
-    marginBottom: Spacing.xs,
-  },
-  headerText: {
-    fontSize: FontSizes.lg,
-    fontWeight: Fonts.semibold,
-    color: Colors.textSubtle,
-    fontStyle: 'italic',
-    lineHeight: 28,
-  },
-  lolaSide: {
-    width: 112,
-    height: 132,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   flarePill: {
     backgroundColor: Colors.flareFaint,
@@ -1212,31 +1268,6 @@ const styles = StyleSheet.create({
     color: Colors.flare,
     fontStyle: 'italic',
     lineHeight: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    letterSpacing: -0.2,
-  },
-  sectionCount: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSubtle,
-    fontWeight: Fonts.medium,
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-    minWidth: 24,
-    textAlign: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   emptyState: {
     alignItems: 'center',
