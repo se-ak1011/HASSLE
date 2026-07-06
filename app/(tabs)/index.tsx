@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
@@ -24,7 +25,7 @@ import { AddTaskModal } from '@/components/ui/AddTaskModal';
 import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
 import { formatShortDate } from '@/services/dates';
 import { CompletionModal } from '@/components/ui/CompletionModal';
-import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, HEADER_QUOTES, dedupeCustomTags } from '@/constants/types';
+import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
@@ -418,6 +419,7 @@ function CheckInView() {
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
   const {
@@ -435,6 +437,7 @@ export default function TodayScreen() {
   } = useDay();
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCheckIn, setShowCheckIn] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -449,10 +452,85 @@ export default function TodayScreen() {
     ]).start(() => setFeedbackMsg(null));
   }, [feedbackMsg]);
 
+  function openReport() {
+    router.push('/report' as any);
+  }
+
+  function openPatterns() {
+    router.push('/(tabs)/patterns' as any);
+  }
+
   if (!day || !day.checkedIn) {
+    if (showCheckIn) {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <CheckInView />
+        </View>
+      );
+    }
+
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <CheckInView />
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.assistantHero}>
+            <View style={styles.heroCopy}>
+              <Text style={[styles.heroKicker, { fontFamily: ff.medium }]}>Today, together.</Text>
+              <Text style={[styles.heroTitle, { fontFamily: ff.bold }]}>Morning.</Text>
+              <Text style={[styles.heroSentence, { fontFamily: ff.regular }]}>What would help today?</Text>
+            </View>
+            <Image source={Lola.sitting} style={styles.heroLola} resizeMode="contain" />
+          </View>
+
+          <View style={styles.actionGrid}>
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, styles.actionCardPrimary, pressed && styles.cardPressed]}
+              onPress={() => setShowCheckIn(true)}
+              accessibilityRole="button"
+            >
+              <MaterialIcons name="event-note" size={22} color={Colors.background} />
+              <Text style={[styles.actionTitle, styles.actionTitlePrimary, { fontFamily: ff.semibold }]}>Plan today</Text>
+              <Text style={[styles.actionBody, styles.actionBodyPrimary, { fontFamily: ff.regular }]}>A small shape for the day.</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+              onPress={() => setShowCheckIn(true)}
+              accessibilityRole="button"
+            >
+              <MaterialIcons name="bedtime" size={22} color={Colors.flare} />
+              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>I’m struggling</Text>
+              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>This can be smaller.</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+              onPress={openReport}
+              accessibilityRole="button"
+            >
+              <MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />
+              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>Doctor report</Text>
+              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Preview appointment notes.</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+              onPress={openPatterns}
+              accessibilityRole="button"
+            >
+              <MaterialIcons name="auto-graph" size={22} color={Colors.primary} />
+              <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>What changed?</Text>
+              <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Look for patterns, gently.</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.observationCard}>
+            <Text style={[styles.observationLabel, { fontFamily: ff.medium }]}>Hassle remembers</Text>
+            <Text style={[styles.observationText, { fontFamily: ff.regular }]}>You can start with one useful thing. The details can wait.</Text>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -467,6 +545,23 @@ export default function TodayScreen() {
   const upcoming = scheduledTasks
     .filter((s) => !movedIds.has(s.task.id))
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
+
+  const isLowEnergy = energyRemaining <= 20;
+  const heroImage = day.isFlareDay || isLowEnergy ? Lola.xeyes : Lola.standing;
+  const heroSentence = day.isFlareDay
+    ? 'Let’s protect your energy.'
+    : isLowEnergy
+    ? 'Today can be smaller.'
+    : 'What would help today?';
+  const observationText = day.isFlareDay
+    ? 'Move one thing if you need to. That is still care.'
+    : moved.length > 0
+    ? 'You have already moved something out of today. That counts as planning.'
+    : pending.length === 0
+    ? 'Nothing urgent is waiting here.'
+    : pending.length === 1
+    ? 'There is one thing left. It can stay small.'
+    : `${pending.length} things are waiting. You only have to choose the next one.`;
 
   function handleCompletePress(task: Task) {
     setPendingCompletion(task);
@@ -521,27 +616,70 @@ export default function TodayScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header — quote on the left, Lola alongside on the right */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerTextCol}>
-            {prefs?.name ? (
-              <Text style={[styles.greeting, { fontFamily: ff.semibold }]}>Hi, {prefs.name}</Text>
-            ) : null}
-            <Text style={[styles.headerText, { fontFamily: ff.regular }]}>
-              {HEADER_QUOTES[new Date().getDate() % HEADER_QUOTES.length]}
+        {/* Ambient assistant hero — Today, together */}
+        <View style={styles.assistantHero}>
+          <View style={styles.heroCopy}>
+            <Text style={[styles.heroKicker, { fontFamily: ff.medium }]}>Today, together.</Text>
+            <Text style={[styles.heroTitle, { fontFamily: ff.bold }]}>
+              {prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
             </Text>
+            <Text style={[styles.heroSentence, { fontFamily: ff.regular }]}>{heroSentence}</Text>
             {day.isFlareDay ? (
               <View style={styles.flarePill}>
                 <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
               </View>
             ) : null}
           </View>
-          {/* Lola — looks worse the more drained you are, or on a flare day */}
-          <Image
-            source={day.isFlareDay || energyRemaining <= 20 ? Lola.xeyes : Lola.standing}
-            style={styles.lolaSide}
-            resizeMode="contain"
-          />
+          <Image source={heroImage} style={styles.heroLola} resizeMode="contain" />
+        </View>
+
+        <View style={styles.actionGrid}>
+          <Pressable
+            style={({ pressed }) => [styles.actionCard, styles.actionCardPrimary, pressed && styles.cardPressed]}
+            onPress={() => setShowAddModal(true)}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="event-note" size={22} color={Colors.background} />
+            <Text style={[styles.actionTitle, styles.actionTitlePrimary, { fontFamily: ff.semibold }]}>Plan today</Text>
+            <Text style={[styles.actionBody, styles.actionBodyPrimary, { fontFamily: ff.regular }]}>Add or choose one thing.</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            onPress={day.isFlareDay ? handleEndDay : () => toggleFlare(true)}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="bedtime" size={22} color={Colors.flare} />
+            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>I’m struggling</Text>
+            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>
+              {day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            onPress={openReport}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />
+            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>Doctor report</Text>
+            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Your 30-day summary.</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionCard, pressed && styles.cardPressed]}
+            onPress={openPatterns}
+            accessibilityRole="button"
+          >
+            <MaterialIcons name="auto-graph" size={22} color={Colors.primary} />
+            <Text style={[styles.actionTitle, { fontFamily: ff.semibold }]}>What changed?</Text>
+            <Text style={[styles.actionBody, { fontFamily: ff.regular }]}>Hassle noticed…</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.observationCard}>
+          <Text style={[styles.observationLabel, { fontFamily: ff.medium }]}>Hassle noticed</Text>
+          <Text style={[styles.observationText, { fontFamily: ff.regular }]}>{observationText}</Text>
         </View>
 
         {/* Tags */}
@@ -615,7 +753,7 @@ export default function TodayScreen() {
         {day.isFlareDay ? (
           <View style={styles.flareMsgSection}>
             <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-              Be gentle with yourself today. This is enough.
+              That’s enough for today.
             </Text>
           </View>
         ) : null}
@@ -623,7 +761,7 @@ export default function TodayScreen() {
         {/* Pending tasks */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Today&apos;s tasks</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Today&apos;s support</Text>
             <Text style={[styles.sectionCount, { fontFamily: ff.medium }]}>{pending.length}</Text>
           </View>
 
@@ -632,7 +770,7 @@ export default function TodayScreen() {
               <Text style={styles.emptyIcon}>🌱</Text>
               <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>Nothing on your list yet.</Text>
               <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                Add only what you can realistically do today.
+                Nothing urgent. Add only what would help.
               </Text>
             </View>
           ) : (
@@ -1095,6 +1233,106 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingBottom: Spacing.xxxl,
+  },
+  assistantHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  heroCopy: {
+    flex: 1,
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  heroKicker: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+  },
+  heroTitle: {
+    fontSize: FontSizes.xxl,
+    fontWeight: Fonts.bold,
+    color: Colors.text,
+    letterSpacing: -0.8,
+    lineHeight: 40,
+  },
+  heroSentence: {
+    fontSize: FontSizes.lg,
+    color: Colors.textMuted,
+    lineHeight: 30,
+  },
+  heroLola: {
+    width: 140,
+    height: 166,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  actionCard: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minHeight: 132,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    justifyContent: 'space-between',
+  },
+  actionCardPrimary: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primaryLight,
+  },
+  cardPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.99 }],
+  },
+  actionTitle: {
+    fontSize: FontSizes.base,
+    fontWeight: Fonts.semibold,
+    color: Colors.text,
+    marginTop: Spacing.md,
+  },
+  actionTitlePrimary: {
+    color: Colors.background,
+  },
+  actionBody: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+    lineHeight: 20,
+    marginTop: Spacing.xs,
+  },
+  actionBodyPrimary: {
+    color: Colors.textSecondary,
+  },
+  observationCard: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    padding: Spacing.md,
+  },
+  observationLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
+  },
+  observationText: {
+    fontSize: FontSizes.base,
+    color: Colors.textMuted,
+    lineHeight: 25,
   },
   headerRow: {
     flexDirection: 'row',
