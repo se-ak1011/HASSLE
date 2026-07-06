@@ -561,7 +561,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
       );
       if (allExisting.includes(tag.toLowerCase())) return false;
       const updated: UserPreferences = {
-        ...(prefs ?? { energyMode: 'spoon', taskDefaults: {}, customTags: [] }),
+        ...(prefs ?? DEFAULT_PREFERENCES),
         customTags: [...currentCustom, tag],
       };
       setPrefs(updated);
@@ -585,7 +585,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
       }
       if (toAdd.length === 0) return 0;
       const updated: UserPreferences = {
-        ...(prefs ?? { energyMode: 'spoon', taskDefaults: {}, customTags: [] }),
+        ...(prefs ?? DEFAULT_PREFERENCES),
         customTags: [...currentCustom, ...toAdd],
       };
       setPrefs(updated);

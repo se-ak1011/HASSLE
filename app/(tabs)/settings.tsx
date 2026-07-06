@@ -546,7 +546,7 @@ export default function SettingsScreen() {
           <View style={styles.infoDivider} />
           <Pressable
             style={({ pressed }) => [styles.accountRow, pressed ? styles.rowPressed : null]}
-            onPress={() => router.push('/account')}
+            onPress={() => router.push('/account' as any)}
             accessibilityRole="button"
           >
             <MaterialIcons name="sync" size={18} color={Colors.primary} />

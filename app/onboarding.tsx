@@ -5,10 +5,12 @@
  * Shown once, then never again.
  *
  * Step 1: Welcome
- * Step 2: Name (optional)
- * Step 3: Pick default daily tasks (multi-select, tap only)
- * Step 4: Enable reminders (optional)
- * Step 5: All set
+ * Step 2: Region
+ * Step 3: Name (optional)
+ * Step 4: Conditions (optional)
+ * Step 5: Pick default daily tasks (multi-select, tap only)
+ * Step 6: Enable reminders (optional)
+ * Step 7: All set
  *
  * Only the name is typed, and it's fully optional/skippable.
  * Designed for low-energy, brain fog, and ADHD users.
@@ -40,13 +42,16 @@ import {
 } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 import { scheduleReminders } from '@/services/notificationService';
+import { useRegion } from '@/localization/RegionContext';
+import { REGIONS } from '@/localization/region';
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
   const { completeOnboarding } = useDay();
+  const { region, setRegion } = useRegion();
 
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -133,7 +138,7 @@ export default function OnboardingScreen() {
         </Text>
         <Text style={[styles.stepBody, { fontFamily: ff.regular }]}>
           I&apos;ll help you track your energy, symptoms, and the things that take more out of you
-          than people realise.
+          than people realize.
         </Text>
         <Text style={[styles.stepBody, styles.stepBodyCalm, { fontFamily: ff.regular }]}>
           Everything here is optional, and you can change it later.
@@ -149,7 +154,66 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 2: Name (optional) ────────────────────────────────────────────────
+
+  // ── Step 2: Region ─────────────────────────────────────────────────────────
+
+  function StepRegion() {
+    return (
+      <View style={styles.stepContent}>
+        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Where are you based?</Text>
+        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>This sets spelling, dates, and price display. Hassle defaults to United States if you skip.</Text>
+
+        <View style={styles.freqBlock}>
+          {REGIONS.map((r) => {
+            const selected = region === r.code;
+            return (
+              <Pressable
+                key={r.code}
+                style={({ pressed }) => [
+                  styles.freqOption,
+                  selected && styles.freqOptionSelected,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setRegion(r.code)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+              >
+                <View style={styles.freqOptionInner}>
+                  <View style={[styles.freqRadio, selected && styles.freqRadioSelected]} />
+                  <View style={styles.freqOptionText}>
+                    <Text
+                      style={[
+                        styles.freqOptionTitle,
+                        selected && styles.freqOptionTitleSelected,
+                        { fontFamily: ff.medium },
+                      ]}
+                    >
+                      {r.flag} {r.label}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.navRow}>
+          <Pressable style={styles.backBtn} onPress={prevStep}>
+            <MaterialIcons name="arrow-back" size={18} color={Colors.textMuted} />
+            <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
+            onPress={nextStep}
+          >
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Step 3: Name (optional) ────────────────────────────────────────────────
 
   function StepName() {
     const hasName = name.trim().length > 0;
@@ -193,7 +257,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 3: Conditions (optional) ──────────────────────────────────────────
+  // ── Step 4: Conditions (optional) ──────────────────────────────────────────
 
   function StepConditions() {
     return (
@@ -269,7 +333,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 4: Default daily tasks ────────────────────────────────────────────
+  // ── Step 5: Default daily tasks ────────────────────────────────────────────
 
   function StepDefaultTasks() {
     return (
@@ -346,7 +410,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 5: Reminders ──────────────────────────────────────────────────────
+  // ── Step 6: Reminders ──────────────────────────────────────────────────────
 
   const FREQ_OPTIONS: { value: Exclude<ReminderFrequency, 'off'>; desc: string }[] = [
     { value: 'low', desc: 'A gentle evening wind-down (7:30pm)' },
@@ -446,7 +510,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  // ── Step 6: All set ────────────────────────────────────────────────────────
+  // ── Step 7: All set ────────────────────────────────────────────────────────
 
   function StepAllSet() {
     return (
@@ -517,11 +581,12 @@ export default function OnboardingScreen() {
             as a new component every keystroke — which would remount the TextInput
             and drop keyboard focus after each letter. */}
         {step === 1 ? StepWelcome() : null}
-        {step === 2 ? StepName() : null}
-        {step === 3 ? StepConditions() : null}
-        {step === 4 ? StepDefaultTasks() : null}
-        {step === 5 ? StepReminders() : null}
-        {step === 6 ? StepAllSet() : null}
+        {step === 2 ? StepRegion() : null}
+        {step === 3 ? StepName() : null}
+        {step === 4 ? StepConditions() : null}
+        {step === 5 ? StepDefaultTasks() : null}
+        {step === 6 ? StepReminders() : null}
+        {step === 7 ? StepAllSet() : null}
       </ScrollView>
     </View>
   );

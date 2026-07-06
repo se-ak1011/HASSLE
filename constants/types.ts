@@ -160,7 +160,7 @@ export const PREMADE_TASKS: { name: string; baseCost: number; category: string }
   { name: 'Make a snack', baseCost: 1, category: 'Nourishment' },
   { name: 'Wash dishes', baseCost: 3, category: 'Home' },
   { name: 'Fold laundry', baseCost: 2, category: 'Home' },
-  { name: 'School run', baseCost: 4, category: 'Responsibilities' },
+  { name: 'School drop-off', baseCost: 4, category: 'Responsibilities' },
   { name: 'Answer emails', baseCost: 3, category: 'Work' },
   { name: 'Phone call', baseCost: 3, category: 'Social' },
   { name: 'Go outside', baseCost: 3, category: 'Movement' },

@@ -17,9 +17,9 @@ export default function EntryScreen() {
   useEffect(() => {
     if (isLoading) return;
     if (!prefs?.hasCompletedOnboarding) {
-      router.replace('/onboarding');
+      router.replace('/onboarding' as any);
     } else {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)' as any);
     }
   }, [isLoading, prefs?.hasCompletedOnboarding]);
 

@@ -7,6 +7,7 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAccount, AccountMode, AuthProvider } from '@/contexts/AccountContext';
+import { formatDateTimeForRegion } from '@/services/regionFormat';
 
 interface OptionMeta {
   key: AccountMode;
@@ -82,12 +83,7 @@ export default function AccountScreen() {
 
   const lastSyncedLabel =
     lastSyncedAt != null
-      ? new Date(lastSyncedAt).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        })
+      ? formatDateTimeForRegion(new Date(lastSyncedAt))
       : 'Not synced yet — tap Sync now';
 
   return (

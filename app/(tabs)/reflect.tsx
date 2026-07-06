@@ -20,6 +20,7 @@ import { loadHistory } from '@/services/storage';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { DayState } from '@/constants/types';
 import { Lola } from '@/constants/lola';
+import { formatDateStringForRegion } from '@/services/regionFormat';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -304,16 +305,7 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
   const remaining = Math.max(0, pastDay.energyLevel - used);
 
   function formatDate(dateStr: string): string {
-    try {
-      const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString(undefined, {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
+    return formatDateStringForRegion(dateStr, 'long');
   }
 
   return (

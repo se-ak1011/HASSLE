@@ -32,7 +32,7 @@ secure. You can sign out at any time, and request deletion of your synced data
 The core app is free. Hassle Plus is an optional auto-renewing subscription:
 - Billing is handled by **Apple (App Store)** or **Google (Play)** — not by us.
 - Price and any free trial are shown in the app before you purchase.
-- Subscriptions renew automatically unless cancelled at least 24 hours before the
+- Subscriptions renew automatically unless canceled at least 24 hours before the
   end of the current period. Manage or cancel in your App Store / Play account
   settings.
 - Except where the law requires, payments are non-refundable; refunds are handled

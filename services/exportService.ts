@@ -13,6 +13,8 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { loadHistory } from '@/services/storage';
 import { DayState, EnergyMode } from '@/constants/types';
+import { formatDateRangeForRegion, formatDateStringForRegion, formatDateForRegion } from '@/services/regionFormat';
+import { getActiveRegionConfig } from '@/localization/RegionContext';
 
 // ─── Date Helpers ─────────────────────────────────────────────────────────────
 
@@ -26,27 +28,11 @@ function getDateString(daysAgo: number): string {
 }
 
 function formatDateReadable(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
+  return formatDateStringForRegion(dateStr, 'short');
 }
 
 function formatDateRange(startStr: string, endStr: string): string {
-  try {
-    const start = new Date(startStr + 'T00:00:00');
-    const end = new Date(endStr + 'T00:00:00');
-    const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' };
-    return `${start.toLocaleDateString(undefined, opts)} — ${end.toLocaleDateString(undefined, opts)}`;
-  } catch {
-    return `${startStr} — ${endStr}`;
-  }
+  return formatDateRangeForRegion(startStr, endStr);
 }
 
 // ─── Unit Formatting ──────────────────────────────────────────────────────────
@@ -224,16 +210,12 @@ function buildHTML(stats: WeeklyStats): string {
           .join('')
       : '<li class="none">No tags recorded</li>';
 
-  const generatedDate = new Date().toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const generatedDate = formatDateForRegion(new Date(), 'medium');
 
   const unitLabel = dominantMode === 'battery' ? '%' : 'spoons';
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${getActiveRegionConfig().locale}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -634,12 +616,7 @@ function buildClinicalHTML(
   daysBack: number
 ): string {
   const mode = stats.dominantMode;
-  const generated = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const generated = formatDateForRegion(new Date(), 'long');
   const flarePct =
     stats.days.length > 0
       ? Math.round((stats.totalFlareDays / stats.days.length) * 100)
@@ -701,7 +678,7 @@ function buildClinicalHTML(
     : '';
 
   return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" />
+<html lang="${getActiveRegionConfig().locale}"><head><meta charset="utf-8" />
 <style>
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #2a2333; margin: 0; padding: 36px 40px; }

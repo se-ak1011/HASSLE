@@ -6,7 +6,8 @@ import { Colors, Spacing, FontSizes, Fonts, Radius, Shadow } from '@/constants/t
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { usePlus } from '@/contexts/PlusContext';
 import { billing } from '@/services/billing';
-import { PLUS_PRICE_LABEL, PLUS_PRICE_USD, PLUS_TRIAL_DAYS } from '@/constants/pricing';
+import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
+import { useRegion } from '@/localization/RegionContext';
 
 interface Props {
   visible: boolean;
@@ -42,6 +43,7 @@ const BENEFITS: Benefit[] = [
 export function PaywallModal({ visible, onClose }: Props) {
   const ff = useFontFamily();
   const { isPlus, unlock, restore } = usePlus();
+  const { config } = useRegion();
   const [busy, setBusy] = useState(false);
 
   async function handleUnlock() {
@@ -139,7 +141,7 @@ export function PaywallModal({ visible, onClose }: Props) {
                   )}
                 </Pressable>
                 <Text style={[styles.priceNote, { fontFamily: ff.regular }]}>
-                  {PLUS_TRIAL_DAYS} days free, then {PLUS_PRICE_LABEL} (≈ {PLUS_PRICE_USD}). Cancel
+                  {PLUS_TRIAL_DAYS} days free, then {config.currency.plusPriceLabel}. Cancel
                   anytime. A hardship option will always exist.
                 </Text>
                 <Pressable onPress={handleRestore} disabled={busy} hitSlop={8}>
