@@ -6,10 +6,9 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { Text } from '@/components/ui/AppText';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
@@ -20,6 +19,11 @@ import { DayState, EnergyMode } from '@/constants/types';
 import { formatCost } from '@/services/formatCost';
 import { Lola } from '@/constants/lola';
 import { formatDateStringForRegion } from '@/services/regionFormat';
+import { AssistantHero } from '@/components/ui/AssistantHero';
+import { ObservationCard } from '@/components/ui/ObservationCard';
+import { SectionBlock } from '@/components/ui/SectionBlock';
+import { ActionTile } from '@/components/ui/ActionTile';
+import { EmptyState } from '@/components/ui/primitives/EmptyState';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +44,79 @@ interface ModeInsights {
   flareDays: number;
   topTask: { name: string; avgCost: number } | null;
   commonTags: { tag: string; count: number }[];
+}
+
+
+type Observation = {
+  text: string;
+  confidenceLabel?: string;
+  actionLabel?: string;
+  onPress?: () => void;
+};
+
+function buildObservationCards(
+  allDays: DayState[],
+  insightsByMode: ModeInsights[],
+  onOpenReport: () => void
+): Observation[] {
+  const observations: Observation[] = [];
+  const days = allDays.slice(0, 30);
+  const totalDays = days.length;
+  const flareDays = days.filter((d) => d.isFlareDay).length;
+  const movedCount = days.flatMap((d) => d.tasks).filter((t) => t.status === 'moved').length;
+  const commonTag = insightsByMode
+    .flatMap((insights) => insights.commonTags)
+    .sort((a, b) => b.count - a.count)[0];
+  const topTask = insightsByMode
+    .map((insights) => insights.topTask ? { ...insights.topTask, mode: insights.mode } : null)
+    .filter((task): task is { name: string; avgCost: number; mode: EnergyMode } => task !== null)
+    .sort((a, b) => b.avgCost - a.avgCost)[0];
+
+  if (topTask) {
+    observations.push({
+      text: `${topTask.name} seems to be one of your heavier tasks lately. It may be worth making it smaller.`,
+      confidenceLabel: 'task pattern',
+    });
+  }
+
+  if (commonTag && commonTag.count >= 2) {
+    observations.push({
+      text: `${commonTag.tag} has shown up often in your recent history. Hassle will keep holding that context for you.`,
+      confidenceLabel: 'recent tag',
+    });
+  }
+
+  if (movedCount >= 2) {
+    observations.push({
+      text: `You moved tasks forward ${movedCount} times recently. A smaller plan may help.`,
+      confidenceLabel: 'task friction',
+    });
+  }
+
+  if (flareDays > 0) {
+    observations.push({
+      text: `${flareDays} ${flareDays === 1 ? 'day has' : 'days have'} been marked as flare ${flareDays === 1 ? 'time' : 'times'} recently. That may be useful context for pacing.`,
+      confidenceLabel: 'flare context',
+    });
+  }
+
+  if (totalDays >= 7) {
+    observations.push({
+      text: 'You have enough recent history for a useful doctor report.',
+      confidenceLabel: 'report ready',
+      actionLabel: 'Preview doctor report',
+      onPress: onOpenReport,
+    });
+  }
+
+  if (observations.length === 0 && totalDays > 0) {
+    observations.push({
+      text: 'A few details are here already. Hassle needs a little more time before naming patterns.',
+      confidenceLabel: 'early signal',
+    });
+  }
+
+  return observations.slice(0, 4);
 }
 
 function buildInsights(days: DayState[], mode: EnergyMode): ModeInsights {
@@ -387,6 +464,7 @@ const sectionStyles = StyleSheet.create({
 
 export default function PatternsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { day } = useDay();
   const ff = useFontFamily();
 
@@ -412,12 +490,6 @@ export default function PatternsScreen() {
   const doneCount = day?.tasks.filter((t) => t.status === 'completed').length ?? 0;
   useEffect(() => {
     reload();
-    // The error message "Definition for rule 'react-hooks/exhaustive-deps' was not found."
-    // indicates an ESLint configuration issue, not a TypeScript syntax error.
-    // To fix this, we should remove the ESLint directive that attempts to disable
-    // a rule that doesn't exist or isn't configured, as it's causing the linter itself to complain.
-    // The dependency array itself is correct, as 'reload' is stable and 'taskCount' and 'doneCount'
-    // are indeed dependencies.
   }, [taskCount, doneCount, reload]);
 
   const batteryDays = history.filter((d) => d.energyMode === 'battery');
@@ -426,6 +498,12 @@ export default function PatternsScreen() {
 
   const batteryInsights = buildInsights(history, 'battery');
   const spoonInsights = buildInsights(history, 'spoon');
+
+  function openReport() {
+    router.push('/report' as any);
+  }
+
+  const observations = buildObservationCards(history, [spoonInsights, batteryInsights], openReport);
 
   // Today at a glance — always live from context
   const flareDay = day?.isFlareDay ?? false;
@@ -439,11 +517,95 @@ export default function PatternsScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { fontFamily: ff.bold }]}>Patterns</Text>
-          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Your history, kept honestly.</Text>
-        </View>
+        <AssistantHero
+          title="Hassle noticed…"
+          subtitle="Small patterns, no judgment."
+          lola={Lola.books}
+        />
+
+        {/* History insights */}
+        <SectionBlock
+          title="Hassle noticed"
+          action={
+            <Pressable
+              onPress={reload}
+              style={({ pressed }) => [
+                styles.refreshBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh insights"
+            >
+              <MaterialIcons name="refresh" size={18} color={Colors.textSubtle} />
+            </Pressable>
+          }
+        >
+          {loading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator color={Colors.primary} size="small" />
+              <Text style={[styles.loadingText, { fontFamily: ff.regular }]}>Loading history…</Text>
+            </View>
+          ) : history.length === 0 ? (
+            <EmptyState
+              lola={Lola.shrug}
+              title="I need a few days to notice patterns."
+              body="No pressure. Just use Hassle when it helps."
+            />
+          ) : (
+            <>
+              <View style={styles.observationStack}>
+                {observations.map((observation) => (
+                  <ObservationCard
+                    key={`${observation.confidenceLabel}-${observation.text}`}
+                    text={observation.text}
+                    confidenceLabel={observation.confidenceLabel}
+                    actionLabel={observation.actionLabel}
+                    onPress={observation.onPress}
+                    style={styles.observationCard}
+                  />
+                ))}
+              </View>
+
+              {history.length >= 7 ? (
+                <View style={styles.reportTileWrap}>
+                  <ActionTile
+                    title="Doctor report ready"
+                    body="Preview your recent appointment summary."
+                    icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
+                    onPress={openReport}
+                    style={styles.reportTile}
+                  />
+                </View>
+              ) : null}
+
+              {hasMixed ? (
+                <View style={styles.mixedNotice}>
+                  <MaterialIcons
+                    name="info-outline"
+                    size={16}
+                    color={Colors.accent}
+                  />
+                  <Text style={[styles.mixedNoticeText, { fontFamily: ff.regular }]}>
+                    You have used more than one energy tracking style. Supporting details are
+                    shown separately for accuracy — battery days and spoon days are
+                    never merged.
+                  </Text>
+                </View>
+              ) : null}
+
+              <Text style={[styles.supportingTitle, { fontFamily: ff.semibold }]}>Supporting details</Text>
+
+              {spoonInsights.days.length > 0 ? (
+                <InsightSection insights={spoonInsights} />
+              ) : null}
+
+              {batteryInsights.days.length > 0 ? (
+                <InsightSection insights={batteryInsights} />
+              ) : null}
+            </>
+          )}
+        </SectionBlock>
 
         {/* Today at a glance */}
         <View style={styles.section}>
@@ -482,69 +644,6 @@ export default function PatternsScreen() {
           </View>
         ) : null}
 
-        {/* History insights */}
-        <View style={styles.section}>
-          <View style={styles.insightsHeader}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>History insights</Text>
-            <Pressable
-              onPress={reload}
-              style={({ pressed }) => [
-                styles.refreshBtn,
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Refresh insights"
-            >
-              <MaterialIcons name="refresh" size={18} color={Colors.textSubtle} />
-            </Pressable>
-          </View>
-
-          {loading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator color={Colors.primary} size="small" />
-              <Text style={[styles.loadingText, { fontFamily: ff.regular }]}>Loading history…</Text>
-            </View>
-          ) : history.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Image source={Lola.shrug} style={styles.emptyLola} resizeMode="contain" />
-              <Text style={[styles.emptyTitle, { fontFamily: ff.semibold }]}>
-                Patterns will start to appear after a few completed days.
-              </Text>
-              <Text style={[styles.emptyDesc, { fontFamily: ff.regular }]}>
-                Use &quot;End the day&quot; on the Today screen when your day is done.
-                Each saved day is stored in your history and will shape your
-                insights over time.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {hasMixed ? (
-                <View style={styles.mixedNotice}>
-                  <MaterialIcons
-                    name="info-outline"
-                    size={16}
-                    color={Colors.accent}
-                  />
-                  <Text style={[styles.mixedNoticeText, { fontFamily: ff.regular }]}>
-                    You have used more than one energy tracking style. Insights are
-                    shown separately for accuracy — battery days and spoon days are
-                    never merged.
-                  </Text>
-                </View>
-              ) : null}
-
-              {spoonInsights.days.length > 0 ? (
-                <InsightSection insights={spoonInsights} />
-              ) : null}
-
-              {batteryInsights.days.length > 0 ? (
-                <InsightSection insights={batteryInsights} />
-              ) : null}
-            </>
-          )}
-        </View>
-
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
     </View>
@@ -558,23 +657,6 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingBottom: Spacing.xxxl,
-  },
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-  },
-  title: {
-    fontSize: FontSizes.xxl,
-    fontWeight: Fonts.bold,
-    color: Colors.text,
-    letterSpacing: -0.5,
-    marginBottom: Spacing.xs,
-  },
-  subtitle: {
-    fontSize: FontSizes.base,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
   },
   section: {
     paddingHorizontal: Spacing.lg,
@@ -637,11 +719,27 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontWeight: Fonts.medium,
   },
-  insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  observationStack: {
+    gap: Spacing.md,
     marginBottom: Spacing.md,
+  },
+  observationCard: {
+    marginHorizontal: 0,
+    marginBottom: 0,
+  },
+  reportTileWrap: {
+    marginBottom: Spacing.md,
+  },
+  reportTile: {
+    flexBasis: 'auto',
+    width: '100%',
+  },
+  supportingTitle: {
+    fontSize: FontSizes.md,
+    fontWeight: Fonts.semibold,
+    color: Colors.text,
+    marginBottom: Spacing.md,
+    letterSpacing: -0.2,
   },
   refreshBtn: {
     padding: 4,
@@ -660,14 +758,6 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textSubtle,
   },
-  emptyBox: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
   iconCircle: {
     width: 52,
     height: 52,
@@ -678,25 +768,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  emptyLola: {
-    width: 120,
-    height: 130,
-    marginBottom: Spacing.md,
-  },
-  emptyTitle: {
-    fontSize: FontSizes.base,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-    lineHeight: 24,
-  },
-  emptyDesc: {
-    fontSize: FontSizes.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   mixedNotice: {
     flexDirection: 'row',

@@ -58,7 +58,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="patterns"
         options={{
-          title: 'Patterns',
+          title: 'Insights',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="show-chart" size={size} color={color} />
           ),

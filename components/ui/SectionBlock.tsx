@@ -6,17 +6,21 @@ import { Colors, FontSizes, Fonts, Radius, Spacing } from '@/constants/theme';
 type SectionBlockProps = {
   title?: string;
   count?: number;
+  action?: ReactNode;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-export function SectionBlock({ title, count, children, style }: SectionBlockProps) {
+export function SectionBlock({ title, count, action, children, style }: SectionBlockProps) {
   return (
     <View style={[styles.section, style]}>
       {title ? (
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
-          {typeof count === 'number' ? <Text style={styles.count}>{count}</Text> : null}
+          <View style={styles.headerMeta}>
+            {typeof count === 'number' ? <Text style={styles.count}>{count}</Text> : null}
+            {action}
+          </View>
         </View>
       ) : null}
       {children}
@@ -34,6 +38,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.md,
+  },
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   title: {
     fontSize: FontSizes.md,
