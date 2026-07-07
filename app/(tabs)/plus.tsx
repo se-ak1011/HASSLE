@@ -11,6 +11,7 @@ import { Lola } from '@/constants/lola';
 import { PaywallModal } from '@/components/ui/PaywallModal';
 import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
 import { AssistantHero } from '@/components/ui/AssistantHero';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 
 export default function PlusScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function PlusScreen() {
   const ff = useFontFamily();
   const { isPlus } = usePlus();
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   function openFeature(path: string) {
     if (!isPlus) {
@@ -29,6 +31,11 @@ export default function PlusScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
         showsVerticalScrollIndicator={false}
@@ -121,6 +128,7 @@ export default function PlusScreen() {
       </ScrollView>
 
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
@@ -135,6 +143,13 @@ function LockTag({ ff }: { ff: ReturnType<typeof useFontFamily> }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
+  },
   scroll: { paddingHorizontal: Spacing.lg, paddingTop: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
   title: { fontSize: FontSizes.xxl, color: Colors.text, letterSpacing: -0.5 },

@@ -34,6 +34,7 @@ import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
 import { IntentSheet } from '@/components/ui/IntentSheet';
 import { CommandSheet } from '@/components/ui/CommandSheet';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 import { loadClinicalSummary } from '@/services/exportService';
 
 const MIN_REPORT_DAYS = 7;
@@ -450,6 +451,7 @@ export default function TodayScreen() {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
   const [showCommandSheet, setShowCommandSheet] = useState(false);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -483,13 +485,24 @@ export default function TodayScreen() {
     if (showCheckIn) {
       return (
         <View style={[styles.root, { paddingTop: insets.top }]}>
+          <View style={styles.headerBar}>
+            <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+              <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+            </Pressable>
+          </View>
           <CheckInView />
+          <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
         </View>
       );
     }
 
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+            <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+          </Pressable>
+        </View>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
@@ -554,6 +567,8 @@ export default function TodayScreen() {
             openSomethingHappened: () => setShowIntentSheet(true),
           }}
         />
+
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     );
   }
@@ -714,6 +729,11 @@ export default function TodayScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -1029,6 +1049,8 @@ export default function TodayScreen() {
           openSomethingHappened: () => setShowIntentSheet(true),
         }}
       />
+
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
@@ -1346,6 +1368,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   scroll: {
     paddingBottom: Spacing.xxxl,

@@ -20,6 +20,8 @@ import { DayState } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 import { formatDateStringForRegion } from '@/services/regionFormat';
 import { AssistantHero } from '@/components/ui/AssistantHero';
+import { MaterialIcons } from '@expo/vector-icons';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -292,7 +294,7 @@ function SummaryRow({
 
 // ─── Read-Only Past Day View ──────────────────────────────────────────────────
 
-function PastDayView({ pastDay }: { pastDay: DayState }) {
+function PastDayView({ pastDay, onOpenMenu }: { pastDay: DayState; onOpenMenu?: () => void }) {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
 
@@ -309,6 +311,11 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -435,10 +442,15 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
 
 // ─── No History Empty State ───────────────────────────────────────────────────
 
-function EmptyReflectView() {
+function EmptyReflectView({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <AssistantHero
         kicker="Reflect"
         title="Anything worth remembering?"
@@ -462,6 +474,8 @@ export default function ReflectScreen() {
   const { day, energyUsed, energyRemaining, saveJournal } = useDay();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
+
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   // Local editable state for the active day
   const [journal, setJournal] = useState(day?.journalEntry ?? '');
@@ -506,9 +520,19 @@ export default function ReflectScreen() {
       );
     }
     if (pastDay) {
-      return <PastDayView pastDay={pastDay} />;
+      return (
+        <>
+          <PastDayView pastDay={pastDay} onOpenMenu={() => setShowNavDrawer(true)} />
+          <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+        </>
+      );
     }
-    return <EmptyReflectView />;
+    return (
+      <>
+        <EmptyReflectView onOpenMenu={() => setShowNavDrawer(true)} />
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+      </>
+    );
   }
 
   // ── Case 2: Active day — full editable reflection ───────────────────────────
@@ -526,6 +550,11 @@ export default function ReflectScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+            <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+          </Pressable>
+        </View>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -649,6 +678,8 @@ export default function ReflectScreen() {
 
           <View style={{ height: insets.bottom + Spacing.xl }} />
         </ScrollView>
+
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -660,6 +691,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   centerContent: {
     justifyContent: 'center',

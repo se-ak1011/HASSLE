@@ -24,6 +24,7 @@ import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { EmptyState } from '@/components/ui/primitives/EmptyState';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -470,6 +471,7 @@ export default function PatternsScreen() {
 
   const [history, setHistory] = useState<DayState[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -513,6 +515,11 @@ export default function PatternsScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -668,6 +675,8 @@ export default function PatternsScreen() {
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
+
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
@@ -676,6 +685,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   scroll: {
     paddingBottom: Spacing.xxxl,

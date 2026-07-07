@@ -1,41 +1,14 @@
 import { Tabs } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Platform, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, FontSizes } from '@/constants/theme';
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.hairline,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          height: Platform.select({
-            ios: insets.bottom + 60,
-            android: insets.bottom + 60,
-            default: 70,
-          }),
-          paddingTop: 8,
-          paddingBottom: Platform.select({
-            ios: insets.bottom + 8,
-            android: insets.bottom + 8,
-            default: 8,
-          }),
-          paddingHorizontal: 16,
-        },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSubtle,
-        tabBarLabelStyle: {
-          fontFamily: 'ChronicSans',
-          fontSize: FontSizes.xs,
-          letterSpacing: 0.2,
-          opacity: 0.8,
-        },
+        // Tab bar is hidden — navigation is handled by Lola's Command Hub
+        // and the hamburger drawer on each screen. Routes remain intact.
+        tabBarStyle: { display: 'none' },
       }}
     >
       <Tabs.Screen
