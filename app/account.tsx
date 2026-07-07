@@ -101,7 +101,7 @@ export default function AccountScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.intro, { fontFamily: ff.regular }]}>
-          Hassle works fully without an account — that's the default, and it's complete. Syncing is
+          Hassle works fully without an account — that&apos;s the default, and it&apos;s complete. Syncing is
           optional and free; it simply mirrors the same data to your other devices. Either way, you
           get the whole app.
         </Text>
@@ -149,7 +149,7 @@ export default function AccountScreen() {
             <View style={styles.infoLine}>
               <MaterialIcons name="check-circle" size={18} color={Colors.success} />
               <Text style={[styles.infoLineText, { fontFamily: ff.regular }]}>
-                You're all set — nothing to do. Everything's saved on this device.
+                You&apos;re all set — nothing to do. Everything&apos;s saved on this device.
               </Text>
             </View>
           ) : null}

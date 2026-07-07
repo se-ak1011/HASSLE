@@ -459,7 +459,7 @@ export default function TodayScreen() {
       Animated.delay(2400),
       Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start(() => setFeedbackMsg(null));
-  }, [feedbackMsg]);
+  }, [feedbackMsg, fadeAnim]);
 
   if (!day || !day.checkedIn) {
     if (showCheckIn) {
@@ -670,7 +670,7 @@ export default function TodayScreen() {
               accessibilityRole="button"
               accessibilityLabel="See today's plan"
             >
-              <Text style={[styles.seePlanText, { fontFamily: ff.medium }]}>See today's plan</Text>
+              <Text style={[styles.seePlanText, { fontFamily: ff.medium }]}>See today&apos;s plan</Text>
               <MaterialIcons name="chevron-right" size={18} color={Colors.primary} />
             </Pressable>
           ) : null}
@@ -686,7 +686,7 @@ export default function TodayScreen() {
       >
         <View style={[styles.root, { paddingTop: insets.top }]}>
           <View style={styles.planHeader}>
-            <Text style={[styles.planTitle, { fontFamily: ff.bold }]}>Today's plan</Text>
+            <Text style={[styles.planTitle, { fontFamily: ff.bold }]}>Today&apos;s plan</Text>
             <Pressable
               onPress={() => setShowPlanSheet(false)}
               hitSlop={12}
@@ -857,7 +857,7 @@ export default function TodayScreen() {
             {day.isFlareDay ? (
               <View style={styles.flareMsgSection}>
                 <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-                  That's enough for today.
+                  That&apos;s enough for today.
                 </Text>
               </View>
             ) : null}

@@ -23,7 +23,6 @@ import {
   Pressable,
   ScrollView,
   Switch,
-  Animated,
   Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
@@ -206,7 +205,7 @@ export default function OnboardingScreen() {
             style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
-            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>That's me</Text>
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>That&apos;s me</Text>
           </Pressable>
         </View>
       </View>

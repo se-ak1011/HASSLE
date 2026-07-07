@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Modal, View, StyleSheet, Pressable, ScrollView, Animated } from 'react-native';
 import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
+import { Colors, Spacing, FontSizes } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

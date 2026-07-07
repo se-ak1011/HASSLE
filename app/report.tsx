@@ -153,7 +153,7 @@ export default function ReportScreen() {
             <View style={styles.heroBlock}>
               <Image source={Lola.report} style={styles.heroLola} resizeMode="contain" />
               <Text style={[styles.heroQuestion, { fontFamily: ff.bold }]}>
-                Ready to see what we've collected?
+                Ready to see what we&apos;ve collected?
               </Text>
             </View>
 
