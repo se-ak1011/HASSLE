@@ -134,7 +134,7 @@ export interface DayContextType {
   completeOnboarding(
     defaultTasks: DefaultDailyTask[],
     reminders: ReminderSettings,
-    profile?: { name?: string; conditions?: string[] }
+    profile?: { name?: string; conditions?: string[]; physicalConditions?: string[]; mentalLoadConditions?: string[]; lolaIntro?: string }
   ): Promise<void>;
 
   /** Update reminder settings (called from Settings screen). */
@@ -144,7 +144,7 @@ export interface DayContextType {
   updateDefaultDailyTasks(tasks: DefaultDailyTask[]): void;
 
   /** Update the user's name / conditions (local only, called from Settings). */
-  updateProfile(profile: { name?: string; conditions?: string[] }): void;
+  updateProfile(profile: { name?: string; conditions?: string[]; physicalConditions?: string[]; mentalLoadConditions?: string[]; lolaIntro?: string }): void;
 
   // Computed
   energyUsed: number;
@@ -626,11 +626,13 @@ export function DayProvider({ children }: { children: ReactNode }) {
     async (
       defaultTasks: DefaultDailyTask[],
       reminders: ReminderSettings,
-      profile?: { name?: string; conditions?: string[] }
+      profile?: { name?: string; conditions?: string[]; physicalConditions?: string[]; mentalLoadConditions?: string[]; lolaIntro?: string }
     ) => {
       const current = await loadPreferences();
       const trimmed = profile?.name?.trim();
-      const conditions = profile?.conditions ?? current.conditions ?? [];
+      const physicalConditions = profile?.physicalConditions ?? current.physicalConditions ?? [];
+      const mentalLoadConditions = profile?.mentalLoadConditions ?? current.mentalLoadConditions ?? [];
+      const conditions = profile?.conditions ?? [...physicalConditions, ...mentalLoadConditions];
       // Pre-load condition-aware symptom tags (built-ins are stripped by dedupe).
       const symptomTags = symptomTagsForConditions(conditions);
       const customTags = dedupeCustomTags([...(current.customTags ?? []), ...symptomTags]);
@@ -640,6 +642,9 @@ export function DayProvider({ children }: { children: ReactNode }) {
         reminders,
         hasCompletedOnboarding: true,
         conditions,
+        physicalConditions,
+        mentalLoadConditions,
+        lolaIntro: profile?.lolaIntro?.trim() ?? current.lolaIntro ?? '',
         customTags,
         ...(trimmed ? { name: trimmed } : {}),
       };
@@ -671,7 +676,7 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // ── Update Profile (name / conditions) ────────────────────────────────────────
 
   const updateProfile = useCallback(
-    (profile: { name?: string; conditions?: string[] }) => {
+    (profile: { name?: string; conditions?: string[]; physicalConditions?: string[]; mentalLoadConditions?: string[]; lolaIntro?: string }) => {
       if (!prefs) return;
       setPrefs({ ...prefs, ...profile });
     },

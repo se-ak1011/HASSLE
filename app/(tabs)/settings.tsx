@@ -26,7 +26,8 @@ import {
   REMINDER_FREQUENCY_LABELS,
   ONBOARDING_TASK_OPTIONS,
   DefaultDailyTask,
-  PRESET_CONDITIONS,
+  PHYSICAL_CONDITIONS,
+  MENTAL_LOAD_CONDITIONS,
   BUILT_IN_TAGS,
 } from '@/constants/types';
 import { CONDITION_SYMPTOM_TAGS } from '@/constants/conditions';
@@ -340,12 +341,21 @@ function ProfilePanel() {
   const { showAlert } = useAlert();
   const ff = useFontFamily();
   const [name, setName] = useState(prefs?.name ?? '');
-  const conditions = prefs?.conditions ?? [];
+  const physicalConditions = prefs?.physicalConditions ?? [];
+  const mentalLoadConditions = prefs?.mentalLoadConditions ?? [];
+  const lolaIntro = prefs?.lolaIntro ?? '';
 
-  function toggleCondition(c: string) {
-    const adding = !conditions.includes(c);
-    const next = adding ? [...conditions, c] : conditions.filter((x) => x !== c);
-    updateProfile({ conditions: next });
+  function toggleCondition(c: string, group: 'physical' | 'mental') {
+    const current = group === 'physical' ? physicalConditions : mentalLoadConditions;
+    const adding = !current.includes(c);
+    const next = adding ? [...current, c] : current.filter((x) => x !== c);
+    const nextPhysical = group === 'physical' ? next : physicalConditions;
+    const nextMental = group === 'mental' ? next : mentalLoadConditions;
+    updateProfile({
+      physicalConditions: nextPhysical,
+      mentalLoadConditions: nextMental,
+      conditions: [...nextPhysical, ...nextMental],
+    });
 
     if (!adding) return;
     // Offer to pre-load this condition's symptom tags (only the ones not already present).
@@ -384,28 +394,40 @@ function ProfilePanel() {
       <Text style={[styles.profileHint, { fontFamily: ff.regular }]}>
         Optional, and just for you. Stays on your device — never displayed anywhere public.
       </Text>
+      <Text style={[styles.profileSubLabel, { fontFamily: ff.semibold }]}>Chronic physical / disability</Text>
       <View style={styles.conditionsWrap}>
-        {PRESET_CONDITIONS.map((c) => {
-          const selected = conditions.includes(c);
+        {PHYSICAL_CONDITIONS.map((c) => {
+          const selected = physicalConditions.includes(c);
           return (
-            <Pressable
-              key={c}
-              onPress={() => toggleCondition(c)}
-              style={[styles.conditionChip, selected && styles.conditionChipSelected]}
-            >
-              <Text
-                style={[
-                  styles.conditionChipText,
-                  { fontFamily: ff.medium },
-                  selected && styles.conditionChipTextSelected,
-                ]}
-              >
-                {c}
-              </Text>
+            <Pressable key={c} onPress={() => toggleCondition(c, 'physical')} style={[styles.conditionChip, selected && styles.conditionChipSelected]}>
+              <Text style={[styles.conditionChipText, { fontFamily: ff.medium }, selected && styles.conditionChipTextSelected]}>{c}</Text>
             </Pressable>
           );
         })}
       </View>
+      <Text style={[styles.profileSubLabel, { fontFamily: ff.semibold }]}>Neurodivergent / mental load</Text>
+      <View style={styles.conditionsWrap}>
+        {MENTAL_LOAD_CONDITIONS.map((c) => {
+          const selected = mentalLoadConditions.includes(c);
+          return (
+            <Pressable key={c} onPress={() => toggleCondition(c, 'mental')} style={[styles.conditionChip, selected && styles.conditionChipSelected]}>
+              <Text style={[styles.conditionChipText, { fontFamily: ff.medium }, selected && styles.conditionChipTextSelected]}>{c}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={[styles.profileLabel, { fontFamily: ff.semibold, marginTop: Spacing.lg }]}>What I told Lola</Text>
+      <TextInput
+        style={[styles.profileInput, styles.profileIntroInput, { fontFamily: ff.regular }]}
+        value={lolaIntro}
+        onChangeText={(text) => updateProfile({ lolaIntro: text })}
+        placeholder="Optional freeform notes for Lola"
+        placeholderTextColor={Colors.textSubtle}
+        multiline
+        textAlignVertical="top"
+        maxLength={800}
+      />
     </View>
   );
 }
@@ -582,6 +604,12 @@ export default function SettingsScreen() {
         {/* Data management */}
         <SectionHeader title="Data" />
         <Card>
+          <SettingsRow
+            icon="restart-alt"
+            label="Start over"
+            sublabel="Clears local profile and history so onboarding runs again"
+            onPress={handleClearData}
+          />
           <SettingsRow
             icon="delete-sweep"
             label="Clear all app data"
@@ -812,6 +840,14 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     lineHeight: 18,
   },
+  profileSubLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
   profileInput: {
     backgroundColor: Colors.surfaceElevated,
     borderRadius: Radius.md,
@@ -821,6 +857,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     fontSize: FontSizes.base,
     color: Colors.text,
+  },
+  profileIntroInput: {
+    minHeight: 120,
+    marginTop: Spacing.sm,
+    lineHeight: 22,
   },
   conditionsWrap: {
     flexDirection: 'row',

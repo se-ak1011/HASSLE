@@ -57,7 +57,10 @@ export interface ReminderSettings {
 export interface UserPreferences {
   energyMode: EnergyMode;
   name?: string;                        // optional first name for personalised greeting
-  conditions?: string[];                // optional self-noted conditions (local only)
+  conditions?: string[];                // combined optional self-noted conditions (local only)
+  physicalConditions?: string[];        // chronic physical / disability conditions (local only)
+  mentalLoadConditions?: string[];      // neurodivergent / mental load conditions (local only)
+  lolaIntro?: string;                   // optional freeform 'Tell Lola' intro (local only)
   taskDefaults: Record<string, number>; // taskName → baseCost
   customTags: string[];                 // user-created reusable tags
   defaultDailyTasks: DefaultDailyTask[]; // tasks auto-added at day start
@@ -76,6 +79,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   energyMode: 'spoon',
   name: '',
   conditions: [],
+  physicalConditions: [],
+  mentalLoadConditions: [],
+  lolaIntro: '',
   taskDefaults: {},
   customTags: [],
   defaultDailyTasks: [],
@@ -136,20 +142,37 @@ export const HEADER_QUOTES: string[] = [
 ];
 
 /** Optional conditions offered during onboarding (local only, never displayed publicly). */
-export const PRESET_CONDITIONS: string[] = [
+export const PHYSICAL_CONDITIONS: string[] = [
   'Fibromyalgia',
   'ME/CFS',
-  'EDS / Hypermobility',
-  'POTS',
-  'ADHD',
-  'Autism',
-  'Anxiety',
-  'Depression',
-  'Endometriosis',
-  'Chronic Migraine',
   'Long COVID',
+  'POTS / dysautonomia',
+  'EDS / hypermobility',
+  'Chronic migraine',
+  'Chronic pain',
+  'Endometriosis',
   'Lupus',
   'MS',
+  'Arthritis',
+  'Other',
+];
+
+export const MENTAL_LOAD_CONDITIONS: string[] = [
+  'ADHD',
+  'Autism',
+  'Dyslexia',
+  'Dyspraxia',
+  'Anxiety',
+  'Depression',
+  'PTSD / trauma',
+  'OCD',
+  'Sensory processing issues',
+  'Other',
+];
+
+export const PRESET_CONDITIONS: string[] = [
+  ...PHYSICAL_CONDITIONS,
+  ...MENTAL_LOAD_CONDITIONS.filter((c) => c !== 'Other'),
 ];
 
 export const PREMADE_TASKS: { name: string; baseCost: number; category: string }[] = [
