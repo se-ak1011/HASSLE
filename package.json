@@ -150,10 +150,18 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
-    "eslint": "9.25.0",
+    "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "react-dev-inspector": "^2.0.1",
     "typescript": "~5.8.3"
+  },
+  "overrides": {
+    "ajv": "^8.17.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "ajv": "^8.17.1"
+    }
   },
   "private": true
 }
