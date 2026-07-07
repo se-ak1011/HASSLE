@@ -408,9 +408,7 @@ function ProfilePanel() {
         {MENTAL_LOAD_CONDITIONS.map((c) => {
           const selected = mentalLoadConditions.includes(c);
           return (
-            <Pressable key={c} onPress={() => toggleCondition(c, 'mental')} style={[styles.conditionChip, selected && styles.conditionChipSelected]}>
-              <Text style={[styles.conditionChipText, { fontFamily: ff.medium }, selected && styles.conditionChipTextSelected]}>{c}</Text>
-            </Pressable>
+            <Pressable key={c} onPress={() => toggleCondition(c, 'mental')} style={[styles.conditionChip, selected && styles.conditionChipSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={c}>
           );
         })}
       </View>
