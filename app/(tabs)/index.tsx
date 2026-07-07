@@ -27,7 +27,7 @@ import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
 import { formatShortDate } from '@/services/dates';
 import { CompletionModal } from '@/components/ui/CompletionModal';
 import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { AssistantHero } from '@/components/ui/AssistantHero';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { IntentSheet } from '@/components/ui/IntentSheet';
@@ -213,7 +213,7 @@ function CheckInView() {
                 : 'What is your battery level?'}
             </Text>
             <Image
-              source={Lola.shrug}
+              source={Companion.WrapUp}
               style={checkInStyles.energyLola}
               resizeMode="contain"
             />
@@ -490,7 +490,7 @@ export default function TodayScreen() {
           <AssistantHero
             title="Morning."
             subtitle="What would help today?"
-            lola={Lola.sitting}
+            lola={Companion.WrapUp}
             onLolaPress={() => setShowCommandSheet(true)}
           />
           <SectionBlock title="Today's Support">
@@ -541,19 +541,19 @@ export default function TodayScreen() {
   const visiblePending = pending.slice(0, VISIBLE_SUPPORT_TASKS);
   const hasMoreSupport = pending.length > visiblePending.length;
 
-  let heroImage = Lola.standing;
+  let heroImage = Companion.Home;
   let heroSentence = 'What would help today?';
   let heroKicker = 'Today, together.';
 
   if (day.isFlareDay) {
-    heroImage = Lola.xeyes;
+    heroImage = Companion.Flare;
     heroSentence = 'Protect your energy today.';
     heroKicker = 'Flare day';
   } else if (isLowEnergy) {
-    heroImage = Lola.xeyes;
+    heroImage = Companion.Flare;
     heroSentence = "Let's make today smaller.";
   } else if (pending.length === 0) {
-    heroImage = Lola.sitting;
+    heroImage = Companion.Home;
     heroSentence = 'Nothing urgent is waiting.';
   }
 

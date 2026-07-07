@@ -17,7 +17,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { loadHistory } from '@/services/storage';
 import { DayState, EnergyMode } from '@/constants/types';
 import { formatCost } from '@/services/formatCost';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { formatDateStringForRegion } from '@/services/regionFormat';
 import { AssistantHero } from '@/components/ui/AssistantHero';
 import { ObservationCard } from '@/components/ui/ObservationCard';
@@ -533,7 +533,7 @@ export default function PatternsScreen() {
           kicker="Insights"
           title="Here's what I've noticed."
           subtitle="What I've noticed."
-          lola={Lola.books}
+          lola={Companion.Insights}
         />
 
         {/* Lead observation — shown prominently before anything else */}
@@ -580,7 +580,7 @@ export default function PatternsScreen() {
             </View>
           ) : history.length === 0 ? (
             <EmptyState
-              lola={Lola.shrug}
+              lola={Companion.Insights}
               title="I need a few days to notice patterns."
               body="No pressure. Just use Hassle when it helps."
             />

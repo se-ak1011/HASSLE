@@ -10,7 +10,7 @@ import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { useRouter } from 'expo-router';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export function CommandSheet({ visible, onClose, handlers = {}, context }: Comma
               </Text>
             </View>
             <Image
-              source={Lola.sitting}
+              source={Companion.Loading}
               style={styles.lolaSmall}
               resizeMode="contain"
               accessibilityLabel="Lola"

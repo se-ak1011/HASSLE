@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 
 interface Plan {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -39,7 +39,7 @@ export default function DirectoryScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Image source={Lola.explorer} style={styles.heroImg} resizeMode="contain" />
+          <Image source={Companion.Directory} style={styles.heroImg} resizeMode="contain" />
         </View>
 
         <View style={styles.badge}>

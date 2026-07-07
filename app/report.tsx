@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Fonts, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAlert } from '@/template';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
 import {
   loadClinicalSummary,
@@ -94,7 +94,7 @@ export default function ReportScreen() {
         ) : reportStatus === 'building' ? (
           // ── Growing report — always shown, even on day 0 ─────────────────────
           <View style={styles.stateBlock}>
-            <Image source={Lola.report} style={styles.lolaImg} resizeMode="contain" />
+            <Image source={Companion.Report} style={styles.lolaImg} resizeMode="contain" />
             <Text style={[styles.stateTitle, { fontFamily: ff.bold }]}>
               {daysFound === 0
                 ? 'Hassle is beginning to understand your days.'
@@ -151,7 +151,7 @@ export default function ReportScreen() {
           <>
             {/* Opening question */}
             <View style={styles.heroBlock}>
-              <Image source={Lola.report} style={styles.heroLola} resizeMode="contain" />
+              <Image source={Companion.Report} style={styles.heroLola} resizeMode="contain" />
               <Text style={[styles.heroQuestion, { fontFamily: ff.bold }]}>
                 Ready to see what we&apos;ve collected?
               </Text>

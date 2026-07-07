@@ -16,7 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAlert } from '@/template';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,7 +149,7 @@ export function IntentSheet({ visible, onClose, handlers = {} }: Props) {
                 </Text>
               </View>
               <Image
-                source={Lola.sitting}
+                source={Companion.Loading}
                 style={sheetStyles.lola}
                 resizeMode="contain"
                 accessibilityLabel="Lola is listening"

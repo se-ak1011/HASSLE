@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { LIBRARY, LIBRARY_DISCLAIMER, LibraryArticle, SourceKind } from '@/constants/library';
 
 const KIND_LABEL: Record<SourceKind, string> = {
@@ -84,7 +84,7 @@ export default function LibraryScreen() {
           // ── Article list ────────────────────────────────────────────────
           <>
             <View style={styles.hero}>
-              <Image source={Lola.books} style={styles.heroImg} resizeMode="contain" />
+              <Image source={Companion.Library} style={styles.heroImg} resizeMode="contain" />
             </View>
             <Text style={[styles.intro, { fontFamily: ff.regular }]}>
               Short, plain-language reads on living with chronic illness — each one linking out to the

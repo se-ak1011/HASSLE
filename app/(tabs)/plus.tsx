@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { usePlus } from '@/contexts/PlusContext';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { PaywallModal } from '@/components/ui/PaywallModal';
 import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
 import { AssistantHero } from '@/components/ui/AssistantHero';
@@ -44,7 +44,7 @@ export default function PlusScreen() {
           kicker="Hassle Plus"
           title={isPlus ? 'You have everything.' : 'A little more, when you need it.'}
           subtitle={isPlus ? 'Thank you for supporting Hassle.' : 'Everything core stays free.'}
-          lola={Lola.standing}
+          lola={Companion.Settings}
           style={{ marginHorizontal: -Spacing.lg }}
         />
 
@@ -73,7 +73,7 @@ export default function PlusScreen() {
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => openFeature('/library')}
         >
-          <Image source={Lola.books} style={styles.thumb} resizeMode="contain" />
+          <Image source={Companion.Library} style={styles.thumb} resizeMode="contain" />
           <View style={styles.cardText}>
             <View style={styles.cardTitleRow}>
               <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Reading library</Text>
@@ -91,7 +91,7 @@ export default function PlusScreen() {
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => openFeature('/directory')}
         >
-          <Image source={Lola.explorer} style={styles.thumb} resizeMode="contain" />
+          <Image source={Companion.Directory} style={styles.thumb} resizeMode="contain" />
           <View style={styles.cardText}>
             <View style={styles.cardTitleRow}>
               <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Specialist directory</Text>
@@ -109,7 +109,7 @@ export default function PlusScreen() {
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => openFeature('/report')}
         >
-          <Image source={Lola.report} style={styles.thumb} resizeMode="contain" />
+          <Image source={Companion.Report} style={styles.thumb} resizeMode="contain" />
           <View style={styles.cardText}>
             <View style={styles.cardTitleRow}>
               <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Doctor-visit report</Text>

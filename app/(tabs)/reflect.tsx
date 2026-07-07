@@ -17,7 +17,7 @@ import { formatCost } from '@/services/formatCost';
 import { loadHistory } from '@/services/storage';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { DayState } from '@/constants/types';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { formatDateStringForRegion } from '@/services/regionFormat';
 import { AssistantHero } from '@/components/ui/AssistantHero';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -329,7 +329,7 @@ function PastDayView({ pastDay, onOpenMenu }: { pastDay: DayState; onOpenMenu?: 
               ? 'Getting through that day counted.'
               : 'A look back at how that day went.'
           }
-          lola={Lola.sitting}
+          lola={Companion.Reflect}
         />
 
         {/* Summary stats */}
@@ -455,7 +455,7 @@ function EmptyReflectView({ onOpenMenu }: { onOpenMenu?: () => void }) {
         kicker="Reflect"
         title="Anything worth remembering?"
         subtitle="Once you finish a day, you can look back here anytime."
-        lola={Lola.sitting}
+        lola={Companion.Reflect}
       />
       <View style={styles.emptyBox}>
         <Text style={styles.emptyTitle}>No pressure to write anything.</Text>
@@ -569,7 +569,7 @@ export default function ReflectScreen() {
                 ? 'Getting through today counts. Only add what feels useful.'
                 : 'Only if it helps. No pressure.'
             }
-            lola={Lola.sitting}
+            lola={Companion.Reflect}
           />
 
           {/* Summary stats */}
