@@ -14,6 +14,7 @@ import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useDay } from '@/hooks/useDay';
 import { ReminderFrequency, PHYSICAL_CONDITIONS, MENTAL_LOAD_CONDITIONS } from '@/constants/types';
+import { extractOnboardingProfile, OnboardingExtractedProfile } from '@/services/aiLola';
 import { Companion } from '@/constants/companion';
 import { useRegion } from '@/localization/RegionContext';
 import { Region } from '@/localization/region';
@@ -33,6 +34,21 @@ type ExtractedProfile = {
   physicalConditions: string[];
   mentalLoadConditions: string[];
 };
+
+type ProfileListKey = Exclude<keyof OnboardingExtractedProfile, 'preferredName' | 'countryRegion' | 'physicalConditions' | 'neurodivergentMentalLoadConditions'>;
+
+const PROFILE_LIST_FIELDS: { key: ProfileListKey; label: string; placeholder: string }[] = [
+  { key: 'family', label: 'Family', placeholder: 'People Lola should know about' },
+  { key: 'pets', label: 'Pets', placeholder: 'Pets or assistance animals' },
+  { key: 'hobbies', label: 'Hobbies', placeholder: 'Things you enjoy' },
+  { key: 'usualTasks', label: 'Usual tasks', placeholder: 'Regular tasks or routines' },
+  { key: 'difficultTasks', label: 'Difficult tasks', placeholder: 'Tasks that are hard right now' },
+  { key: 'reminders', label: 'Reminders', placeholder: 'Things you may want reminders for' },
+  { key: 'thingsThatHelp', label: 'Things that help', placeholder: 'Supports, tools, strategies' },
+  { key: 'thingsThatMakeDaysHarder', label: 'Things that make days harder', placeholder: 'Triggers, barriers, draining things' },
+  { key: 'goals', label: 'Goals', placeholder: 'What you want help with' },
+  { key: 'notes', label: 'Notes', placeholder: 'Anything else Lola noticed' },
+];
 
 function normalise(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -87,30 +103,77 @@ function extractProfile(transcript: string): ExtractedProfile {
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
-  const { completeOnboarding } = useDay();
+  const { completeOnboarding, prefs } = useDay();
   const { region, setRegion } = useRegion();
 
   const [transcript, setTranscript] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [organising, setOrganising] = useState(false);
+  const [organiseMessage, setOrganiseMessage] = useState('');
   const extracted = useMemo(() => extractProfile(transcript), [transcript]);
   const [nameOverride, setNameOverride] = useState('');
   const [physicalOverride, setPhysicalOverride] = useState<string[] | null>(null);
   const [mentalOverride, setMentalOverride] = useState<string[] | null>(null);
   const [regionOverride, setRegionOverride] = useState<Region | null>(null);
+  const [profileDetails, setProfileDetails] = useState<OnboardingExtractedProfile | null>(null);
 
   const name = nameOverride || extracted.name;
   const physicalConditions = physicalOverride ?? extracted.physicalConditions;
   const mentalLoadConditions = mentalOverride ?? extracted.mentalLoadConditions;
   const selectedRegion = regionOverride ?? extracted.region ?? region;
 
-  function beginReview() {
-    setNameOverride(extracted.name);
-    setPhysicalOverride(extracted.physicalConditions);
-    setMentalOverride(extracted.mentalLoadConditions);
-    setRegionOverride(extracted.region ?? region);
-    setReviewing(true);
+  function mergeProfileDetails(details: OnboardingExtractedProfile | null) {
+    const fallbackRegion = extracted.region ?? region;
+    setNameOverride(details?.preferredName ?? extracted.name);
+    setPhysicalOverride(details?.physicalConditions?.length ? details.physicalConditions : extracted.physicalConditions);
+    setMentalOverride(details?.neurodivergentMentalLoadConditions?.length ? details.neurodivergentMentalLoadConditions : extracted.mentalLoadConditions);
+    setRegionOverride(details?.countryRegion === 'UK' ? 'GB' : details?.countryRegion ?? fallbackRegion);
+    setProfileDetails(details);
+  }
+
+  async function beginReview() {
+    const trimmedTranscript = transcript.trim();
+    if (!trimmedTranscript || organising) return;
+    setOrganising(true);
+    setOrganiseMessage('');
+    try {
+      const details = await extractOnboardingProfile({
+        transcript: trimmedTranscript,
+        regionHint: region === 'GB' ? 'UK' : region ?? null,
+        existingProfile: prefs ?? undefined,
+      });
+      mergeProfileDetails(details);
+    } catch {
+      mergeProfileDetails(null);
+      setOrganiseMessage('Lola saved what you said, but couldn’t organise it just now. You can still edit anything.');
+    } finally {
+      setOrganising(false);
+      setReviewing(true);
+    }
+  }
+
+  function updateProfileList(key: ProfileListKey, text: string) {
+    const items = text.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+    setProfileDetails((current) => ({
+      preferredName: name || null,
+      countryRegion: selectedRegion === 'GB' ? 'UK' : selectedRegion,
+      physicalConditions,
+      neurodivergentMentalLoadConditions: mentalLoadConditions,
+      family: [],
+      pets: [],
+      hobbies: [],
+      usualTasks: [],
+      difficultTasks: [],
+      reminders: [],
+      thingsThatHelp: [],
+      thingsThatMakeDaysHarder: [],
+      goals: [],
+      notes: [],
+      ...(current ?? {}),
+      [key]: items,
+    }));
   }
 
   function toggleCondition(condition: string, group: 'physical' | 'mental') {
@@ -118,6 +181,18 @@ export default function OnboardingScreen() {
     const next = current.includes(condition) ? current.filter((c) => c !== condition) : [...current, condition];
     if (group === 'physical') setPhysicalOverride(next);
     else setMentalOverride(next);
+  }
+
+  function formatApprovedProfile() {
+    const lines = ['Raw transcript:', transcript.trim()];
+    if (profileDetails) {
+      lines.push('', 'Approved Lola profile:');
+      PROFILE_LIST_FIELDS.forEach(({ key, label }) => {
+        const values = profileDetails[key];
+        if (values.length) lines.push(`${label}: ${values.join(', ')}`);
+      });
+    }
+    return lines.join('\n');
   }
 
   async function handleConfirm() {
@@ -133,7 +208,7 @@ export default function OnboardingScreen() {
         physicalConditions,
         mentalLoadConditions,
         conditions: [...physicalConditions, ...mentalLoadConditions],
-        lolaIntro: transcript,
+        lolaIntro: formatApprovedProfile(),
       }
     );
     router.replace('/(tabs)');
@@ -148,6 +223,8 @@ export default function OnboardingScreen() {
             const isSelected = selected.includes(condition);
             return (
               <Pressable key={`${title}-${condition}`} style={[styles.conditionChip, isSelected && styles.conditionChipSelected]} onPress={() => toggleCondition(condition, group)} accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }} accessibilityLabel={condition}>
+                <Text style={[styles.conditionText, isSelected && styles.conditionTextSelected, { fontFamily: ff.semibold }]}>{condition}</Text>
+              </Pressable>
             );
           })}
         </View>
@@ -162,8 +239,9 @@ export default function OnboardingScreen() {
           <View style={styles.lolaBlockSmall}>
             <Image source={Companion.Loading} style={styles.smallLola} resizeMode="contain" />
           </View>
-          <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Lola organised this.</Text>
+          <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Here’s what Lola understood.</Text>
           <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Check what feels right. Anything uncertain is left blank and editable.</Text>
+          {organiseMessage ? <Text style={[styles.warningText, { fontFamily: ff.regular }]}>{organiseMessage}</Text> : null}
 
           <View style={styles.card}>
             <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Name</Text>
@@ -184,6 +262,27 @@ export default function OnboardingScreen() {
 
           <ConditionReview title="Physical / Disability" options={PHYSICAL_CONDITIONS} selected={physicalConditions} group="physical" />
           <ConditionReview title="Neurodivergence / Mental Health" options={MENTAL_LOAD_CONDITIONS} selected={mentalLoadConditions} group="mental" />
+
+
+          {profileDetails ? (
+            <View style={styles.card}>
+              <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Other things Lola noticed</Text>
+              {PROFILE_LIST_FIELDS.map(({ key, label, placeholder }) => (
+                <View key={key} style={styles.detailField}>
+                  <Text style={[styles.detailLabel, { fontFamily: ff.semibold }]}>{label}</Text>
+                  <TextInput
+                    style={[styles.detailInput, { fontFamily: ff.regular }]}
+                    value={profileDetails[key].join('\n')}
+                    onChangeText={(text) => updateProfileList(key, text)}
+                    placeholder={placeholder}
+                    placeholderTextColor={Colors.textSubtle}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Source transcript</Text>
@@ -239,10 +338,10 @@ export default function OnboardingScreen() {
           />
         )}
 
-        <Pressable style={[styles.primaryBtn, transcript.trim().length === 0 && styles.primaryBtnDisabled]} onPress={beginReview} disabled={transcript.trim().length === 0}>
-          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Let Lola organise this</Text>
+        <Pressable style={[styles.primaryBtn, (transcript.trim().length === 0 || organising) && styles.primaryBtnDisabled]} onPress={beginReview} disabled={transcript.trim().length === 0 || organising}>
+          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>{organising ? 'Lola is organising...' : 'Let Lola organise this'}</Text>
         </Pressable>
-        <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>No backend. No LLM parsing in this build. The transcript stays local and becomes your source document.</Text>
+        <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>Lola uses the secure Supabase AI function to organise your transcript. If that is unavailable, your transcript stays local and editable.</Text>
       </ScrollView>
     </View>
   );
@@ -269,6 +368,7 @@ const styles = StyleSheet.create({
   primaryBtnDisabled: { opacity: 0.45 },
   primaryBtnText: { fontSize: FontSizes.base, fontWeight: Fonts.semibold, color: Colors.background, letterSpacing: 0.2 },
   futureNoteText: { fontSize: FontSizes.sm, color: Colors.textSubtle, lineHeight: 20, textAlign: 'center' },
+  warningText: { fontSize: FontSizes.sm, color: Colors.textSecondary, lineHeight: 20, backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md },
   card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, gap: Spacing.md },
   input: { backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, paddingVertical: 12, paddingHorizontal: Spacing.md, fontSize: FontSizes.base, color: Colors.text },
   sectionLabel: { fontSize: FontSizes.sm, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.7 },
@@ -283,5 +383,8 @@ const styles = StyleSheet.create({
   conditionChipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   conditionText: { fontSize: FontSizes.sm, color: Colors.text },
   conditionTextSelected: { color: Colors.background },
+  detailField: { gap: 6 },
+  detailLabel: { fontSize: FontSizes.sm, color: Colors.textSecondary },
+  detailInput: { minHeight: 54, backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, fontSize: FontSizes.base, color: Colors.text, lineHeight: 22 },
   transcriptReview: { minHeight: 110, backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, fontSize: FontSizes.base, color: Colors.text, lineHeight: 24 },
 });
