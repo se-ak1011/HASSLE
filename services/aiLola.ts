@@ -1,6 +1,31 @@
 import { supabase } from '@/services/supabase';
 import { UserPreferences } from '@/constants/types';
 
+export type LolaMode =
+  | 'onboarding_extract'
+  | 'journal_reflect'
+  | 'doctor_report'
+  | 'daily_summary'
+  | 'chat'
+  | 'task_support'
+  | 'pattern_detection'
+  | 'future_letter';
+
+export type AiLolaRegion = 'US' | 'UK';
+
+export type LolaRequest<TData = unknown> = {
+  mode: LolaMode;
+  data?: TData;
+};
+
+export type LolaResponse<TResult = unknown> = {
+  ok: boolean;
+  mode?: LolaMode;
+  result?: TResult;
+  error?: string;
+  fallback?: boolean;
+};
+
 export type AiLolaRegion = 'US' | 'UK';
 
 export type OnboardingExtractedProfile = {
@@ -20,6 +45,7 @@ export type OnboardingExtractedProfile = {
   notes: string[];
 };
 
+export type OnboardingExtractData = {
 export type AiLolaOnboardingPayload = {
   mode: 'onboarding_extract';
   transcript: string;
@@ -59,6 +85,13 @@ function asRegion(value: unknown): AiLolaRegion | null {
   return null;
 }
 
+function unwrapResult(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const record = data as Record<string, unknown>;
+  if (record.ok === true && 'result' in record) return record.result;
+  for (const key of ['profile', 'data', 'result', 'onboardingProfile']) {
+    const nested = record[key];
+    if (nested && typeof nested === 'object') return nested;
 function unwrapResponse(data: unknown): Record<string, unknown> {
   if (!data || typeof data !== 'object') return {};
   const record = data as Record<string, unknown>;
@@ -69,6 +102,8 @@ function unwrapResponse(data: unknown): Record<string, unknown> {
   return record;
 }
 
+export function normalizeOnboardingExtractResult(data: unknown): OnboardingExtractedProfile {
+  const record = (unwrapResult(data) ?? {}) as Record<string, unknown>;
 export function normalizeAiLolaOnboardingResponse(data: unknown): OnboardingExtractedProfile {
   const record = unwrapResponse(data);
   return {
@@ -92,6 +127,20 @@ export function normalizeAiLolaOnboardingResponse(data: unknown): OnboardingExtr
   };
 }
 
+export async function invokeLola<TResult = unknown, TData = unknown>(request: LolaRequest<TData>): Promise<LolaResponse<TResult>> {
+  const { data, error } = await supabase.functions.invoke('ai-lola', { body: request });
+  if (error) return { ok: false, mode: request.mode, error: error.message, fallback: true };
+  if (data && typeof data === 'object' && 'ok' in data) return data as LolaResponse<TResult>;
+  return { ok: true, mode: request.mode, result: data as TResult };
+}
+
+export async function extractOnboardingProfile(data: OnboardingExtractData): Promise<OnboardingExtractedProfile> {
+  const response = await invokeLola<OnboardingExtractedProfile, OnboardingExtractData>({
+    mode: 'onboarding_extract',
+    data,
+  });
+  if (!response.ok) throw new Error(response.error ?? 'Lola could not organise onboarding');
+  return normalizeOnboardingExtractResult(response.result);
 export async function extractOnboardingProfileWithLola(payload: AiLolaOnboardingPayload): Promise<OnboardingExtractedProfile> {
   const { data, error } = await supabase.functions.invoke('ai-lola', { body: payload });
   if (error) throw error;

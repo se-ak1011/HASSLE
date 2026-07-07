@@ -400,6 +400,8 @@ function ProfilePanel() {
           const selected = physicalConditions.includes(c);
           return (
             <Pressable key={c} onPress={() => toggleCondition(c, 'physical')} style={[styles.conditionChip, selected && styles.conditionChipSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={c}>
+              <Text style={[styles.conditionChipText, selected && styles.conditionChipTextSelected, { fontFamily: ff.regular }]}>{c}</Text>
+            </Pressable>
           );
         })}
       </View>
@@ -409,6 +411,8 @@ function ProfilePanel() {
           const selected = mentalLoadConditions.includes(c);
           return (
             <Pressable key={c} onPress={() => toggleCondition(c, 'mental')} style={[styles.conditionChip, selected && styles.conditionChipSelected]} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={c}>
+              <Text style={[styles.conditionChipText, selected && styles.conditionChipTextSelected, { fontFamily: ff.regular }]}>{c}</Text>
+            </Pressable>
           );
         })}
       </View>

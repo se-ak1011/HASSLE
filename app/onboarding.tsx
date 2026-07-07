@@ -14,6 +14,7 @@ import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useDay } from '@/hooks/useDay';
 import { ReminderFrequency, PHYSICAL_CONDITIONS, MENTAL_LOAD_CONDITIONS } from '@/constants/types';
+import { extractOnboardingProfile, OnboardingExtractedProfile } from '@/services/aiLola';
 import { extractOnboardingProfileWithLola, OnboardingExtractedProfile } from '@/services/aiLola';
 import { Companion } from '@/constants/companion';
 import { useRegion } from '@/localization/RegionContext';
@@ -139,6 +140,7 @@ export default function OnboardingScreen() {
     setOrganising(true);
     setOrganiseMessage('');
     try {
+      const details = await extractOnboardingProfile({
       const details = await extractOnboardingProfileWithLola({
         mode: 'onboarding_extract',
         transcript: trimmedTranscript,
