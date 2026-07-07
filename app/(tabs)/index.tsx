@@ -929,7 +929,7 @@ export default function TodayScreen() {
               status="building"
               title="Building your summary."
               subtitle="We're quietly building your appointment summary."
-              primaryAction={{ label: 'See what's there', onPress: openReport }}
+              primaryAction={{ label: "See what's there", onPress: openReport }}
             />
           </View>
         ) : null}
