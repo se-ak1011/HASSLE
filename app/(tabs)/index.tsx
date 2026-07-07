@@ -33,6 +33,7 @@ import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
 import { IntentSheet } from '@/components/ui/IntentSheet';
+import { CommandSheet } from '@/components/ui/CommandSheet';
 import { loadClinicalSummary } from '@/services/exportService';
 
 const MIN_REPORT_DAYS = 7;
@@ -448,6 +449,7 @@ export default function TodayScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
+  const [showCommandSheet, setShowCommandSheet] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -492,7 +494,12 @@ export default function TodayScreen() {
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
         >
-          <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
+          <AssistantHero
+            title="Morning."
+            subtitle="What would help today?"
+            lola={Lola.sitting}
+            onLolaPress={() => setShowCommandSheet(true)}
+          />
 
           <Pressable
             style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
@@ -537,6 +544,15 @@ export default function TodayScreen() {
           visible={showIntentSheet}
           onClose={() => setShowIntentSheet(false)}
           handlers={{ openFlareWorkflow: () => setShowCheckIn(true) }}
+        />
+
+        <CommandSheet
+          visible={showCommandSheet}
+          onClose={() => setShowCommandSheet(false)}
+          handlers={{
+            openPlanToday: () => setShowCheckIn(true),
+            openSomethingHappened: () => setShowIntentSheet(true),
+          }}
         />
       </View>
     );
@@ -628,6 +644,7 @@ export default function TodayScreen() {
           title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
           subtitle={heroSentence}
           lola={heroImage}
+          onLolaPress={() => setShowCommandSheet(true)}
           badge={
             day.isFlareDay ? (
               <View style={styles.flarePill}>
@@ -919,6 +936,15 @@ export default function TodayScreen() {
           },
           openEndDay: handleEndDay,
           openReflect: () => router.push('/(tabs)/reflect' as any),
+        }}
+      />
+
+      <CommandSheet
+        visible={showCommandSheet}
+        onClose={() => setShowCommandSheet(false)}
+        handlers={{
+          openPlanToday: () => setShowAddModal(true),
+          openSomethingHappened: () => setShowIntentSheet(true),
         }}
       />
     </View>

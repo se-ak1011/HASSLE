@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { ImageSourcePropType, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { Colors, FontSizes, Fonts, Spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/primitives/Button';
@@ -20,6 +20,7 @@ type AssistantHeroProps = {
   secondaryAction?: AssistantHeroAction;
   badge?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  onLolaPress?: () => void;
 };
 
 export function AssistantHero({
@@ -32,6 +33,7 @@ export function AssistantHero({
   secondaryAction,
   badge,
   style,
+  onLolaPress,
 }: AssistantHeroProps) {
   return (
     <View style={[styles.container, style]}>
@@ -49,7 +51,18 @@ export function AssistantHero({
           </View>
         ) : null}
       </View>
-      <LolaPanel image={lola} size={lolaSize} />
+      {onLolaPress ? (
+        <Pressable
+          onPress={onLolaPress}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Open Lola"
+        >
+          <LolaPanel image={lola} size={lolaSize} />
+        </Pressable>
+      ) : (
+        <LolaPanel image={lola} size={lolaSize} />
+      )}
     </View>
   );
 }
