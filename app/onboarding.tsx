@@ -147,9 +147,7 @@ export default function OnboardingScreen() {
           {options.map((condition) => {
             const isSelected = selected.includes(condition);
             return (
-              <Pressable key={`${title}-${condition}`} style={[styles.conditionChip, isSelected && styles.conditionChipSelected]} onPress={() => toggleCondition(condition, group)}>
-                <Text style={[styles.conditionText, isSelected && styles.conditionTextSelected, { fontFamily: ff.medium }]}>{condition}</Text>
-              </Pressable>
+              <Pressable key={`${title}-${condition}`} style={[styles.conditionChip, isSelected && styles.conditionChipSelected]} onPress={() => toggleCondition(condition, group)} accessibilityRole="checkbox" accessibilityState={{ checked: isSelected }} accessibilityLabel={condition}>
             );
           })}
         </View>
