@@ -4,11 +4,9 @@ import { AlertProvider } from '@/template';
 import { DayProvider } from '@/contexts/DayContext';
 import { PlusProvider } from '@/contexts/PlusContext';
 import { AccountProvider } from '@/contexts/AccountContext';
-import { View, Text, Image, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import { Colors } from '@/constants/theme';
 import { billing } from '@/services/billing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RegionProvider } from '@/localization/RegionContext';
@@ -18,34 +16,6 @@ import { RegionProvider } from '@/localization/RegionContext';
 // hideAsync() below, this means a font hiccup can never strand us on the splash.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-/** Brief loading screen shown while fonts settle (usually a blink). */
-function LoadingScreen() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: Colors.background,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 28,
-        // Extra bottom padding shifts the centred content (sticker + text) up
-        // the screen so Lola sits higher rather than dead-centre.
-        paddingBottom: 160,
-      }}
-    >
-      <Image
-        source={require('@/assets/images/splash.png')}
-        style={{ width: 180, height: 180, resizeMode: 'contain' }}
-      />
-      <Text style={{ color: Colors.text, fontSize: 22, fontWeight: '700', marginTop: 18 }}>
-        Loading… 🦴
-      </Text>
-      <Text style={{ color: Colors.textSubtle, fontSize: 15, marginTop: 14 }}>(Maybe)</Text>
-      <ActivityIndicator color={Colors.primary} style={{ marginTop: 16 }} />
-    </View>
-  );
-}
-
 export default function RootLayout() {
   // Proceed even if a custom font fails to load — a missing font just falls back
   // to the system font and must never block the whole app from starting.
@@ -53,26 +23,15 @@ export default function RootLayout() {
     ChronicSans: require('@/assets/fonts/ChronicSans.otf'),
   });
 
-  // Hold the loading screen for at least half a second so "Loading… 🦴 (Maybe)"
-  // is actually readable — fonts usually load in a blink, which would otherwise
-  // flash the screen past too fast to see.
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setMinTimeElapsed(true), 500);
-    return () => clearTimeout(t);
-  }, []);
+  const ready = fontsLoaded || !!fontError;
 
-  const ready = (fontsLoaded || !!fontError) && minTimeElapsed;
-
-  // Always hide the splash shortly after mount, regardless of fonts, so we can
-  // never get stuck on it. Once it's down, the ErrorBoundary can surface any
-  // captured startup error instead of an endless splash.
+  // Keep the native Expo splash visible until the app is ready. We no longer
+  // render a second in-app loading splash, which prevents the previous
+  // placeholder-then-sticker double splash transition.
   useEffect(() => {
-    const t = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 50);
-    return () => clearTimeout(t);
-  }, []);
+    if (!ready) return;
+    SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
 
   // Initialise the billing SDK once (RevenueCat on native, no-op on web).
   useEffect(() => {
@@ -81,9 +40,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      {!ready ? (
-        <LoadingScreen />
-      ) : (
+      {!ready ? null : (
         <RegionProvider>
           <AlertProvider>
           <SafeAreaProvider>
@@ -100,6 +57,7 @@ export default function RootLayout() {
                     <Stack.Screen name="directory" />
                     <Stack.Screen name="report" />
                     <Stack.Screen name="quiet-time" />
+                    <Stack.Screen name="life" />
                   </Stack>
                 </AccountProvider>
               </PlusProvider>

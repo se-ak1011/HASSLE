@@ -4,7 +4,7 @@ import { Colors, FontSizes, Fonts, Spacing } from '@/constants/theme';
 
 type LolaPanelProps = {
   image: ImageSourcePropType;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
   alignment?: 'center' | 'start' | 'end';
   title?: string;
   subtitle?: string;
@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
   smallImage: { width: 72, height: 86 },
   mediumImage: { width: 112, height: 132 },
   largeImage: { width: 140, height: 166 },
+  xlargeImage: { width: 220, height: 260 },
   title: {
     fontSize: FontSizes.base,
     fontWeight: Fonts.semibold,

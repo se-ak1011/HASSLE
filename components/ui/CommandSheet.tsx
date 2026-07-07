@@ -1,21 +1,14 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  Pressable,
-  Modal,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, Pressable, Modal, Image } from 'react-native';
 import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
+import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { Companion } from '@/constants/companion';
 import { useRouter } from 'expo-router';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type CommandSheetHandlers = {
+  openBody?: () => void;
   openPlanToday?: () => void;
   openSomethingHappened?: () => void;
 };
@@ -24,220 +17,92 @@ type CommandSheetProps = {
   visible: boolean;
   onClose: () => void;
   handlers?: CommandSheetHandlers;
-  /** Optional context — surfaces screen-specific commands at the top of the list */
   context?: 'insights';
 };
 
-// ─── Command definitions ──────────────────────────────────────────────────────
-
-type Command = {
-  key: string;
+type LolaChip = {
+  key: 'body' | 'mind' | 'life' | 'quiet';
   label: string;
-  icon: string;
-  route: string | null;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  style: object;
 };
 
-const BASE_COMMANDS: Command[] = [
-  { key: 'plan',      label: 'Shape today',             icon: 'event-note',    route: null },
-  { key: 'happened',  label: 'What happened?',          icon: 'bolt',          route: null },
-  { key: 'insights',  label: "What I've noticed",       icon: 'show-chart',    route: '/patterns' },
-  { key: 'report',    label: 'View report',             icon: 'picture-as-pdf', route: '/report' },
-  { key: 'reflect',   label: 'Anything else?',          icon: 'edit-note',     route: '/reflect' },
-  { key: 'distract',  label: 'Choose something gentle', icon: 'spa',           route: '/quiet-time' },
-  { key: 'settings',  label: 'Settings',                icon: 'tune',          route: '/settings' },
+const CHIPS: LolaChip[] = [
+  { key: 'body', label: 'Body', icon: 'accessibility-new', style: { left: 18, top: 134 } },
+  { key: 'mind', label: 'Mind', icon: 'edit-note', style: { alignSelf: 'center', top: 24 } },
+  { key: 'life', label: 'Life', icon: 'folder-special', style: { right: 18, top: 134 } },
+  { key: 'quiet', label: 'Quiet Time', icon: 'spa', style: { alignSelf: 'center', bottom: 24 } },
 ];
-
-/** Commands surfaced first on the Insights screen */
-const INSIGHTS_PRIORITY_KEYS = ['reflect', 'report', 'distract'];
-
-function buildCommands(context?: 'insights'): Command[] {
-  if (context === 'insights') {
-    const priority = INSIGHTS_PRIORITY_KEYS
-      .map((k) => BASE_COMMANDS.find((c) => c.key === k))
-      .filter((c): c is Command => c !== undefined);
-    const rest = BASE_COMMANDS.filter((c) => !INSIGHTS_PRIORITY_KEYS.includes(c.key));
-    return [...priority, ...rest];
-  }
-  return BASE_COMMANDS;
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function CommandSheet({ visible, onClose, handlers = {}, context }: CommandSheetProps) {
   const ff = useFontFamily();
   const router = useRouter();
 
-  const COMMANDS = buildCommands(context);
-
-  function handleClose() {
+  function go(key: LolaChip['key']) {
     onClose();
-  }
-
-  function handleCommand(cmd: Command) {
-    switch (cmd.key) {
-      case 'plan':
-        handleClose();
-        handlers.openPlanToday?.();
-        break;
-      case 'happened':
-        handleClose();
-        handlers.openSomethingHappened?.();
-        break;
-      default:
-        if (cmd.route) {
-          handleClose();
-          router.push(cmd.route as any);
-        }
+    if (key === 'body') {
+      if (handlers.openBody) handlers.openBody();
+      else if (handlers.openPlanToday) handlers.openPlanToday();
+      else router.push('/(tabs)?body=1' as any);
+      return;
     }
+    if (key === 'mind') {
+      if (handlers.openSomethingHappened) handlers.openSomethingHappened();
+      else router.push('/reflect' as any);
+      return;
+    }
+    if (key === 'life') {
+      router.push('/life' as any);
+      return;
+    }
+    router.push('/quiet-time' as any);
   }
-
-  const greetingText = context === 'insights' ? 'Insights.' : 'Hi.';
-  const subText = context === 'insights'
-    ? 'Reflect, report or take a break?'
-    : 'What would help?';
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
-
-          {/* ── Command list ─────────────────────────────────────────────────── */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close Lola actions" />
+        <View style={styles.orbitCard}>
           <View style={styles.topBar}>
-            <View style={styles.greetingBlock}>
-              <Text style={[styles.greeting, { fontFamily: ff.bold }]}>{greetingText}</Text>
-              <Text style={[styles.subGreeting, { fontFamily: ff.regular }]}>
-                {subText}
-              </Text>
+            <View>
+              <Text style={[styles.greeting, { fontFamily: ff.bold }]}>{context === 'insights' ? 'Lola can help sort it.' : 'What would help today?'}</Text>
+              <Text style={[styles.subGreeting, { fontFamily: ff.regular }]}>Choose a gentle starting point.</Text>
             </View>
-            <Image
-              source={Companion.Loading}
-              style={styles.lolaSmall}
-              resizeMode="contain"
-              accessibilityLabel="Lola"
-            />
-            <Pressable
-              onPress={handleClose}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
+            <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
               <MaterialIcons name="close" size={22} color={Colors.textMuted} />
             </Pressable>
           </View>
 
-          <View style={styles.commandList}>
-            {COMMANDS.map((cmd, index) => (
+          <View style={styles.orbitArea}>
+            <Image source={Companion.Home} style={styles.lola} resizeMode="contain" accessibilityLabel="Lola" />
+            {CHIPS.map((chip) => (
               <Pressable
-                key={cmd.key}
-                style={({ pressed }) => [
-                  styles.commandRow,
-                  index < COMMANDS.length - 1 && styles.commandRowBorder,
-                  pressed && styles.commandRowPressed,
-                ]}
-                onPress={() => handleCommand(cmd)}
+                key={chip.key}
+                style={({ pressed }) => [styles.chip, chip.style, pressed && styles.chipPressed]}
+                onPress={() => go(chip.key)}
                 accessibilityRole="button"
-                accessibilityLabel={cmd.label}
+                accessibilityLabel={chip.label}
               >
-                <MaterialIcons
-                  name={cmd.icon as any}
-                  size={20}
-                  color={Colors.textSubtle}
-                  style={styles.commandIcon}
-                />
-                <Text style={[styles.commandLabel, { fontFamily: ff.medium }]}>
-                  {cmd.label}
-                </Text>
-                <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
+                <MaterialIcons name={chip.icon} size={18} color={Colors.primary} />
+                <Text style={[styles.chipText, { fontFamily: ff.semibold }]}>{chip.label}</Text>
               </Pressable>
             ))}
           </View>
-
         </View>
       </View>
     </Modal>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: Colors.overlay,
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-
-  // ── Top bar ────────────────────────────────────────────────────────────────
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  greetingBlock: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  greeting: {
-    fontSize: FontSizes.xxl,
-    fontWeight: Fonts.bold,
-    color: Colors.text,
-    letterSpacing: -0.8,
-    lineHeight: 42,
-  },
-  subGreeting: {
-    fontSize: FontSizes.base,
-    color: Colors.textMuted,
-    lineHeight: 24,
-  },
-  lolaSmall: {
-    width: 52,
-    height: 64,
-    marginTop: 2,
-  },
-
-  // ── Command list ───────────────────────────────────────────────────────────
-  commandList: {
-    gap: 0,
-  },
-  commandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md + 2,
-    minHeight: 56,
-  },
-  commandRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.hairline,
-  },
-  commandRowPressed: {
-    opacity: 0.65,
-  },
-  commandIcon: {
-    marginRight: Spacing.md,
-    width: 24,
-    textAlign: 'center',
-  },
-  commandLabel: {
-    flex: 1,
-    fontSize: FontSizes.base,
-    color: Colors.text,
-    lineHeight: 24,
-  },
+  overlay: { flex: 1, justifyContent: 'center', backgroundColor: Colors.overlay, padding: Spacing.lg },
+  orbitCard: { backgroundColor: Colors.surface, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, padding: Spacing.lg },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md, alignItems: 'flex-start' },
+  greeting: { fontSize: FontSizes.xl, color: Colors.text, letterSpacing: -0.4 },
+  subGreeting: { marginTop: 4, fontSize: FontSizes.sm, color: Colors.textSubtle },
+  orbitArea: { height: 330, marginTop: Spacing.md, justifyContent: 'center', alignItems: 'center' },
+  lola: { width: 190, height: 226 },
+  chip: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border, borderRadius: 999, paddingHorizontal: Spacing.md, paddingVertical: 10, shadowColor: '#000000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+  chipPressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
+  chipText: { fontSize: FontSizes.sm, color: Colors.text },
 });

@@ -23,15 +23,20 @@ type NavItem = {
 // ─── Navigation items ─────────────────────────────────────────────────────────
 
 const MAIN_ITEMS: NavItem[] = [
-  { label: 'Home',      icon: 'home',           route: '/' },
-  { label: 'Library',   icon: 'menu-book',      route: '/library' },
-  { label: 'Directory', icon: 'local-hospital', route: '/directory' },
+  { label: 'Home',        icon: 'home',           route: '/(tabs)' },
+  { label: 'Body',        icon: 'accessibility-new', route: '/(tabs)?body=1' },
+  { label: 'Mind',        icon: 'edit-note',      route: '/reflect' },
+  { label: 'Life',        icon: 'folder-special', route: '/life' },
+  { label: 'Quiet Time',  icon: 'spa',            route: '/quiet-time' },
 ];
 
 const MORE_ITEMS: NavItem[] = [
-  { label: 'Plus',     icon: 'auto-awesome',   route: '/plus' },
-  { label: 'Settings', icon: 'tune',           route: '/settings' },
-  { label: 'Account',  icon: 'person-outline', route: '/account' },
+  { label: 'Library',       icon: 'menu-book',      route: '/library' },
+  { label: 'Directory',     icon: 'local-hospital', route: '/directory' },
+  { label: 'Doctor Report', icon: 'picture-as-pdf', route: '/report' },
+  { label: 'Plus',          icon: 'auto-awesome',   route: '/plus' },
+  { label: 'Settings',      icon: 'tune',           route: '/settings' },
+  { label: 'Account',       icon: 'person-outline', route: '/account' },
 ];
 
 const DRAWER_WIDTH = 280;
@@ -73,8 +78,8 @@ export function NavDrawer({ visible, onClose }: NavDrawerProps) {
 
   function handleNav(route: string) {
     onClose();
-    if (route === '/') {
-      router.replace('/' as any);
+    if (route === '/(tabs)') {
+      router.replace('/(tabs)' as any);
       return;
     }
     router.push(route as any);
