@@ -31,6 +31,11 @@ import { AssistantHero } from '@/components/ui/AssistantHero';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
+import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
+import { IntentSheet } from '@/components/ui/IntentSheet';
+import { loadClinicalSummary } from '@/services/exportService';
+
+const MIN_REPORT_DAYS = 7;
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -442,10 +447,18 @@ export default function TodayScreen() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showIntentSheet, setShowIntentSheet] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [reportDaysFound, setReportDaysFound] = useState<number>(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    loadClinicalSummary(30)
+      .then((s) => setReportDaysFound(s?.daysFound ?? 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!feedbackMsg) return;
@@ -481,6 +494,14 @@ export default function TodayScreen() {
         >
           <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
 
+          <Pressable
+            style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => setShowIntentSheet(true)}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
+          </Pressable>
+
           <View style={styles.actionGrid}>
             <ActionTile
               primary
@@ -490,7 +511,7 @@ export default function TodayScreen() {
               onPress={() => setShowCheckIn(true)}
             />
             <ActionTile
-              title="I’m struggling"
+              title="I'm struggling"
               body="This can be smaller."
               icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
               onPress={() => setShowCheckIn(true)}
@@ -511,6 +532,12 @@ export default function TodayScreen() {
 
           <ObservationCard label="Hassle remembers" text="You can start with one useful thing. The details can wait." />
         </ScrollView>
+
+        <IntentSheet
+          visible={showIntentSheet}
+          onClose={() => setShowIntentSheet(false)}
+          handlers={{ openFlareWorkflow: () => setShowCheckIn(true) }}
+        />
       </View>
     );
   }
@@ -610,6 +637,14 @@ export default function TodayScreen() {
           }
         />
 
+        <Pressable
+          style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
+          onPress={() => setShowIntentSheet(true)}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
+        </Pressable>
+
         <View style={styles.actionGrid}>
           <ActionTile
             primary
@@ -640,84 +675,27 @@ export default function TodayScreen() {
 
         <ObservationCard text={observationText} />
 
-        {/* Tags */}
-        {day.tags.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagsScroll}
-          >
-            <View style={styles.tagsRow}>
-              {day.tags.map((tag) => (
-                <View
-                  key={tag}
-                  style={[
-                    styles.tagPill,
-                    { borderColor: tagColors[tag] ?? Colors.border },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tagPillText,
-                      { color: tagColors[tag] ?? Colors.textSubtle },
-                      { fontFamily: ff.medium },
-                    ]}
-                  >
-                    {tag}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+        {/* Contextual report-ready card */}
+        {reportDaysFound >= MIN_REPORT_DAYS ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="ready"
+              title="Doctor report ready."
+              subtitle="You now have enough information for your appointment."
+              primaryAction={{ label: 'View report', onPress: openReport }}
+            />
+          </View>
         ) : null}
 
-        {/* Energy Bar */}
-        <View style={styles.section}>
-          <EnergyBar
-            mode={day.energyMode}
-            total={day.energyLevel}
-            used={energyUsed}
-            remaining={energyRemaining}
-            isFlare={day.isFlareDay}
-          />
-        </View>
-
-        {/* Inline feedback message */}
+        {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
           <Animated.View style={[styles.feedbackRow, { opacity: fadeAnim }]}>
             <Text style={[styles.feedbackText, { fontFamily: ff.regular }]}>{feedbackMsg}</Text>
           </Animated.View>
         ) : null}
 
-        {/* Flare day toggle */}
-        <View style={[styles.section, styles.flareToggleCard]}>
-          <View style={styles.flareToggleLeft}>
-            <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
-            <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
-              {day.isFlareDay
-                ? 'All task costs are increased by 50%'
-                : 'Toggle on to increase task costs by 50%'}
-            </Text>
-          </View>
-          <Switch
-            value={day.isFlareDay}
-            onValueChange={toggleFlare}
-            trackColor={{ false: Colors.border, true: Colors.flare }}
-            thumbColor={Colors.white}
-            accessibilityLabel="Flare day"
-          />
-        </View>
-
-        {day.isFlareDay ? (
-          <View style={styles.flareMsgSection}>
-            <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-              That’s enough for today.
-            </Text>
-          </View>
-        ) : null}
-
         {/* Pending tasks */}
-        <SectionBlock title="Today&apos;s support" count={pending.length}>
+        <SectionBlock title="Today's support" count={pending.length}>
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
@@ -817,6 +795,77 @@ export default function TodayScreen() {
           </SectionBlock>
         ) : null}
 
+        {/* ── Supporting information ─────────────────────────────────── */}
+
+        {/* Today's tags — supporting context */}
+        {day.tags.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tagsScroll}
+          >
+            <View style={styles.tagsRow}>
+              {day.tags.map((tag) => (
+                <View
+                  key={tag}
+                  style={[
+                    styles.tagPill,
+                    { borderColor: tagColors[tag] ?? Colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagPillText,
+                      { color: tagColors[tag] ?? Colors.textSubtle },
+                      { fontFamily: ff.medium },
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        ) : null}
+
+        {/* Energy bar — supporting info */}
+        <View style={styles.section}>
+          <EnergyBar
+            mode={day.energyMode}
+            total={day.energyLevel}
+            used={energyUsed}
+            remaining={energyRemaining}
+            isFlare={day.isFlareDay}
+          />
+        </View>
+
+        {/* Flare day toggle */}
+        <View style={[styles.section, styles.flareToggleCard]}>
+          <View style={styles.flareToggleLeft}>
+            <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
+            <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
+              {day.isFlareDay
+                ? 'All task costs are increased by 50%'
+                : 'Toggle on to increase task costs by 50%'}
+            </Text>
+          </View>
+          <Switch
+            value={day.isFlareDay}
+            onValueChange={toggleFlare}
+            trackColor={{ false: Colors.border, true: Colors.flare }}
+            thumbColor={Colors.white}
+            accessibilityLabel="Flare day"
+          />
+        </View>
+
+        {day.isFlareDay ? (
+          <View style={styles.flareMsgSection}>
+            <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
+              That's enough for today.
+            </Text>
+          </View>
+        ) : null}
+
         {/* End day */}
         <View style={styles.section}>
           <Pressable
@@ -853,6 +902,21 @@ export default function TodayScreen() {
         onPick={(date) => {
           if (movingTask) moveTask(movingTask.id, date);
           setMovingTask(null);
+        }}
+      />
+
+      <IntentSheet
+        visible={showIntentSheet}
+        onClose={() => setShowIntentSheet(false)}
+        handlers={{
+          openFlareWorkflow: day.isFlareDay ? handleEndDay : () => toggleFlare(true),
+          openAddTask: () => setShowAddModal(true),
+          openMoveTask: () => {
+            // No specific task to move; open add-task so user can create/select
+            setShowAddModal(true);
+          },
+          openEndDay: handleEndDay,
+          openReflect: () => router.push('/(tabs)/reflect' as any),
         }}
       />
     </View>
@@ -1198,6 +1262,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  reportCardWrap: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
   tagsScroll: {
     marginBottom: Spacing.sm,
   },
@@ -1360,5 +1428,19 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: Fonts.medium,
     color: Colors.textSubtle,
+  },
+  whatHappenedBtn: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md + 2,
+    alignItems: 'center',
+  },
+  whatHappenedText: {
+    fontSize: FontSizes.md,
+    fontWeight: Fonts.semibold,
+    color: Colors.text,
+    letterSpacing: -0.2,
   },
 });
