@@ -673,20 +673,6 @@ export default function TodayScreen() {
           />
         </View>
 
-        <ObservationCard text={observationText} />
-
-        {/* Contextual report-ready card */}
-        {reportDaysFound >= MIN_REPORT_DAYS ? (
-          <View style={styles.reportCardWrap}>
-            <ReportReadyCard
-              status="ready"
-              title="Doctor report ready."
-              subtitle="You now have enough information for your appointment."
-              primaryAction={{ label: 'View report', onPress: openReport }}
-            />
-          </View>
-        ) : null}
-
         {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
           <Animated.View style={[styles.feedbackRow, { opacity: fadeAnim }]}>
@@ -795,7 +781,23 @@ export default function TodayScreen() {
           </SectionBlock>
         ) : null}
 
-        {/* ── Supporting information ─────────────────────────────────── */}
+        {/* ── Recent observations ─────────────────────────────────────── */}
+
+        <ObservationCard text={observationText} />
+
+        {/* Contextual report-ready card */}
+        {reportDaysFound >= MIN_REPORT_DAYS ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="ready"
+              title="Doctor report ready."
+              subtitle="You now have enough information for your appointment."
+              primaryAction={{ label: 'View report', onPress: openReport }}
+            />
+          </View>
+        ) : null}
+
+        {/* ── Optional details ────────────────────────────────────────── */}
 
         {/* Today's tags — supporting context */}
         {day.tags.length > 0 ? (

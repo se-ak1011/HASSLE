@@ -451,9 +451,9 @@ function EmptyReflectView() {
           <View style={styles.emptyIconCircle}>
             <MaterialIcons name="edit-note" size={28} color={Colors.primary} />
           </View>
-          <Text style={styles.emptyTitle}>Your reflections will appear here.</Text>
+          <Text style={styles.emptyTitle}>Reflections can live here, if you want.</Text>
           <Text style={styles.emptyDesc}>
-            Once you finish a day, you will be able to look back here anytime.
+            Once you finish a day, you can look back here anytime. No pressure to write anything.
           </Text>
         </View>
       </View>
@@ -539,11 +539,11 @@ export default function ReflectScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontFamily: ff.bold }]}>Anything happen today?</Text>
+            <Text style={[styles.title, { fontFamily: ff.bold }]}>This space is yours.</Text>
             <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
               {day.isFlareDay
-                ? 'Getting through today counts.'
-                : 'Nothing has to be perfect.'}
+                ? 'Getting through today counts. Only add what feels useful.'
+                : 'If you want. Only if it helps.'}
             </Text>
           </View>
 
@@ -579,8 +579,8 @@ export default function ReflectScreen() {
 
           {/* Free journal — surfaced first as the primary entry point */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything worth remembering?</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Just for you.</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything worth noting?</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Only you will see this.</Text>
             <TextInput
               style={styles.journalInput}
               value={journal}
@@ -628,8 +628,8 @@ export default function ReflectScreen() {
 
           {/* Guided prompts */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Guided prompts</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none.</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Optional prompts</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none. No pressure.</Text>
 
             <PromptCarousel
               prompts={[
@@ -649,7 +649,7 @@ export default function ReflectScreen() {
             ]}
             onPress={handleSave}
           >
-            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save reflection</Text>
+            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save, if you're ready</Text>
           </Pressable>
 
           <View style={{ height: insets.bottom + Spacing.xl }} />

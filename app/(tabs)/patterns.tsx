@@ -518,10 +518,29 @@ export default function PatternsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <AssistantHero
-          title="Hassle noticed…"
-          subtitle="Small patterns, no judgment."
+          title="What we noticed."
+          subtitle="One thing at a time."
           lola={Lola.books}
         />
+
+        {/* Lead observation — shown prominently before anything else */}
+        {!loading && observations.length > 0 ? (
+          <View style={styles.leadObservation}>
+            <Text style={[styles.leadLabel, { fontFamily: ff.regular }]}>Something small I've seen…</Text>
+            <Text style={[styles.leadText, { fontFamily: ff.regular }]}>{observations[0].text}</Text>
+            {observations[0].actionLabel ? (
+              <Pressable
+                onPress={observations[0].onPress}
+                style={({ pressed }) => [styles.leadAction, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.leadActionText, { fontFamily: ff.semibold }]}>
+                  {observations[0].actionLabel}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* History insights */}
         <SectionBlock
@@ -554,18 +573,20 @@ export default function PatternsScreen() {
             />
           ) : (
             <>
-              <View style={styles.observationStack}>
-                {observations.map((observation) => (
-                  <ObservationCard
-                    key={`${observation.confidenceLabel}-${observation.text}`}
-                    text={observation.text}
-                    confidenceLabel={observation.confidenceLabel}
-                    actionLabel={observation.actionLabel}
-                    onPress={observation.onPress}
-                    style={styles.observationCard}
-                  />
-                ))}
-              </View>
+              {observations.length > 1 ? (
+                <View style={styles.observationStack}>
+                  {observations.slice(1).map((observation) => (
+                    <ObservationCard
+                      key={`${observation.confidenceLabel}-${observation.text}`}
+                      text={observation.text}
+                      confidenceLabel={observation.confidenceLabel}
+                      actionLabel={observation.actionLabel}
+                      onPress={observation.onPress}
+                      style={styles.observationCard}
+                    />
+                  ))}
+                </View>
+              ) : null}
 
               {history.length >= 7 ? (
                 <View style={styles.reportTileWrap}>
@@ -594,7 +615,7 @@ export default function PatternsScreen() {
                 </View>
               ) : null}
 
-              <Text style={[styles.supportingTitle, { fontFamily: ff.semibold }]}>Supporting details</Text>
+              <Text style={[styles.supportingTitle, { fontFamily: ff.regular }]}>Supporting details</Text>
 
               {spoonInsights.days.length > 0 ? (
                 <InsightSection insights={spoonInsights} />
@@ -735,11 +756,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   supportingTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
+    fontSize: FontSizes.sm,
+    fontWeight: Fonts.medium,
+    color: Colors.textSubtle,
     marginBottom: Spacing.md,
-    letterSpacing: -0.2,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase' as const,
   },
   refreshBtn: {
     padding: 4,
@@ -785,5 +807,34 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.accent,
     lineHeight: 20,
+  },
+  leadObservation: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  leadLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
+  },
+  leadText: {
+    fontSize: FontSizes.md,
+    color: Colors.text,
+    lineHeight: 34,
+    letterSpacing: -0.2,
+  },
+  leadAction: {
+    marginTop: Spacing.md,
+  },
+  leadActionText: {
+    fontSize: FontSizes.sm,
+    color: Colors.primary,
   },
 });

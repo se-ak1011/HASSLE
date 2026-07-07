@@ -32,8 +32,9 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.textSubtle,
         tabBarLabelStyle: {
           fontFamily: 'ChronicSans',
-          fontSize: FontSizes.sm,
-          letterSpacing: 0.3,
+          fontSize: FontSizes.xs,
+          letterSpacing: 0.2,
+          opacity: 0.8,
         },
       }}
     >
