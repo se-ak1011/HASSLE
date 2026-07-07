@@ -32,6 +32,7 @@ import { ActionTile } from '@/components/ui/ActionTile';
 import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
+import { IntentSheet } from '@/components/ui/IntentSheet';
 import { loadClinicalSummary } from '@/services/exportService';
 
 const MIN_REPORT_DAYS = 7;
@@ -446,6 +447,7 @@ export default function TodayScreen() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showIntentSheet, setShowIntentSheet] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -492,6 +494,14 @@ export default function TodayScreen() {
         >
           <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
 
+          <Pressable
+            style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => setShowIntentSheet(true)}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
+          </Pressable>
+
           <View style={styles.actionGrid}>
             <ActionTile
               primary
@@ -501,7 +511,7 @@ export default function TodayScreen() {
               onPress={() => setShowCheckIn(true)}
             />
             <ActionTile
-              title="I’m struggling"
+              title="I'm struggling"
               body="This can be smaller."
               icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
               onPress={() => setShowCheckIn(true)}
@@ -522,6 +532,12 @@ export default function TodayScreen() {
 
           <ObservationCard label="Hassle remembers" text="You can start with one useful thing. The details can wait." />
         </ScrollView>
+
+        <IntentSheet
+          visible={showIntentSheet}
+          onClose={() => setShowIntentSheet(false)}
+          handlers={{ openFlareWorkflow: () => setShowCheckIn(true) }}
+        />
       </View>
     );
   }
@@ -620,6 +636,14 @@ export default function TodayScreen() {
             ) : null
           }
         />
+
+        <Pressable
+          style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
+          onPress={() => setShowIntentSheet(true)}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
+        </Pressable>
 
         <View style={styles.actionGrid}>
           <ActionTile
@@ -878,6 +902,21 @@ export default function TodayScreen() {
         onPick={(date) => {
           if (movingTask) moveTask(movingTask.id, date);
           setMovingTask(null);
+        }}
+      />
+
+      <IntentSheet
+        visible={showIntentSheet}
+        onClose={() => setShowIntentSheet(false)}
+        handlers={{
+          openFlareWorkflow: day.isFlareDay ? handleEndDay : () => toggleFlare(true),
+          openAddTask: () => setShowAddModal(true),
+          openMoveTask: () => {
+            // No specific task to move; open add-task so user can create/select
+            setShowAddModal(true);
+          },
+          openEndDay: handleEndDay,
+          openReflect: () => router.push('/(tabs)/reflect' as any),
         }}
       />
     </View>
@@ -1389,5 +1428,19 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: Fonts.medium,
     color: Colors.textSubtle,
+  },
+  whatHappenedBtn: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md + 2,
+    alignItems: 'center',
+  },
+  whatHappenedText: {
+    fontSize: FontSizes.md,
+    fontWeight: Fonts.semibold,
+    color: Colors.text,
+    letterSpacing: -0.2,
   },
 });

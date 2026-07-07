@@ -539,11 +539,11 @@ export default function ReflectScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontFamily: ff.bold }]}>End of day</Text>
+            <Text style={[styles.title, { fontFamily: ff.bold }]}>Anything happen today?</Text>
             <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
               {day.isFlareDay
                 ? 'Getting through today counts.'
-                : 'A gentle look at how today went.'}
+                : 'Nothing has to be perfect.'}
             </Text>
           </View>
 
@@ -577,6 +577,22 @@ export default function ReflectScreen() {
             </View>
           ) : null}
 
+          {/* Free journal — surfaced first as the primary entry point */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything worth remembering?</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Just for you.</Text>
+            <TextInput
+              style={styles.journalInput}
+              value={journal}
+              onChangeText={setJournal}
+              multiline
+              numberOfLines={6}
+              placeholder="Whatever comes to mind..."
+              placeholderTextColor={Colors.textSubtle}
+              textAlignVertical="top"
+            />
+          </View>
+
           {/* What you did */}
           {completedTasks.length > 0 ? (
             <View style={styles.section}>
@@ -609,22 +625,6 @@ export default function ReflectScreen() {
               </View>
             </View>
           )}
-
-          {/* Free journal */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Write anything about today</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Just for you.</Text>
-            <TextInput
-              style={styles.journalInput}
-              value={journal}
-              onChangeText={setJournal}
-              multiline
-              numberOfLines={6}
-              placeholder="Whatever comes to mind..."
-              placeholderTextColor={Colors.textSubtle}
-              textAlignVertical="top"
-            />
-          </View>
 
           {/* Guided prompts */}
           <View style={styles.section}>
