@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Modal,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -28,16 +29,12 @@ import { CompletionModal } from '@/components/ui/CompletionModal';
 import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 import { AssistantHero } from '@/components/ui/AssistantHero';
-import { ActionTile } from '@/components/ui/ActionTile';
-import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
-import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
 import { IntentSheet } from '@/components/ui/IntentSheet';
 import { CommandSheet } from '@/components/ui/CommandSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
-import { loadClinicalSummary } from '@/services/exportService';
 
-const MIN_REPORT_DAYS = 7;
+const VISIBLE_SUPPORT_TASKS = 3;
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -448,18 +445,12 @@ export default function TodayScreen() {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
   const [showCommandSheet, setShowCommandSheet] = useState(false);
+  const [showPlanSheet, setShowPlanSheet] = useState(false);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
-  const [reportDaysFound, setReportDaysFound] = useState<number>(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    loadClinicalSummary(30)
-      .then((s) => setReportDaysFound(s?.daysFound ?? 0))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!feedbackMsg) return;
@@ -469,14 +460,6 @@ export default function TodayScreen() {
       Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start(() => setFeedbackMsg(null));
   }, [feedbackMsg]);
-
-  function openReport() {
-    router.push('/report' as any);
-  }
-
-  function openPatterns() {
-    router.push('/(tabs)/patterns' as any);
-  }
 
   if (!day || !day.checkedIn) {
     if (showCheckIn) {
@@ -510,44 +493,17 @@ export default function TodayScreen() {
             lola={Lola.sitting}
             onLolaPress={() => setShowCommandSheet(true)}
           />
-
-          <Pressable
-            style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => setShowIntentSheet(true)}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
-          </Pressable>
-
-          <View style={styles.actionGrid}>
-            <ActionTile
-              primary
-              title="Plan today"
-              body="A small shape for the day."
-              icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
-              onPress={() => setShowCheckIn(true)}
-            />
-            <ActionTile
-              title="I'm struggling"
-              body="This can be smaller."
-              icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
-              onPress={() => setShowCheckIn(true)}
-            />
-            <ActionTile
-              title="Doctor report"
-              body="Preview appointment notes."
-              icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
-              onPress={openReport}
-            />
-            <ActionTile
-              title="What changed?"
-              body="Look for patterns, gently."
-              icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
-              onPress={openPatterns}
-            />
-          </View>
-
-          <ObservationCard label="Hassle remembers" text="You can start with one useful thing. The details can wait." />
+          <SectionBlock title="Today's Support">
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🌱</Text>
+              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
+                Nothing needs your attention yet.
+              </Text>
+              <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
+                Tap Lola when you want to shape today.
+              </Text>
+            </View>
+          </SectionBlock>
         </ScrollView>
 
         <IntentSheet
@@ -582,10 +538,9 @@ export default function TodayScreen() {
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   const isLowEnergy = energyRemaining <= 20;
-  const isReportReady = reportDaysFound >= MIN_REPORT_DAYS;
-  const isReportBuilding = reportDaysFound > 0 && reportDaysFound < MIN_REPORT_DAYS;
+  const visiblePending = pending.slice(0, VISIBLE_SUPPORT_TASKS);
+  const hasMoreSupport = pending.length > visiblePending.length;
 
-  // ── Adaptive hero ──────────────────────────────────────────────────────────
   let heroImage = Lola.standing;
   let heroSentence = 'What would help today?';
   let heroKicker = 'Today, together.';
@@ -597,39 +552,9 @@ export default function TodayScreen() {
   } else if (isLowEnergy) {
     heroImage = Lola.xeyes;
     heroSentence = "Let's make today smaller.";
-  } else if (isReportReady) {
-    heroImage = Lola.report;
-    heroSentence = 'Your appointment summary is ready.';
-    heroKicker = 'Your summary is ready.';
   } else if (pending.length === 0) {
     heroImage = Lola.sitting;
     heroSentence = 'Nothing urgent is waiting.';
-  } else if (reportDaysFound >= 3) {
-    heroImage = Lola.books;
-    heroSentence = "I've noticed something.";
-    heroKicker = 'Hassle noticed.';
-  }
-
-  // ── Adaptive observation ───────────────────────────────────────────────────
-  let observationText: string;
-  if (isReportReady) {
-    observationText = 'You seem to have enough information for a useful appointment summary.';
-  } else if (day.isFlareDay && completed.length > 0) {
-    observationText = "You've been protecting your energy well. That's real care.";
-  } else if (moved.length >= 2) {
-    observationText = "You've moved tasks a few times recently. That often seems to help.";
-  } else if (moved.length === 1) {
-    observationText = 'Moving something out of today may have made things a little lighter.';
-  } else if (pending.length === 0 && completed.length > 0) {
-    observationText = "You've already done things today. That counts.";
-  } else if (pending.length === 0) {
-    observationText = 'Nothing else needs your attention right now.';
-  } else if (isLowEnergy) {
-    observationText = 'Your energy might be running lower today. The list can stay small.';
-  } else if (pending.length === 1) {
-    observationText = 'There is one thing left. It can stay small.';
-  } else {
-    observationText = `${pending.length} things are waiting. You only have to choose the next one.`;
   }
 
   function handleCompletePress(task: Task) {
@@ -679,49 +604,8 @@ export default function TodayScreen() {
     'decent day': Colors.success,
   };
 
-  // ── Adaptive action order ──────────────────────────────────────────────────
-  const actionPlan = {
-    key: 'plan',
-    title: 'Plan today',
-    body: 'Add or choose one thing.',
-    iconName: 'event-note',
-    iconColor: Colors.primary,
-    onPress: () => setShowAddModal(true),
-  };
-  const actionStruggling = {
-    key: 'struggling',
-    title: "I'm struggling",
-    body: day.isFlareDay ? "That's enough for today." : 'Protect your energy.',
-    iconName: 'bedtime',
-    iconColor: Colors.flare,
-    onPress: day.isFlareDay ? () => { handleEndDay(); } : () => toggleFlare(true),
-  };
-  const actionReport = {
-    key: 'report',
-    title: 'Doctor report',
-    body: 'Your 30-day summary.',
-    iconName: 'picture-as-pdf',
-    iconColor: Colors.accent,
-    onPress: openReport,
-  };
-  const actionPatterns = {
-    key: 'patterns',
-    title: 'What changed?',
-    body: 'Hassle noticed…',
-    iconName: 'auto-graph',
-    iconColor: Colors.primary,
-    onPress: openPatterns,
-  };
-
-  let orderedActions: typeof actionPlan[];
-  if (day.isFlareDay) {
-    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
-  } else if (isReportReady) {
-    orderedActions = [actionReport, actionPatterns, actionPlan, actionStruggling];
-  } else if (isLowEnergy) {
-    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
-  } else {
-    orderedActions = [actionPlan, actionPatterns, actionReport, actionStruggling];
+  function openPlanToday() {
+    setShowPlanSheet(true);
   }
 
   return (
@@ -744,46 +628,13 @@ export default function TodayScreen() {
           onLolaPress={() => setShowCommandSheet(true)}
         />
 
-        <Pressable
-          style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
-          onPress={() => setShowIntentSheet(true)}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.whatHappenedText, { fontFamily: ff.semibold }]}>What happened?</Text>
-        </Pressable>
-
-        <View style={styles.actionGrid}>
-          {orderedActions.map((action, i) => {
-            const isPrimary = i === 0;
-            return (
-              <ActionTile
-                key={action.key}
-                primary={isPrimary}
-                title={action.title}
-                body={action.body}
-                icon={
-                  <MaterialIcons
-                    name={action.iconName as React.ComponentProps<typeof MaterialIcons>['name']}
-                    size={22}
-                    color={isPrimary ? Colors.background : action.iconColor}
-                  />
-                }
-                onPress={action.onPress}
-              />
-            );
-          })}
-        </View>
-
-        {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
           <Animated.View style={[styles.feedbackRow, { opacity: fadeAnim }]}>
             <Text style={[styles.feedbackText, { fontFamily: ff.regular }]}>{feedbackMsg}</Text>
           </Animated.View>
         ) : null}
 
-        {/* Pending tasks */}
-        <SectionBlock title="Today's support" count={pending.length}>
-
+        <SectionBlock title="Today's Support" count={pending.length}>
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
@@ -795,12 +646,12 @@ export default function TodayScreen() {
                   : 'Nothing on your list yet.'}
               </Text>
               <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                {day.isFlareDay ? 'Let today stay light.' : 'Add only what would help.'}
+                {day.isFlareDay ? 'Let today stay light.' : 'Tap Lola to shape what matters next.'}
               </Text>
             </View>
           ) : (
             <View style={styles.taskList}>
-              {pending.map((task) => (
+              {visiblePending.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -812,215 +663,222 @@ export default function TodayScreen() {
             </View>
           )}
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.addTaskBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => setShowAddModal(true)}
-          >
-            <MaterialIcons name="add" size={20} color={Colors.primary} />
-            <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add something</Text>
-          </Pressable>
+          {hasMoreSupport ? (
+            <Pressable
+              style={({ pressed }) => [styles.seePlanBtn, pressed && { opacity: 0.7 }]}
+              onPress={openPlanToday}
+              accessibilityRole="button"
+              accessibilityLabel="See today's plan"
+            >
+              <Text style={[styles.seePlanText, { fontFamily: ff.medium }]}>See today's plan</Text>
+              <MaterialIcons name="chevron-right" size={18} color={Colors.primary} />
+            </Pressable>
+          ) : null}
         </SectionBlock>
-
-        {/* Done today */}
-        {completed.length > 0 ? (
-          <SectionBlock title="Done today" count={completed.length}>
-            <View style={styles.taskList}>
-              {completed.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  mode={day.energyMode}
-                  onComplete={() => {}}
-                  onMove={() => {}}
-                />
-              ))}
-            </View>
-          </SectionBlock>
-        ) : null}
-
-        {/* Moved ahead */}
-        {moved.length > 0 ? (
-          <SectionBlock title="Moved ahead" count={moved.length}>
-            <View style={styles.taskList}>
-              {moved.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  mode={day.energyMode}
-                  onComplete={() => {}}
-                  onMove={() => {}}
-                  onRevert={() => unmoveTask(task.id)}
-                />
-              ))}
-            </View>
-          </SectionBlock>
-        ) : null}
-
-        {/* Coming up — tasks rescheduled to a future day */}
-        {upcoming.length > 0 ? (
-          <SectionBlock title="Coming up" count={upcoming.length}>
-            <View style={styles.taskList}>
-              {upcoming.map((s) => (
-                <View key={s.task.id} style={styles.comingCard}>
-                  <View style={styles.comingInfo}>
-                    <Text style={[styles.comingName, { fontFamily: ff.medium }]}>{s.task.name}</Text>
-                    <View style={styles.comingDateRow}>
-                      <MaterialIcons name="event" size={13} color={Colors.accent} />
-                      <Text style={[styles.comingDate, { fontFamily: ff.regular }]}>
-                        {formatShortDate(s.scheduledFor)}
-                      </Text>
-                    </View>
-                  </View>
-                  <Pressable
-                    onPress={() => removeScheduled(s.task.id)}
-                    hitSlop={10}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Cancel scheduled "${s.task.name}"`}
-                  >
-                    <MaterialIcons name="close" size={18} color={Colors.textSubtle} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          </SectionBlock>
-        ) : null}
-
-        {/* ── Recent observations ─────────────────────────────────────── */}
-
-        <ObservationCard text={observationText} />
-
-        {/* Quiet Time — shown on flare days or when energy is low */}
-        {(day.isFlareDay || isLowEnergy) ? (
-          <Pressable
-            style={({ pressed }) => [styles.quietTimeBanner, pressed && { opacity: 0.75 }]}
-            onPress={() => router.push('/quiet-time' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Quiet Time — something gentle"
-          >
-            <MaterialIcons name="spa" size={18} color={Colors.accent} style={{ marginRight: Spacing.sm }} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.quietTimeBannerTitle, { fontFamily: ff.medium }]}>
-                Need a quiet minute?
-              </Text>
-              <Text style={[styles.quietTimeBannerSub, { fontFamily: ff.regular }]}>
-                Quiet Time — something gentle
-              </Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
-          </Pressable>
-        ) : null}
-
-        {/* Contextual report-ready card */}
-        {isReportReady ? (
-          <View style={styles.reportCardWrap}>
-            <ReportReadyCard
-              status="ready"
-              title="Doctor report ready."
-              subtitle="You now have enough information for your appointment."
-              primaryAction={{ label: 'View report', onPress: openReport }}
-            />
-          </View>
-        ) : isReportBuilding ? (
-          <View style={styles.reportCardWrap}>
-            <ReportReadyCard
-              status="building"
-              title="Building your summary."
-              subtitle="We're quietly building your appointment summary."
-              primaryAction={{ label: "See what's there", onPress: openReport }}
-            />
-          </View>
-        ) : null}
-
-        {/* ── Optional details ────────────────────────────────────────── */}
-
-        {/* Today's tags — supporting context */}
-        {day.tags.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagsScroll}
-          >
-            <View style={styles.tagsRow}>
-              {day.tags.map((tag) => (
-                <View
-                  key={tag}
-                  style={[
-                    styles.tagPill,
-                    { borderColor: tagColors[tag] ?? Colors.border },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tagPillText,
-                      { color: tagColors[tag] ?? Colors.textSubtle },
-                      { fontFamily: ff.medium },
-                    ]}
-                  >
-                    {tag}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        ) : null}
-
-        {/* Energy bar — supporting info */}
-        <View style={styles.section}>
-          <EnergyBar
-            mode={day.energyMode}
-            total={day.energyLevel}
-            used={energyUsed}
-            remaining={energyRemaining}
-            isFlare={day.isFlareDay}
-          />
-        </View>
-
-        {/* Flare day toggle */}
-        <View style={[styles.section, styles.flareToggleCard]}>
-          <View style={styles.flareToggleLeft}>
-            <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
-            <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
-              {day.isFlareDay
-                ? 'All task costs are increased by 50%'
-                : 'Toggle on to increase task costs by 50%'}
-            </Text>
-          </View>
-          <Switch
-            value={day.isFlareDay}
-            onValueChange={toggleFlare}
-            trackColor={{ false: Colors.border, true: Colors.flare }}
-            thumbColor={Colors.white}
-            accessibilityLabel="Flare day"
-          />
-        </View>
-
-        {day.isFlareDay ? (
-          <View style={styles.flareMsgSection}>
-            <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-              That's enough for today.
-            </Text>
-          </View>
-        ) : null}
-
-        {/* End day */}
-        <View style={styles.section}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.endDayBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={handleEndDay}
-          >
-            <MaterialIcons name="nights-stay" size={16} color={Colors.textSubtle} />
-            <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>Wrap up today</Text>
-          </Pressable>
-        </View>
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
+
+      <Modal
+        visible={showPlanSheet}
+        animationType="slide"
+        onRequestClose={() => setShowPlanSheet(false)}
+      >
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <View style={styles.planHeader}>
+            <Text style={[styles.planTitle, { fontFamily: ff.bold }]}>Today's plan</Text>
+            <Pressable
+              onPress={() => setShowPlanSheet(false)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close today's plan"
+            >
+              <MaterialIcons name="close" size={22} color={Colors.textSubtle} />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <SectionBlock title="Today's Support" count={pending.length}>
+              {pending.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
+                  <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
+                    {completed.length > 0
+                      ? 'Nothing else needs your attention today.'
+                      : day.isFlareDay
+                      ? 'Take it easy today.'
+                      : 'Nothing on your list yet.'}
+                  </Text>
+                  <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
+                    {day.isFlareDay ? 'Let today stay light.' : 'Add only what would help.'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.taskList}>
+                  {pending.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      mode={day.energyMode}
+                      onComplete={() => handleCompletePress(task)}
+                      onMove={() => setMovingTask(task)}
+                    />
+                  ))}
+                </View>
+              )}
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addTaskBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setShowAddModal(true)}
+              >
+                <MaterialIcons name="add" size={20} color={Colors.primary} />
+                <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add something</Text>
+              </Pressable>
+            </SectionBlock>
+
+            {completed.length > 0 ? (
+              <SectionBlock title="Done today" count={completed.length}>
+                <View style={styles.taskList}>
+                  {completed.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      mode={day.energyMode}
+                      onComplete={() => {}}
+                      onMove={() => {}}
+                    />
+                  ))}
+                </View>
+              </SectionBlock>
+            ) : null}
+
+            {moved.length > 0 ? (
+              <SectionBlock title="Moved ahead" count={moved.length}>
+                <View style={styles.taskList}>
+                  {moved.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      mode={day.energyMode}
+                      onComplete={() => {}}
+                      onMove={() => {}}
+                      onRevert={() => unmoveTask(task.id)}
+                    />
+                  ))}
+                </View>
+              </SectionBlock>
+            ) : null}
+
+            {upcoming.length > 0 ? (
+              <SectionBlock title="Coming up" count={upcoming.length}>
+                <View style={styles.taskList}>
+                  {upcoming.map((s) => (
+                    <View key={s.task.id} style={styles.comingCard}>
+                      <View style={styles.comingInfo}>
+                        <Text style={[styles.comingName, { fontFamily: ff.medium }]}>{s.task.name}</Text>
+                        <View style={styles.comingDateRow}>
+                          <MaterialIcons name="event" size={13} color={Colors.accent} />
+                          <Text style={[styles.comingDate, { fontFamily: ff.regular }]}>
+                            {formatShortDate(s.scheduledFor)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Pressable
+                        onPress={() => removeScheduled(s.task.id)}
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Cancel scheduled "${s.task.name}"`}
+                      >
+                        <MaterialIcons name="close" size={18} color={Colors.textSubtle} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </SectionBlock>
+            ) : null}
+
+            {day.tags.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsScroll}>
+                <View style={styles.tagsRow}>
+                  {day.tags.map((tag) => (
+                    <View
+                      key={tag}
+                      style={[
+                        styles.tagPill,
+                        { borderColor: tagColors[tag] ?? Colors.border },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.tagPillText,
+                          { color: tagColors[tag] ?? Colors.textSubtle },
+                          { fontFamily: ff.medium },
+                        ]}
+                      >
+                        {tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            ) : null}
+
+            <View style={styles.section}>
+              <EnergyBar
+                mode={day.energyMode}
+                total={day.energyLevel}
+                used={energyUsed}
+                remaining={energyRemaining}
+                isFlare={day.isFlareDay}
+              />
+            </View>
+
+            <View style={[styles.section, styles.flareToggleCard]}>
+              <View style={styles.flareToggleLeft}>
+                <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
+                <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
+                  {day.isFlareDay
+                    ? 'All task costs are increased by 50%'
+                    : 'Toggle on to increase task costs by 50%'}
+                </Text>
+              </View>
+              <Switch
+                value={day.isFlareDay}
+                onValueChange={toggleFlare}
+                trackColor={{ false: Colors.border, true: Colors.flare }}
+                thumbColor={Colors.white}
+                accessibilityLabel="Flare day"
+              />
+            </View>
+
+            {day.isFlareDay ? (
+              <View style={styles.flareMsgSection}>
+                <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
+                  That's enough for today.
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.section}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.endDayBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={handleEndDay}
+              >
+                <MaterialIcons name="nights-stay" size={16} color={Colors.textSubtle} />
+                <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>Wrap up today</Text>
+              </Pressable>
+            </View>
+
+            <View style={{ height: insets.bottom + Spacing.xl }} />
+          </ScrollView>
+        </View>
+      </Modal>
 
       <AddTaskModal
         visible={showAddModal}
@@ -1055,7 +913,7 @@ export default function TodayScreen() {
             setShowAddModal(true);
           },
           openEndDay: handleEndDay,
-          openReflect: () => router.push('/(tabs)/reflect' as any),
+          openReflect: () => router.push('/reflect' as any),
         }}
       />
 
@@ -1063,7 +921,7 @@ export default function TodayScreen() {
         visible={showCommandSheet}
         onClose={() => setShowCommandSheet(false)}
         handlers={{
-          openPlanToday: () => setShowAddModal(true),
+          openPlanToday,
           openSomethingHappened: () => setShowIntentSheet(true),
         }}
       />
@@ -1591,6 +1449,18 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.medium,
     color: Colors.primary,
   },
+  seePlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: 10,
+  },
+  seePlanText: {
+    fontSize: FontSizes.sm,
+    fontWeight: Fonts.medium,
+    color: Colors.primary,
+  },
   endDayBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1607,15 +1477,14 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.medium,
     color: Colors.textSubtle,
   },
-  whatHappenedBtn: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.md + 2,
+  planHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
-  whatHappenedText: {
+  planTitle: {
     fontSize: FontSizes.md,
     fontWeight: Fonts.semibold,
     color: Colors.text,
