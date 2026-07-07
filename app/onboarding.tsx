@@ -15,6 +15,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { useDay } from '@/hooks/useDay';
 import { ReminderFrequency, PHYSICAL_CONDITIONS, MENTAL_LOAD_CONDITIONS } from '@/constants/types';
 import { extractOnboardingProfile, OnboardingExtractedProfile } from '@/services/aiLola';
+import { extractOnboardingProfileWithLola, OnboardingExtractedProfile } from '@/services/aiLola';
 import { Companion } from '@/constants/companion';
 import { useRegion } from '@/localization/RegionContext';
 import { Region } from '@/localization/region';
@@ -140,6 +141,8 @@ export default function OnboardingScreen() {
     setOrganiseMessage('');
     try {
       const details = await extractOnboardingProfile({
+      const details = await extractOnboardingProfileWithLola({
+        mode: 'onboarding_extract',
         transcript: trimmedTranscript,
         regionHint: region === 'GB' ? 'UK' : region ?? null,
         existingProfile: prefs ?? undefined,
