@@ -26,8 +26,6 @@ export type LolaResponse<TResult = unknown> = {
   fallback?: boolean;
 };
 
-export type AiLolaRegion = 'US' | 'UK';
-
 export type OnboardingExtractedProfile = {
   preferredName: string | null;
   countryRegion: AiLolaRegion | null;
@@ -46,11 +44,9 @@ export type OnboardingExtractedProfile = {
 };
 
 export type OnboardingExtractData = {
-export type AiLolaOnboardingPayload = {
-  mode: 'onboarding_extract';
   transcript: string;
-  regionHint: AiLolaRegion | null;
-  existingProfile?: Partial<UserPreferences>;
+  regionHint?: AiLolaRegion | null;
+  existingProfile?: Partial<UserPreferences> | null;
 };
 
 const EMPTY_PROFILE: OnboardingExtractedProfile = {
@@ -92,20 +88,12 @@ function unwrapResult(data: unknown): unknown {
   for (const key of ['profile', 'data', 'result', 'onboardingProfile']) {
     const nested = record[key];
     if (nested && typeof nested === 'object') return nested;
-function unwrapResponse(data: unknown): Record<string, unknown> {
-  if (!data || typeof data !== 'object') return {};
-  const record = data as Record<string, unknown>;
-  for (const key of ['profile', 'data', 'result', 'onboardingProfile']) {
-    const nested = record[key];
-    if (nested && typeof nested === 'object') return nested as Record<string, unknown>;
   }
   return record;
 }
 
 export function normalizeOnboardingExtractResult(data: unknown): OnboardingExtractedProfile {
   const record = (unwrapResult(data) ?? {}) as Record<string, unknown>;
-export function normalizeAiLolaOnboardingResponse(data: unknown): OnboardingExtractedProfile {
-  const record = unwrapResponse(data);
   return {
     ...EMPTY_PROFILE,
     preferredName: asNullableString(record.preferredName ?? record.name),
@@ -134,15 +122,11 @@ export async function invokeLola<TResult = unknown, TData = unknown>(request: Lo
   return { ok: true, mode: request.mode, result: data as TResult };
 }
 
-export async function extractOnboardingProfile(data: OnboardingExtractData): Promise<OnboardingExtractedProfile> {
+export async function extractOnboardingProfileWithLola(data: OnboardingExtractData): Promise<OnboardingExtractedProfile> {
   const response = await invokeLola<OnboardingExtractedProfile, OnboardingExtractData>({
     mode: 'onboarding_extract',
     data,
   });
   if (!response.ok) throw new Error(response.error ?? 'Lola could not organise onboarding');
   return normalizeOnboardingExtractResult(response.result);
-export async function extractOnboardingProfileWithLola(payload: AiLolaOnboardingPayload): Promise<OnboardingExtractedProfile> {
-  const { data, error } = await supabase.functions.invoke('ai-lola', { body: payload });
-  if (error) throw error;
-  return normalizeAiLolaOnboardingResponse(data);
 }
