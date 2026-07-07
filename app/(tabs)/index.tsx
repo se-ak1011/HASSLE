@@ -570,21 +570,55 @@ export default function TodayScreen() {
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   const isLowEnergy = energyRemaining <= 20;
-  const heroImage = day.isFlareDay || isLowEnergy ? Lola.xeyes : Lola.standing;
-  const heroSentence = day.isFlareDay
-    ? 'Let’s protect your energy.'
-    : isLowEnergy
-    ? 'Today can be smaller.'
-    : 'What would help today?';
-  const observationText = day.isFlareDay
-    ? 'Move one thing if you need to. That is still care.'
-    : moved.length > 0
-    ? 'You have already moved something out of today. That counts as planning.'
-    : pending.length === 0
-    ? 'Nothing urgent is waiting here.'
-    : pending.length === 1
-    ? 'There is one thing left. It can stay small.'
-    : `${pending.length} things are waiting. You only have to choose the next one.`;
+  const isReportReady = reportDaysFound >= MIN_REPORT_DAYS;
+  const isReportBuilding = reportDaysFound > 0 && reportDaysFound < MIN_REPORT_DAYS;
+
+  // ── Adaptive hero ──────────────────────────────────────────────────────────
+  let heroImage = Lola.standing;
+  let heroSentence = 'What would help today?';
+  let heroKicker = 'Today, together.';
+
+  if (day.isFlareDay) {
+    heroImage = Lola.xeyes;
+    heroSentence = 'Protect your energy today.';
+    heroKicker = 'Flare day';
+  } else if (isLowEnergy) {
+    heroImage = Lola.xeyes;
+    heroSentence = "Let's make today smaller.";
+  } else if (isReportReady) {
+    heroImage = Lola.report;
+    heroSentence = 'Your appointment summary is ready.';
+    heroKicker = 'Your summary is ready.';
+  } else if (pending.length === 0) {
+    heroImage = Lola.sitting;
+    heroSentence = 'Nothing urgent is waiting.';
+  } else if (reportDaysFound >= 3) {
+    heroImage = Lola.books;
+    heroSentence = "I've noticed something.";
+    heroKicker = 'Hassle noticed.';
+  }
+
+  // ── Adaptive observation ───────────────────────────────────────────────────
+  let observationText: string;
+  if (isReportReady) {
+    observationText = 'You seem to have enough information for a useful appointment summary.';
+  } else if (day.isFlareDay && completed.length > 0) {
+    observationText = "You've been protecting your energy well. That's real care.";
+  } else if (moved.length >= 2) {
+    observationText = "You've moved tasks a few times recently. That often seems to help.";
+  } else if (moved.length === 1) {
+    observationText = 'Moving something out of today may have made things a little lighter.';
+  } else if (pending.length === 0 && completed.length > 0) {
+    observationText = "You've already done things today. That counts.";
+  } else if (pending.length === 0) {
+    observationText = 'Nothing else needs your attention right now.';
+  } else if (isLowEnergy) {
+    observationText = 'Your energy might be running lower today. The list can stay small.';
+  } else if (pending.length === 1) {
+    observationText = 'There is one thing left. It can stay small.';
+  } else {
+    observationText = `${pending.length} things are waiting. You only have to choose the next one.`;
+  }
 
   function handleCompletePress(task: Task) {
     setPendingCompletion(task);
@@ -633,6 +667,51 @@ export default function TodayScreen() {
     'decent day': Colors.success,
   };
 
+  // ── Adaptive action order ──────────────────────────────────────────────────
+  const actionPlan = {
+    key: 'plan',
+    title: 'Plan today',
+    body: 'Add or choose one thing.',
+    iconName: 'event-note',
+    iconColor: Colors.primary,
+    onPress: () => setShowAddModal(true),
+  };
+  const actionStruggling = {
+    key: 'struggling',
+    title: "I'm struggling",
+    body: day.isFlareDay ? "That's enough for today." : 'Protect your energy.',
+    iconName: 'bedtime',
+    iconColor: Colors.flare,
+    onPress: day.isFlareDay ? () => { handleEndDay(); } : () => toggleFlare(true),
+  };
+  const actionReport = {
+    key: 'report',
+    title: 'Doctor report',
+    body: 'Your 30-day summary.',
+    iconName: 'picture-as-pdf',
+    iconColor: Colors.accent,
+    onPress: openReport,
+  };
+  const actionPatterns = {
+    key: 'patterns',
+    title: 'What changed?',
+    body: 'Hassle noticed…',
+    iconName: 'auto-graph',
+    iconColor: Colors.primary,
+    onPress: openPatterns,
+  };
+
+  let orderedActions: typeof actionPlan[];
+  if (day.isFlareDay) {
+    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
+  } else if (isReportReady) {
+    orderedActions = [actionReport, actionPatterns, actionPlan, actionStruggling];
+  } else if (isLowEnergy) {
+    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
+  } else {
+    orderedActions = [actionPlan, actionPatterns, actionReport, actionStruggling];
+  }
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <ScrollView
@@ -641,17 +720,11 @@ export default function TodayScreen() {
       >
         {/* Ambient assistant hero — Today, together */}
         <AssistantHero
+          kicker={heroKicker}
           title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
           subtitle={heroSentence}
           lola={heroImage}
           onLolaPress={() => setShowCommandSheet(true)}
-          badge={
-            day.isFlareDay ? (
-              <View style={styles.flarePill}>
-                <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
-              </View>
-            ) : null
-          }
         />
 
         <Pressable
@@ -663,31 +736,25 @@ export default function TodayScreen() {
         </Pressable>
 
         <View style={styles.actionGrid}>
-          <ActionTile
-            primary
-            title="Plan today"
-            body="Add or choose one thing."
-            icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
-            onPress={() => setShowAddModal(true)}
-          />
-          <ActionTile
-            title="I’m struggling"
-            body={day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
-            icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
-            onPress={day.isFlareDay ? handleEndDay : () => toggleFlare(true)}
-          />
-          <ActionTile
-            title="Doctor report"
-            body="Your 30-day summary."
-            icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
-            onPress={openReport}
-          />
-          <ActionTile
-            title="What changed?"
-            body="Hassle noticed…"
-            icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
-            onPress={openPatterns}
-          />
+          {orderedActions.map((action, i) => {
+            const isPrimary = i === 0;
+            return (
+              <ActionTile
+                key={action.key}
+                primary={isPrimary}
+                title={action.title}
+                body={action.body}
+                icon={
+                  <MaterialIcons
+                    name={action.iconName as React.ComponentProps<typeof MaterialIcons>['name']}
+                    size={22}
+                    color={isPrimary ? Colors.background : action.iconColor}
+                  />
+                }
+                onPress={action.onPress}
+              />
+            );
+          })}
         </View>
 
         {/* Inline feedback message — shown near task section */}
@@ -702,10 +769,16 @@ export default function TodayScreen() {
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🌱</Text>
-              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>Nothing on your list yet.</Text>
+              <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
+              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
+                {completed.length > 0
+                  ? 'Nothing else needs your attention today.'
+                  : day.isFlareDay
+                  ? 'Take it easy today.'
+                  : 'Nothing on your list yet.'}
+              </Text>
               <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                Nothing urgent. Add only what would help.
+                {day.isFlareDay ? 'Let today stay light.' : 'Add only what would help.'}
               </Text>
             </View>
           ) : (
@@ -803,13 +876,22 @@ export default function TodayScreen() {
         <ObservationCard text={observationText} />
 
         {/* Contextual report-ready card */}
-        {reportDaysFound >= MIN_REPORT_DAYS ? (
+        {isReportReady ? (
           <View style={styles.reportCardWrap}>
             <ReportReadyCard
               status="ready"
               title="Doctor report ready."
               subtitle="You now have enough information for your appointment."
               primaryAction={{ label: 'View report', onPress: openReport }}
+            />
+          </View>
+        ) : isReportBuilding ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="building"
+              title="Building your summary."
+              subtitle="We're quietly building your appointment summary."
+              primaryAction={{ label: 'See what's there', onPress: openReport }}
             />
           </View>
         ) : null}
