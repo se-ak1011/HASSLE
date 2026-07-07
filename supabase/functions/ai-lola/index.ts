@@ -1,10 +1,8 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { buildPrompt } from './prompt.ts';
-import { LolaErrorResponse, LolaMode, LolaRequest, LolaSuccessResponse } from './types.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_MODEL = 'claude-3-5-sonnet-latest';
-const SUPPORTED_MODES: LolaMode[] = [
+const SUPPORTED_MODES = [
   'onboarding_extract',
   'journal_reflect',
   'doctor_report',
@@ -13,13 +11,113 @@ const SUPPORTED_MODES: LolaMode[] = [
   'task_support',
   'pattern_detection',
   'future_letter',
-];
+] as const;
+
+type LolaMode = (typeof SUPPORTED_MODES)[number];
+
+type LolaRequest<TData = unknown> = {
+  mode: LolaMode;
+  data?: TData;
+};
+
+type LolaSuccessResponse<T = unknown> = {
+  ok: true;
+  mode: LolaMode;
+  result: T;
+};
+
+type LolaErrorResponse = {
+  ok: false;
+  mode?: LolaMode;
+  error: string;
+  fallback: true;
+};
+
+type OnboardingExtractData = {
+  transcript: string;
+  regionHint?: 'US' | 'UK' | null;
+  existingProfile?: Record<string, unknown> | null;
+};
+
+type LolaPrompt = {
+  system: string;
+  user: string;
+};
+
+const BASE_SYSTEM_PROMPT = [
+  'You are Lola, the supportive AI companion inside Hassle.',
+  'Be gentle, practical, disability-aware, neurodivergence-aware, and concise.',
+  'Do not diagnose, replace medical care, or invent facts.',
+  'Use only the user-provided data.',
+].join(' ');
+
+const ONBOARDING_SCHEMA = `Return only JSON with this exact shape:
+{
+  "preferredName": string | null,
+  "countryRegion": "US" | "UK" | null,
+  "physicalConditions": string[],
+  "neurodivergentMentalLoadConditions": string[],
+  "family": string[],
+  "pets": string[],
+  "hobbies": string[],
+  "usualTasks": string[],
+  "difficultTasks": string[],
+  "reminders": string[],
+  "thingsThatHelp": string[],
+  "thingsThatMakeDaysHarder": string[],
+  "goals": string[],
+  "notes": string[]
+}`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+function stringifyData(data: unknown): string {
+  return JSON.stringify(data ?? {}, null, 2);
+}
+
+function onboardingPrompt(data: unknown): LolaPrompt {
+  const payload = (data ?? {}) as Partial<OnboardingExtractData>;
+  return {
+    system: `${BASE_SYSTEM_PROMPT} Extract structured onboarding profile information. Leave unknown fields null or empty arrays. ${ONBOARDING_SCHEMA}`,
+    user: stringifyData({
+      transcript: payload.transcript ?? '',
+      regionHint: payload.regionHint ?? null,
+      existingProfile: payload.existingProfile ?? null,
+    }),
+  };
+}
+
+function templatePrompt(instruction: string, data: unknown): LolaPrompt {
+  return {
+    system: `${BASE_SYSTEM_PROMPT} ${instruction} Return helpful structured JSON for the app to render.`,
+    user: stringifyData(data),
+  };
+}
+
+function buildPrompt(mode: LolaMode, data: unknown): LolaPrompt {
+  switch (mode) {
+    case 'onboarding_extract':
+      return onboardingPrompt(data);
+    case 'journal_reflect':
+      return templatePrompt('Reflect on a journal entry with validation, patterns, and one small next step.', data);
+    case 'doctor_report':
+      return templatePrompt('Summarise user-approved symptoms, patterns, and context for a medical appointment.', data);
+    case 'daily_summary':
+      return templatePrompt('Summarise the day in a calm way, highlighting wins, costs, and tomorrow supports.', data);
+    case 'chat':
+      return templatePrompt('Respond conversationally as Lola while staying grounded in the supplied app context.', data);
+    case 'task_support':
+      return templatePrompt('Suggest accessible task support, pacing, adaptations, and lower-energy alternatives.', data);
+    case 'pattern_detection':
+      return templatePrompt('Detect gentle patterns from supplied history without overclaiming or diagnosing.', data);
+    case 'future_letter':
+      return templatePrompt('Draft a compassionate future letter based only on supplied user-approved context.', data);
+  }
+}
 
 function jsonResponse(body: LolaSuccessResponse | LolaErrorResponse, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -29,7 +127,7 @@ function jsonResponse(body: LolaSuccessResponse | LolaErrorResponse, status = 20
 }
 
 function isLolaMode(mode: unknown): mode is LolaMode {
-  return typeof mode === 'string' && SUPPORTED_MODES.includes(mode as LolaMode);
+  return typeof mode === 'string' && (SUPPORTED_MODES as readonly string[]).includes(mode);
 }
 
 function normaliseRequest(raw: Record<string, unknown>): LolaRequest {

@@ -30,6 +30,5 @@ Optional: `ANTHROPIC_MODEL` can override the default model.
 
 ## Prompt organisation
 
-- `index.ts` handles HTTP, CORS, request validation, safe fallbacks, and Anthropic transport.
-- `prompt.ts` owns mode-specific prompt templates.
-- `types.ts` owns request/response and mode types.
+- `index.ts` is intentionally self-contained so it can be pasted into the Supabase dashboard editor without missing local module imports. It handles HTTP, CORS, request validation, safe fallbacks, prompt templates, request/response types, and Anthropic transport.
+- `prompt.ts` and `types.ts` are kept as source references for local development, but dashboard copy-paste deploys should use the full `index.ts`.
