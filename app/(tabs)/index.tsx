@@ -31,6 +31,10 @@ import { AssistantHero } from '@/components/ui/AssistantHero';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
+import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
+import { loadClinicalSummary } from '@/services/exportService';
+
+const MIN_REPORT_DAYS = 7;
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -445,7 +449,14 @@ export default function TodayScreen() {
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [reportDaysFound, setReportDaysFound] = useState<number>(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    loadClinicalSummary(30)
+      .then((s) => setReportDaysFound(s?.daysFound ?? 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!feedbackMsg) return;
@@ -639,6 +650,18 @@ export default function TodayScreen() {
         </View>
 
         <ObservationCard text={observationText} />
+
+        {/* Contextual report-ready card */}
+        {reportDaysFound >= MIN_REPORT_DAYS ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="ready"
+              title="Doctor report ready."
+              subtitle="You now have enough information for your appointment."
+              primaryAction={{ label: 'View report', onPress: openReport }}
+            />
+          </View>
+        ) : null}
 
         {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
@@ -1199,6 +1222,10 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  reportCardWrap: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   tagsScroll: {
     marginBottom: Spacing.sm,
