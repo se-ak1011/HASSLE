@@ -1,42 +1,42 @@
 // Hassle — Design System
-// Dark, grounded, editorial palette. Worn-in, honest, muted.
-// Plum/charcoal — matched to drained.life (monochrome purple, no green/olive).
+// Warm charcoal palette. A therapist's office. Soft lighting. Safety. Calm. Rest.
+// Sage accent — distinct from Alchono's purple-led identity.
 
 export const Colors = {
-  background: '#191A1C',
-  surface: '#292728',
-  surfaceElevated: '#332F32',
-  surfaceDark: '#141315',
+  background: '#161719',
+  surface: '#202225',
+  surfaceElevated: '#2A2D31',
+  surfaceDark: '#111213',
 
-  primary: '#5C3F5A',       // plum
-  primaryLight: '#7A5478',  // mauve
-  primaryFaint: '#2A2230',  // very dark faint plum
+  primary: '#78836F',       // muted sage
+  primaryLight: '#909A87',  // light sage
+  primaryFaint: '#1E2220',  // dark sage-tinted
 
-  accent: '#7A5478',        // mauve (matches web --accent)
-  accentFaint: '#261F2A',   // very dark faint mauve
+  accent: '#6F8295',        // muted slate blue
+  accentFaint: '#1C2229',   // dark slate-tinted
 
-  flare: '#7A5268',         // plum flare accent (web --flare-foreground)
-  flareFaint: '#3D2638',    // very dark faint flare (web --flare)
-  warning: '#B08A5B',
-  warningFaint: '#332719',
-  danger: '#B46A75',
-  dangerFaint: '#3B2027',
+  flare: '#A06B63',         // muted terracotta (flare state)
+  flareFaint: '#271A18',    // dark terracotta-tinted
+  warning: '#A06B63',       // muted terracotta
+  warningFaint: '#2A1C1A',
+  danger: '#A06B63',        // understated, same as warning
+  dangerFaint: '#2A1C1A',
 
-  success: '#7A5478',       // mauve — palette is monochrome, no green
-  successFaint: '#261F2A',
+  success: '#7E9473',       // muted moss
+  successFaint: '#1E2620',  // dark moss-tinted
 
-  text: '#F2ECE4',
-  textPrimary: '#F2ECE4',
-  textSecondary: '#D2CCC3',
-  textMuted: '#D2CCC3',
-  textSubtle: '#9A9097',
+  text: '#F3F1ED',
+  textPrimary: '#F3F1ED',
+  textSecondary: '#C8C6C1',
+  textMuted: '#A9ACA8',
+  textSubtle: '#6E7370',
 
-  border: '#353239',
-  hairline: '#2F2C31',
-  borderLight: '#3F3B42',
+  border: '#2E3134',
+  hairline: '#252729',
+  borderLight: '#3A3D41',
 
-  white: '#E7E0D8',
-  overlay: 'rgba(10, 10, 9, 0.65)',
+  white: '#F3F1ED',
+  overlay: 'rgba(10, 10, 10, 0.65)',
 };
 
 export const Fonts = {
@@ -102,14 +102,14 @@ export const Shadow = {
   soft: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.18,
     shadowRadius: 8,
     elevation: 3,
   },
   medium: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.26,
     shadowRadius: 12,
     elevation: 6,
   },
