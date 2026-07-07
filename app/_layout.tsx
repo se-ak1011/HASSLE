@@ -51,7 +51,6 @@ export default function RootLayout() {
   // to the system font and must never block the whole app from starting.
   const [fontsLoaded, fontError] = useFonts({
     ChronicSans: require('@/assets/fonts/ChronicSans.otf'),
-    ChronicSansFlare: require('@/assets/fonts/ChronicSansFlare.otf'),
   });
 
   // Hold the loading screen for at least half a second so "Loading… 🦴 (Maybe)"
@@ -100,6 +99,7 @@ export default function RootLayout() {
                     <Stack.Screen name="library" />
                     <Stack.Screen name="directory" />
                     <Stack.Screen name="report" />
+                    <Stack.Screen name="quiet-time" />
                   </Stack>
                 </AccountProvider>
               </PlusProvider>

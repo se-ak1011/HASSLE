@@ -46,7 +46,7 @@ const BATTERY_VALUES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 function CheckInView() {
   const insets = useSafeAreaInsets();
-  const { completeCheckIn, prefs, addCustomTag, setFlarePreview } = useDay();
+  const { completeCheckIn, prefs, addCustomTag } = useDay();
   const ff = useFontFamily();
   const { config } = useRegion();
 
@@ -54,8 +54,6 @@ function CheckInView() {
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
   const [isFlare, setIsFlare] = useState(false);
 
-  // Reset flare-font preview when leaving the check-in screen
-  useEffect(() => () => setFlarePreview(false), [setFlarePreview]);
   const [tags, setTags] = useState<DailyTag[]>([]);
   const [showCustomSpoon, setShowCustomSpoon] = useState(false);
   const [customSpoonInput, setCustomSpoonInput] = useState('');
@@ -299,7 +297,6 @@ function CheckInView() {
                 value={isFlare}
                 onValueChange={(v) => {
                   setIsFlare(v);
-                  setFlarePreview(v);
                 }}
                 trackColor={{ false: Colors.border, true: Colors.flare }}
                 thumbColor={Colors.white}
@@ -895,6 +892,27 @@ export default function TodayScreen() {
 
         <ObservationCard text={observationText} />
 
+        {/* Quiet Time — shown on flare days or when energy is low */}
+        {(day.isFlareDay || isLowEnergy) ? (
+          <Pressable
+            style={({ pressed }) => [styles.quietTimeBanner, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push('/quiet-time' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Quiet Time — something gentle"
+          >
+            <MaterialIcons name="spa" size={18} color={Colors.accent} style={{ marginRight: Spacing.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.quietTimeBannerTitle, { fontFamily: ff.medium }]}>
+                Need a quiet minute?
+              </Text>
+              <Text style={[styles.quietTimeBannerSub, { fontFamily: ff.regular }]}>
+                Quiet Time — something gentle
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
+          </Pressable>
+        ) : null}
+
         {/* Contextual report-ready card */}
         {isReportReady ? (
           <View style={styles.reportCardWrap}>
@@ -1404,6 +1422,27 @@ const styles = StyleSheet.create({
   reportCardWrap: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
+  },
+  quietTimeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.accentFaint,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.accent + '30',
+  },
+  quietTimeBannerTitle: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  quietTimeBannerSub: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    lineHeight: 18,
   },
   tagsScroll: {
     marginBottom: Spacing.sm,

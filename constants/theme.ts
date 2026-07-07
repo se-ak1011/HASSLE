@@ -49,23 +49,15 @@ export const Fonts = {
 
 /**
  * Font family names — local .otf files loaded via expo-font in app/_layout.tsx.
- * Use useFontFamily() hook in components to get the correct set
- * based on flare state (Chronic Sans = normal, Chronic Sans Flare = flare).
+ * Use useFontFamily() hook in components to get the correct set.
+ * Chronic Sans is always used regardless of flare state.
  */
 export const FontFamily = {
-  // Normal mode
   normal: {
     regular: 'ChronicSans',
     medium: 'ChronicSans',
     semibold: 'ChronicSans',
     bold: 'ChronicSans',
-  },
-  // Flare mode
-  flare: {
-    regular: 'ChronicSansFlare',
-    medium: 'ChronicSansFlare',
-    semibold: 'ChronicSansFlare',
-    bold: 'ChronicSansFlare',
   },
 };
 
