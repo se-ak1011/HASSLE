@@ -7,11 +7,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
@@ -21,6 +19,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { DayState } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 import { formatDateStringForRegion } from '@/services/regionFormat';
+import { AssistantHero } from '@/components/ui/AssistantHero';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -314,24 +313,21 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Reflection</Text>
-          <View style={styles.pastDayBadge}>
-            <MaterialIcons name="history" size={13} color={Colors.accent} />
-            <Text style={styles.pastDayBadgeText}>{formatDate(pastDay.date)}</Text>
-          </View>
-          <Text style={styles.subtitle}>
-            {pastDay.isFlareDay
+        {/* Opening — Lola + question */}
+        <AssistantHero
+          kicker={formatDate(pastDay.date)}
+          title="Anything worth remembering?"
+          subtitle={
+            pastDay.isFlareDay
               ? 'Getting through that day counted.'
-              : 'A look back at how that day went.'}
-          </Text>
-        </View>
+              : 'A look back at how that day went.'
+          }
+          lola={Lola.sitting}
+        />
 
-        {/* Summary + Lola, side by side */}
-        <View style={styles.summaryLolaRow}>
+        {/* Summary stats */}
+        <View style={styles.summaryBlock}>
           <SummaryRow dayData={pastDay} used={used} remaining={remaining} />
-          <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
         </View>
 
         {/* Flare card */}
@@ -443,19 +439,17 @@ function EmptyReflectView() {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.emptyRoot}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Reflect</Text>
-        </View>
-        <View style={styles.emptyBox}>
-          <View style={styles.emptyIconCircle}>
-            <MaterialIcons name="edit-note" size={28} color={Colors.primary} />
-          </View>
-          <Text style={styles.emptyTitle}>Reflections can live here, if you want.</Text>
-          <Text style={styles.emptyDesc}>
-            Once you finish a day, you can look back here anytime. No pressure to write anything.
-          </Text>
-        </View>
+      <AssistantHero
+        kicker="Reflect"
+        title="Anything worth remembering?"
+        subtitle="Once you finish a day, you can look back here anytime."
+        lola={Lola.sitting}
+      />
+      <View style={styles.emptyBox}>
+        <Text style={styles.emptyTitle}>No pressure to write anything.</Text>
+        <Text style={styles.emptyDesc}>
+          Reflections live here after you end a day. Come back whenever it helps.
+        </Text>
       </View>
     </View>
   );
@@ -537,20 +531,21 @@ export default function ReflectScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { fontFamily: ff.bold }]}>This space is yours.</Text>
-            <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
-              {day.isFlareDay
+          {/* Opening — Lola + question */}
+          <AssistantHero
+            kicker="Reflect"
+            title="Anything worth remembering?"
+            subtitle={
+              day.isFlareDay
                 ? 'Getting through today counts. Only add what feels useful.'
-                : 'If you want. Only if it helps.'}
-            </Text>
-          </View>
+                : 'Only if it helps. No pressure.'
+            }
+            lola={Lola.sitting}
+          />
 
-          {/* Summary + Lola, side by side */}
-          <View style={styles.summaryLolaRow}>
+          {/* Summary stats */}
+          <View style={styles.summaryBlock}>
             <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
-            <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
           </View>
 
           {/* Flare day card */}
@@ -723,6 +718,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  summaryBlock: {
+    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
   },
   summaryColumn: {

@@ -518,8 +518,9 @@ export default function PatternsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <AssistantHero
-          title="What we noticed."
-          subtitle="One thing at a time."
+          kicker="Insights"
+          title="Here's what I've noticed."
+          subtitle="Patterns, gently."
           lola={Lola.books}
         />
 

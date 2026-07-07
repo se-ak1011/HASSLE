@@ -515,7 +515,7 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { fontFamily: ff.bold }]}>Settings</Text>
           <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
-            Simple controls for a simple app.
+            Everything at your pace.
           </Text>
         </View>
 

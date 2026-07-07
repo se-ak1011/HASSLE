@@ -10,6 +10,7 @@ import { usePlus } from '@/contexts/PlusContext';
 import { Lola } from '@/constants/lola';
 import { PaywallModal } from '@/components/ui/PaywallModal';
 import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
+import { AssistantHero } from '@/components/ui/AssistantHero';
 
 export default function PlusScreen() {
   const router = useRouter();
@@ -32,22 +33,15 @@ export default function PlusScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.titleRow}>
-          <Text style={[styles.title, { fontFamily: ff.bold }]}>Hassle Plus</Text>
-          <View style={styles.badge}>
-            <MaterialIcons name="auto-awesome" size={13} color={Colors.background} />
-            <Text style={[styles.badgeText, { fontFamily: ff.semibold }]}>PLUS</Text>
-          </View>
-        </View>
+        <AssistantHero
+          kicker="Hassle Plus"
+          title={isPlus ? 'You have everything.' : 'A little more, when you need it.'}
+          subtitle={isPlus ? 'Thank you for supporting Hassle.' : 'Everything core stays free.'}
+          lola={Lola.standing}
+          style={{ marginHorizontal: -Spacing.lg }}
+        />
 
-        {isPlus ? (
-          <View style={styles.activeBanner}>
-            <MaterialIcons name="check-circle" size={18} color={Colors.success} />
-            <Text style={[styles.activeText, { fontFamily: ff.medium }]}>
-              Plus is active — thank you for supporting Hassle 💜
-            </Text>
-          </View>
-        ) : (
+        {isPlus ? null : (
           <Pressable
             style={({ pressed }) => [styles.upsell, pressed && { opacity: 0.9 }]}
             onPress={() => setShowPaywall(true)}
@@ -141,7 +135,7 @@ function LockTag({ ff }: { ff: ReturnType<typeof useFontFamily> }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+  scroll: { paddingHorizontal: Spacing.lg, paddingTop: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.lg },
   title: { fontSize: FontSizes.xxl, color: Colors.text, letterSpacing: -0.5 },
   badge: {

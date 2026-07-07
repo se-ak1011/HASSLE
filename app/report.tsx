@@ -149,9 +149,12 @@ export default function ReportScreen() {
         ) : (
           // ── Report ready ─────────────────────────────────────────────────────
           <>
-            {/* Ready card */}
+            {/* Opening question */}
             <View style={styles.heroBlock}>
               <Image source={Lola.report} style={styles.heroLola} resizeMode="contain" />
+              <Text style={[styles.heroQuestion, { fontFamily: ff.bold }]}>
+                Ready to see what we've collected?
+              </Text>
             </View>
 
             <ReportReadyCard
@@ -410,8 +413,16 @@ const styles = StyleSheet.create({
   miniTagText: { fontSize: FontSizes.xs, color: Colors.accent },
 
   // ── Ready state ──────────────────────────────────────────────────────────────
-  heroBlock: { alignItems: 'center', paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  heroBlock: { alignItems: 'center', paddingTop: Spacing.md, paddingBottom: Spacing.md, gap: Spacing.sm },
   heroLola: { width: 110, height: 124 },
+  heroQuestion: {
+    fontSize: FontSizes.xl,
+    color: Colors.text,
+    textAlign: 'center',
+    letterSpacing: -0.4,
+    lineHeight: 34,
+    paddingHorizontal: Spacing.lg,
+  },
   readyCard: { marginBottom: Spacing.lg },
   busyRow: {
     flexDirection: 'row',

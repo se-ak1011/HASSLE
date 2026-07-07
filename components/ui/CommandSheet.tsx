@@ -121,10 +121,10 @@ export function CommandSheet({ visible, onClose, handlers = {} }: CommandSheetPr
                   Sometimes surviving today is enough.
                 </Text>
                 <Text style={[styles.distractBody, { fontFamily: ff.regular }]}>
-                  Games and gentle distractions will live here.
+                  Need five quiet minutes?
                 </Text>
-                <Text style={[styles.distractComingSoon, { fontFamily: ff.medium }]}>
-                  Coming soon.
+                <Text style={[styles.distractBody, { fontFamily: ff.regular }]}>
+                  This space will eventually contain gentle distractions designed specifically for flare days.
                 </Text>
               </View>
             </>
