@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ImageSourcePropType, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, ImageSourcePropType, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { Colors, FontSizes, Fonts, Spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/primitives/Button';
@@ -15,12 +15,14 @@ type AssistantHeroProps = {
   title: string;
   subtitle: string;
   lola: ImageSourcePropType;
-  lolaSize?: 'medium' | 'large';
+  lolaSize?: 'medium' | 'large' | 'xlarge';
   primaryAction?: AssistantHeroAction;
   secondaryAction?: AssistantHeroAction;
   badge?: ReactNode;
   style?: StyleProp<ViewStyle>;
   onLolaPress?: () => void;
+  lolaHint?: ReactNode;
+  lolaAnimatedStyle?: any;
 };
 
 export function AssistantHero({
@@ -34,6 +36,8 @@ export function AssistantHero({
   badge,
   style,
   onLolaPress,
+  lolaHint,
+  lolaAnimatedStyle,
 }: AssistantHeroProps) {
   return (
     <View style={[styles.container, style]}>
@@ -58,10 +62,16 @@ export function AssistantHero({
           accessibilityRole="button"
           accessibilityLabel="Open Lola"
         >
-          <LolaPanel image={lola} size={lolaSize} />
+          <Animated.View style={[styles.lolaWrap, lolaAnimatedStyle]}>
+            {lolaHint}
+            <LolaPanel image={lola} size={lolaSize} />
+          </Animated.View>
         </Pressable>
       ) : (
-        <LolaPanel image={lola} size={lolaSize} />
+        <Animated.View style={[styles.lolaWrap, lolaAnimatedStyle]}>
+          {lolaHint}
+          <LolaPanel image={lola} size={lolaSize} />
+        </Animated.View>
       )}
     </View>
   );
@@ -99,6 +109,9 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     color: Colors.textMuted,
     lineHeight: 30,
+  },
+  lolaWrap: {
+    alignItems: 'center',
   },
   actions: {
     flexDirection: 'row',

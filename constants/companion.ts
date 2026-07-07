@@ -35,7 +35,7 @@ export const Companion = {
   WrapUp: require('@/assets/companion/journal.png'),
 
   /** Reflect screen — journaling and writing */
-  Reflect: require('@/assets/companion/support.png'),
+  Reflect: require('@/assets/companion/writing.png'),
 
   /** Gentle Movement screen */
   GentleMovement: require('@/assets/companion/stretch.png'),
@@ -45,6 +45,12 @@ export const Companion = {
 
   /** AI loading / thinking state */
   Loading: require('@/assets/companion/coffee.png'),
+
+  /** Body support / pacing / tasks */
+  Body: require('@/assets/companion/support.png'),
+
+  /** Life admin hub */
+  Life: require('@/assets/companion/walking.png'),
 
   /** Settings / Account / generic screens */
   Settings: require('@/assets/companion/standing.png'),

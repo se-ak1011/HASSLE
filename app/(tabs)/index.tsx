@@ -6,14 +6,16 @@ import {
   Pressable,
   Switch,
   Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   Image,
   Modal,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
@@ -34,7 +36,8 @@ import { IntentSheet } from '@/components/ui/IntentSheet';
 import { CommandSheet } from '@/components/ui/CommandSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
 
-const VISIBLE_SUPPORT_TASKS = 3;
+const LOLA_TAP_HINT_KEY = 'hassle_lola_tap_hint_seen';
+
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -425,6 +428,7 @@ function CheckInView() {
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ body?: string }>();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
   const {
@@ -451,6 +455,9 @@ export default function TodayScreen() {
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const hintOpacity = useRef(new Animated.Value(0)).current;
+  const [showLolaHint, setShowLolaHint] = useState(false);
 
   useEffect(() => {
     if (!feedbackMsg) return;
@@ -461,6 +468,75 @@ export default function TodayScreen() {
     ]).start(() => setFeedbackMsg(null));
   }, [feedbackMsg, fadeAnim]);
 
+  useEffect(() => {
+    let mounted = true;
+    AsyncStorage.getItem(LOLA_TAP_HINT_KEY).then((seen) => {
+      if (mounted && seen !== 'true') setShowLolaHint(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showLolaHint) {
+      pulseAnim.stopAnimation();
+      hintOpacity.stopAnimation();
+      pulseAnim.setValue(1);
+      hintOpacity.setValue(0);
+      return;
+    }
+
+    Animated.timing(hintOpacity, {
+      toValue: 1,
+      duration: 700,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.025,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.delay(900),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hintOpacity, pulseAnim, showLolaHint]);
+
+  function handleLolaPress() {
+    if (showLolaHint) {
+      setShowLolaHint(false);
+      AsyncStorage.setItem(LOLA_TAP_HINT_KEY, 'true');
+    }
+    setShowCommandSheet(true);
+  }
+
+  const lolaHint = showLolaHint ? (
+    <Animated.View style={[styles.tapHint, { opacity: hintOpacity }]}>
+      <Text style={[styles.tapHintText, { fontFamily: ff.semibold }]}>Tap Lola</Text>
+    </Animated.View>
+  ) : null;
+
+  const lolaPulseStyle = showLolaHint ? { transform: [{ scale: pulseAnim }] } : undefined;
+
+  const hasBodyParam = params.body === '1';
+
+  useEffect(() => {
+    if (hasBodyParam) setShowPlanSheet(true);
+  }, [hasBodyParam]);
+
   if (!day || !day.checkedIn) {
     if (showCheckIn) {
       return (
@@ -468,6 +544,9 @@ export default function TodayScreen() {
           <View style={styles.headerBar}>
             <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
               <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
+              <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
             </Pressable>
           </View>
           <CheckInView />
@@ -482,28 +561,24 @@ export default function TodayScreen() {
           <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
             <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
           </Pressable>
+          <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
+            <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
+          </Pressable>
         </View>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
         >
           <AssistantHero
+            kicker=""
             title="Morning."
             subtitle="What would help today?"
-            lola={Companion.WrapUp}
-            onLolaPress={() => setShowCommandSheet(true)}
+            lola={Companion.Home}
+            lolaSize="xlarge"
+            lolaHint={lolaHint}
+            lolaAnimatedStyle={lolaPulseStyle}
+            onLolaPress={handleLolaPress}
           />
-          <SectionBlock title="Today's Support">
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🌱</Text>
-              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
-                Nothing needs your attention yet.
-              </Text>
-              <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                Tap Lola when you want to shape today.
-              </Text>
-            </View>
-          </SectionBlock>
         </ScrollView>
 
         <IntentSheet
@@ -516,6 +591,7 @@ export default function TodayScreen() {
           visible={showCommandSheet}
           onClose={() => setShowCommandSheet(false)}
           handlers={{
+            openBody: () => setShowCheckIn(true),
             openPlanToday: () => setShowCheckIn(true),
             openSomethingHappened: () => setShowIntentSheet(true),
           }}
@@ -538,23 +614,16 @@ export default function TodayScreen() {
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   const isLowEnergy = energyRemaining <= 20;
-  const visiblePending = pending.slice(0, VISIBLE_SUPPORT_TASKS);
-  const hasMoreSupport = pending.length > visiblePending.length;
-
   let heroImage = Companion.Home;
   let heroSentence = 'What would help today?';
-  let heroKicker = 'Today, together.';
+  let heroKicker = '';
 
   if (day.isFlareDay) {
     heroImage = Companion.Flare;
     heroSentence = 'Protect your energy today.';
-    heroKicker = 'Flare day';
   } else if (isLowEnergy) {
     heroImage = Companion.Flare;
     heroSentence = "Let's make today smaller.";
-  } else if (pending.length === 0) {
-    heroImage = Companion.Home;
-    heroSentence = 'Nothing urgent is waiting.';
   }
 
   function handleCompletePress(task: Task) {
@@ -614,6 +683,9 @@ export default function TodayScreen() {
         <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
           <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
         </Pressable>
+        <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
+          <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
+        </Pressable>
       </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -625,7 +697,10 @@ export default function TodayScreen() {
           title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
           subtitle={heroSentence}
           lola={heroImage}
-          onLolaPress={() => setShowCommandSheet(true)}
+          lolaSize="xlarge"
+          lolaHint={lolaHint}
+          lolaAnimatedStyle={lolaPulseStyle}
+          onLolaPress={handleLolaPress}
         />
 
         {feedbackMsg ? (
@@ -633,48 +708,6 @@ export default function TodayScreen() {
             <Text style={[styles.feedbackText, { fontFamily: ff.regular }]}>{feedbackMsg}</Text>
           </Animated.View>
         ) : null}
-
-        <SectionBlock title="Today's Support" count={pending.length}>
-          {pending.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
-              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
-                {completed.length > 0
-                  ? 'Nothing else needs your attention today.'
-                  : day.isFlareDay
-                  ? 'Take it easy today.'
-                  : 'Nothing on your list yet.'}
-              </Text>
-              <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                {day.isFlareDay ? 'Let today stay light.' : 'Tap Lola to shape what matters next.'}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.taskList}>
-              {visiblePending.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  mode={day.energyMode}
-                  onComplete={() => handleCompletePress(task)}
-                  onMove={() => setMovingTask(task)}
-                />
-              ))}
-            </View>
-          )}
-
-          {hasMoreSupport ? (
-            <Pressable
-              style={({ pressed }) => [styles.seePlanBtn, pressed && { opacity: 0.7 }]}
-              onPress={openPlanToday}
-              accessibilityRole="button"
-              accessibilityLabel="See today's plan"
-            >
-              <Text style={[styles.seePlanText, { fontFamily: ff.medium }]}>See today&apos;s plan</Text>
-              <MaterialIcons name="chevron-right" size={18} color={Colors.primary} />
-            </Pressable>
-          ) : null}
-        </SectionBlock>
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
@@ -1241,6 +1274,21 @@ const checkInStyles = StyleSheet.create({
 // ─── Today Styles ─────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  tapHint: {
+    alignSelf: 'center',
+    marginBottom: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
+  },
+  tapHintText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+    letterSpacing: 0.2,
+  },
   root: {
     flex: 1,
     backgroundColor: Colors.background,

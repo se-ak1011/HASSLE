@@ -3,7 +3,7 @@
 // Sage accent — distinct from Alchono's purple-led identity.
 
 export const Colors = {
-  background: '#161719',
+  background: '#161618',
   surface: '#202225',
   surfaceElevated: '#2A2D31',
   surfaceDark: '#111213',
