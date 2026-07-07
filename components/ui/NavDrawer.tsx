@@ -1,5 +1,6 @@
-import { useRouter } from 'expo-router';
-import { Modal, View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Modal, View, StyleSheet, Pressable, ScrollView, Animated } from 'react-native';
 import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
@@ -25,6 +26,7 @@ const MAIN_ITEMS: NavItem[] = [
   { label: 'Home',          icon: 'home',            route: '/(tabs)/index' },
   { label: 'Insights',      icon: 'show-chart',      route: '/(tabs)/patterns' },
   { label: 'Reflect',       icon: 'edit-note',       route: '/(tabs)/reflect' },
+  { label: 'Quiet Time',    icon: 'spa',             route: '/quiet-time' },
   { label: 'Research',      icon: 'menu-book',       route: '/library' },
   { label: 'Directory',     icon: 'local-hospital',  route: '/directory' },
   { label: 'Doctor Report', icon: 'picture-as-pdf',  route: '/report' },
@@ -37,17 +39,79 @@ const MORE_ITEMS: NavItem[] = [
 ];
 
 const DRAWER_WIDTH = 280;
+const SLIDE_DURATION = 220;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Normalise the pathname so both "/quiet-time" and "quiet-time" match. */
+function routeMatches(pathname: string, route: string): boolean {
+  // For tab routes like "/(tabs)/index" compare after stripping the group segment
+  const norm = (s: string) => s.replace(/\/\(tabs\)/, '').replace(/^\//, '');
+  return norm(pathname) === norm(route);
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NavDrawer({ visible, onClose }: NavDrawerProps) {
   const ff = useFontFamily();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
+
+  // ── Slide animation ────────────────────────────────────────────────────────
+  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: SLIDE_DURATION,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Instantly reset so next open starts from off-screen
+      slideAnim.setValue(-DRAWER_WIDTH);
+    }
+  }, [visible, slideAnim]);
 
   function handleNav(route: string) {
     onClose();
     router.push(route as any);
+  }
+
+  function renderItem(item: NavItem, labelStyle: object) {
+    const active = routeMatches(pathname, item.route);
+    return (
+      <Pressable
+        key={item.route}
+        style={({ pressed }) => [
+          styles.navRow,
+          active && styles.navRowActive,
+          pressed && !active && styles.navRowPressed,
+        ]}
+        onPress={() => handleNav(item.route)}
+        accessibilityRole="menuitem"
+        accessibilityLabel={item.label}
+        accessibilityState={{ selected: active }}
+      >
+        <MaterialIcons
+          name={item.icon as any}
+          size={20}
+          color={active ? Colors.primary : Colors.textSubtle}
+          style={styles.navIcon}
+        />
+        <Text
+          style={[
+            labelStyle,
+            { fontFamily: ff.medium },
+            active && styles.navLabelActive,
+          ]}
+        >
+          {item.label}
+        </Text>
+        {active ? <View style={styles.activeDot} /> : null}
+      </Pressable>
+    );
   }
 
   return (
@@ -60,12 +124,13 @@ export function NavDrawer({ visible, onClose }: NavDrawerProps) {
       <View style={styles.overlay}>
 
         {/* ── Drawer panel (left) ──────────────────────────────────────────── */}
-        <View
+        <Animated.View
           style={[
             styles.drawer,
             {
               paddingTop: insets.top,
               paddingBottom: Math.max(insets.bottom, Spacing.md),
+              transform: [{ translateX: slideAnim }],
             },
           ]}
         >
@@ -88,46 +153,14 @@ export function NavDrawer({ visible, onClose }: NavDrawerProps) {
             contentContainerStyle={styles.navContent}
           >
             {/* Main destinations */}
-            {MAIN_ITEMS.map((item) => (
-              <Pressable
-                key={item.route}
-                style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-                onPress={() => handleNav(item.route)}
-                accessibilityRole="menuitem"
-                accessibilityLabel={item.label}
-              >
-                <MaterialIcons
-                  name={item.icon as any}
-                  size={20}
-                  color={Colors.textSubtle}
-                  style={styles.navIcon}
-                />
-                <Text style={[styles.navLabel, { fontFamily: ff.medium }]}>{item.label}</Text>
-              </Pressable>
-            ))}
+            {MAIN_ITEMS.map((item) => renderItem(item, styles.navLabel))}
 
             <View style={styles.divider} />
 
             {/* Utility destinations */}
-            {MORE_ITEMS.map((item) => (
-              <Pressable
-                key={item.route}
-                style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-                onPress={() => handleNav(item.route)}
-                accessibilityRole="menuitem"
-                accessibilityLabel={item.label}
-              >
-                <MaterialIcons
-                  name={item.icon as any}
-                  size={20}
-                  color={Colors.textSubtle}
-                  style={styles.navIcon}
-                />
-                <Text style={[styles.navLabelMore, { fontFamily: ff.medium }]}>{item.label}</Text>
-              </Pressable>
-            ))}
+            {MORE_ITEMS.map((item) => renderItem(item, styles.navLabelMore))}
           </ScrollView>
-        </View>
+        </Animated.View>
 
         {/* ── Dismiss overlay (right) ──────────────────────────────────────── */}
         <Pressable
@@ -186,6 +219,9 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     minHeight: 48,
   },
+  navRowActive: {
+    backgroundColor: Colors.primaryFaint,
+  },
   navRowPressed: {
     opacity: 0.55,
     backgroundColor: Colors.surfaceElevated,
@@ -204,6 +240,16 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
     flex: 1,
+  },
+  navLabelActive: {
+    color: Colors.primary,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
+    marginLeft: Spacing.sm,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

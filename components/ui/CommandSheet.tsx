@@ -24,6 +24,8 @@ type CommandSheetProps = {
   visible: boolean;
   onClose: () => void;
   handlers?: CommandSheetHandlers;
+  /** Optional context — surfaces screen-specific commands at the top of the list */
+  context?: 'insights';
 };
 
 // ─── Command definitions ──────────────────────────────────────────────────────
@@ -35,25 +37,39 @@ type Command = {
   route: string | null;
 };
 
-const COMMANDS: Command[] = [
-  { key: 'plan',      label: 'Shape today',          icon: 'event-note',    route: null },
-  { key: 'happened',  label: 'What happened?',       icon: 'bolt',          route: null },
-  { key: 'insights',  label: "What I've noticed",    icon: 'show-chart',    route: '/(tabs)/patterns' },
-  { key: 'report',    label: 'View report',          icon: 'picture-as-pdf', route: '/report' },
-  { key: 'reflect',   label: 'Anything else?',       icon: 'edit-note',     route: '/(tabs)/reflect' },
-  { key: 'distract',  label: 'Choose something gentle', icon: 'spa',        route: null },
-  { key: 'settings',  label: 'Settings',             icon: 'tune',          route: '/(tabs)/settings' },
+const BASE_COMMANDS: Command[] = [
+  { key: 'plan',      label: 'Shape today',             icon: 'event-note',    route: null },
+  { key: 'happened',  label: 'What happened?',          icon: 'bolt',          route: null },
+  { key: 'insights',  label: "What I've noticed",       icon: 'show-chart',    route: '/(tabs)/patterns' },
+  { key: 'report',    label: 'View report',             icon: 'picture-as-pdf', route: '/report' },
+  { key: 'reflect',   label: 'Anything else?',          icon: 'edit-note',     route: '/(tabs)/reflect' },
+  { key: 'distract',  label: 'Choose something gentle', icon: 'spa',           route: '/quiet-time' },
+  { key: 'settings',  label: 'Settings',                icon: 'tune',          route: '/(tabs)/settings' },
 ];
+
+/** Commands surfaced first on the Insights screen */
+const INSIGHTS_PRIORITY_KEYS = ['reflect', 'report', 'distract'];
+
+function buildCommands(context?: 'insights'): Command[] {
+  if (context === 'insights') {
+    const priority = INSIGHTS_PRIORITY_KEYS
+      .map((k) => BASE_COMMANDS.find((c) => c.key === k))
+      .filter((c): c is Command => c !== undefined);
+    const rest = BASE_COMMANDS.filter((c) => !INSIGHTS_PRIORITY_KEYS.includes(c.key));
+    return [...priority, ...rest];
+  }
+  return BASE_COMMANDS;
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function CommandSheet({ visible, onClose, handlers = {} }: CommandSheetProps) {
+export function CommandSheet({ visible, onClose, handlers = {}, context }: CommandSheetProps) {
   const ff = useFontFamily();
   const router = useRouter();
-  const [showDistract, setShowDistract] = useState(false);
+
+  const COMMANDS = buildCommands(context);
 
   function handleClose() {
-    setShowDistract(false);
     onClose();
   }
 
@@ -67,9 +83,6 @@ export function CommandSheet({ visible, onClose, handlers = {} }: CommandSheetPr
         handleClose();
         handlers.openSomethingHappened?.();
         break;
-      case 'distract':
-        setShowDistract(true);
-        break;
       default:
         if (cmd.route) {
           handleClose();
@@ -77,6 +90,11 @@ export function CommandSheet({ visible, onClose, handlers = {} }: CommandSheetPr
         }
     }
   }
+
+  const greetingText = context === 'insights' ? 'Insights.' : 'Hi.';
+  const subText = context === 'insights'
+    ? 'Reflect, report or take a break?'
+    : 'What would help?';
 
   return (
     <Modal
@@ -88,100 +106,56 @@ export function CommandSheet({ visible, onClose, handlers = {} }: CommandSheetPr
       <View style={styles.overlay}>
         <View style={styles.sheet}>
 
-          {showDistract ? (
-            // ── Distract placeholder ─────────────────────────────────────────
-            <>
-              <View style={styles.topBar}>
-                <Pressable
-                  onPress={() => setShowDistract(false)}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to menu"
-                >
-                  <MaterialIcons name="arrow-back" size={22} color={Colors.textMuted} />
-                </Pressable>
-                <Pressable
-                  onPress={handleClose}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                >
-                  <MaterialIcons name="close" size={22} color={Colors.textMuted} />
-                </Pressable>
-              </View>
+          {/* ── Command list ─────────────────────────────────────────────────── */}
+          <View style={styles.topBar}>
+            <View style={styles.greetingBlock}>
+              <Text style={[styles.greeting, { fontFamily: ff.bold }]}>{greetingText}</Text>
+              <Text style={[styles.subGreeting, { fontFamily: ff.regular }]}>
+                {subText}
+              </Text>
+            </View>
+            <Image
+              source={Lola.sitting}
+              style={styles.lolaSmall}
+              resizeMode="contain"
+              accessibilityLabel="Lola"
+            />
+            <Pressable
+              onPress={handleClose}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <MaterialIcons name="close" size={22} color={Colors.textMuted} />
+            </Pressable>
+          </View>
 
-              <View style={styles.distractContent}>
-                <Image
-                  source={Lola.sitting}
-                  style={styles.distractLola}
-                  resizeMode="contain"
-                  accessibilityLabel="Lola"
+          <View style={styles.commandList}>
+            {COMMANDS.map((cmd, index) => (
+              <Pressable
+                key={cmd.key}
+                style={({ pressed }) => [
+                  styles.commandRow,
+                  index < COMMANDS.length - 1 && styles.commandRowBorder,
+                  pressed && styles.commandRowPressed,
+                ]}
+                onPress={() => handleCommand(cmd)}
+                accessibilityRole="button"
+                accessibilityLabel={cmd.label}
+              >
+                <MaterialIcons
+                  name={cmd.icon as any}
+                  size={20}
+                  color={Colors.textSubtle}
+                  style={styles.commandIcon}
                 />
-                <Text style={[styles.distractHeading, { fontFamily: ff.bold }]}>
-                  Sometimes surviving today is enough.
+                <Text style={[styles.commandLabel, { fontFamily: ff.medium }]}>
+                  {cmd.label}
                 </Text>
-                <Text style={[styles.distractBody, { fontFamily: ff.regular }]}>
-                  Need five quiet minutes?
-                </Text>
-                <Text style={[styles.distractBody, { fontFamily: ff.regular }]}>
-                  This space will eventually contain gentle distractions designed specifically for flare days.
-                </Text>
-              </View>
-            </>
-          ) : (
-            // ── Command list ─────────────────────────────────────────────────
-            <>
-              <View style={styles.topBar}>
-                <View style={styles.greetingBlock}>
-                  <Text style={[styles.greeting, { fontFamily: ff.bold }]}>Hi.</Text>
-                  <Text style={[styles.subGreeting, { fontFamily: ff.regular }]}>
-                    What would help?
-                  </Text>
-                </View>
-                <Image
-                  source={Lola.sitting}
-                  style={styles.lolaSmall}
-                  resizeMode="contain"
-                  accessibilityLabel="Lola"
-                />
-                <Pressable
-                  onPress={handleClose}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                >
-                  <MaterialIcons name="close" size={22} color={Colors.textMuted} />
-                </Pressable>
-              </View>
-
-              <View style={styles.commandList}>
-                {COMMANDS.map((cmd, index) => (
-                  <Pressable
-                    key={cmd.key}
-                    style={({ pressed }) => [
-                      styles.commandRow,
-                      index < COMMANDS.length - 1 && styles.commandRowBorder,
-                      pressed && styles.commandRowPressed,
-                    ]}
-                    onPress={() => handleCommand(cmd)}
-                    accessibilityRole="button"
-                    accessibilityLabel={cmd.label}
-                  >
-                    <MaterialIcons
-                      name={cmd.icon as any}
-                      size={20}
-                      color={Colors.textSubtle}
-                      style={styles.commandIcon}
-                    />
-                    <Text style={[styles.commandLabel, { fontFamily: ff.medium }]}>
-                      {cmd.label}
-                    </Text>
-                    <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          )}
+                <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
+              </Pressable>
+            ))}
+          </View>
 
         </View>
       </View>
@@ -265,39 +239,5 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     color: Colors.text,
     lineHeight: 24,
-  },
-
-  // ── Distract placeholder ───────────────────────────────────────────────────
-  distractContent: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.md,
-  },
-  distractLola: {
-    width: 100,
-    height: 120,
-    marginBottom: Spacing.sm,
-  },
-  distractHeading: {
-    fontSize: FontSizes.lg,
-    fontWeight: Fonts.bold,
-    color: Colors.text,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    lineHeight: 34,
-    paddingHorizontal: Spacing.md,
-  },
-  distractBody: {
-    fontSize: FontSizes.base,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: Spacing.lg,
-  },
-  distractComingSoon: {
-    fontSize: FontSizes.sm,
-    color: Colors.textSubtle,
-    textAlign: 'center',
-    marginTop: Spacing.sm,
   },
 });

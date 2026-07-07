@@ -25,6 +25,7 @@ import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { EmptyState } from '@/components/ui/primitives/EmptyState';
 import { NavDrawer } from '@/components/ui/NavDrawer';
+import { CommandSheet } from '@/components/ui/CommandSheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -472,6 +473,7 @@ export default function PatternsScreen() {
   const [history, setHistory] = useState<DayState[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
+  const [showCommandSheet, setShowCommandSheet] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -518,6 +520,9 @@ export default function PatternsScreen() {
       <View style={styles.headerBar}>
         <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
           <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+        <Pressable onPress={() => setShowCommandSheet(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open Lola">
+          <MaterialIcons name="spa" size={22} color={Colors.textSubtle} />
         </Pressable>
       </View>
       <ScrollView
@@ -677,6 +682,11 @@ export default function PatternsScreen() {
       </ScrollView>
 
       <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+      <CommandSheet
+        visible={showCommandSheet}
+        onClose={() => setShowCommandSheet(false)}
+        context="insights"
+      />
     </View>
   );
 }
@@ -689,6 +699,7 @@ const styles = StyleSheet.create({
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     minHeight: 44,
