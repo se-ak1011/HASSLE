@@ -39,7 +39,7 @@ import {
   REMINDER_FREQUENCY_LABELS,
   PRESET_CONDITIONS,
 } from '@/constants/types';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 import { scheduleReminders } from '@/services/notificationService';
 import { useRegion } from '@/localization/RegionContext';
 import { REGIONS } from '@/localization/region';
@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
     return (
       <View style={styles.stepContent}>
         <View style={styles.welcomeLolaBlock}>
-          <Image source={Lola.welcome} style={styles.welcomeLola} resizeMode="contain" />
+          <Image source={Companion.FirstLaunch} style={styles.welcomeLola} resizeMode="contain" />
         </View>
 
         <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>

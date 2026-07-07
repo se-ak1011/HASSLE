@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { Lola } from '@/constants/lola';
+import { Companion } from '@/constants/companion';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1058,7 +1058,7 @@ export default function QuietTimeScreen() {
         {/* Lola — calm, low-energy presence */}
         <View style={styles.lolaBlock}>
           <Image
-            source={Lola.sitting}
+            source={Companion.QuietTime}
             style={styles.lolaImage}
             resizeMode="contain"
             accessibilityLabel="Lola sitting quietly"
