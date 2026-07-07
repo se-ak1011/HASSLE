@@ -160,7 +160,7 @@ function CheckInView() {
         {/* Mode selector */}
         <View style={checkInStyles.section}>
           <Text style={[checkInStyles.label, { fontFamily: ff.medium }]}>
-            How would you like to track energy?
+            How do you track your energy?
           </Text>
           <View style={checkInStyles.modeRow}>
             <Pressable
@@ -640,12 +640,12 @@ export default function TodayScreen() {
 
   async function handleEndDay() {
     showAlert(
-      'End the day?',
-      "Today\u2019s tasks, energy, and reflection will be saved to your history. You\u2019ll be brought back to check-in to start fresh.",
+      'Wrap up today?',
+      "Today\u2019s tasks, energy, and reflections will be saved. You\u2019ll be ready to start fresh tomorrow.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Not yet', style: 'cancel' },
         {
-          text: 'End day',
+          text: 'Yes, wrap up',
           style: 'default',
           onPress: async () => {
             await endDay();
@@ -803,7 +803,7 @@ export default function TodayScreen() {
             onPress={() => setShowAddModal(true)}
           >
             <MaterialIcons name="add" size={20} color={Colors.primary} />
-            <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add a task</Text>
+            <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add something</Text>
           </Pressable>
         </SectionBlock>
 
@@ -977,7 +977,7 @@ export default function TodayScreen() {
             onPress={handleEndDay}
           >
             <MaterialIcons name="nights-stay" size={16} color={Colors.textSubtle} />
-            <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>End the day</Text>
+            <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>Wrap up today</Text>
           </Pressable>
         </View>
 

@@ -104,7 +104,7 @@ function buildObservationCards(
     observations.push({
       text: 'You have enough recent history for a useful doctor report.',
       confidenceLabel: 'report ready',
-      actionLabel: 'Preview doctor report',
+      actionLabel: 'View report',
       onPress: onOpenReport,
     });
   }
@@ -520,14 +520,14 @@ export default function PatternsScreen() {
         <AssistantHero
           kicker="Insights"
           title="Here's what I've noticed."
-          subtitle="Patterns, gently."
+          subtitle="What I've noticed."
           lola={Lola.books}
         />
 
         {/* Lead observation — shown prominently before anything else */}
         {!loading && observations.length > 0 ? (
           <View style={styles.leadObservation}>
-            <Text style={[styles.leadLabel, { fontFamily: ff.regular }]}>Something small I've seen…</Text>
+            <Text style={[styles.leadLabel, { fontFamily: ff.regular }]}>I noticed...</Text>
             <Text style={[styles.leadText, { fontFamily: ff.regular }]}>{observations[0].text}</Text>
             {observations[0].actionLabel ? (
               <Pressable
@@ -545,7 +545,7 @@ export default function PatternsScreen() {
 
         {/* History insights */}
         <SectionBlock
-          title="Hassle noticed"
+          title="What I've noticed"
           action={
             <Pressable
               onPress={reload}
@@ -592,8 +592,8 @@ export default function PatternsScreen() {
               {history.length >= 7 ? (
                 <View style={styles.reportTileWrap}>
                   <ActionTile
-                    title="Doctor report ready"
-                    body="Preview your recent appointment summary."
+                    title="View report"
+                    body="Your appointment summary is ready."
                     icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
                     onPress={openReport}
                     style={styles.reportTile}
@@ -616,7 +616,7 @@ export default function PatternsScreen() {
                 </View>
               ) : null}
 
-              <Text style={[styles.supportingTitle, { fontFamily: ff.regular }]}>Supporting details</Text>
+              <Text style={[styles.supportingTitle, { fontFamily: ff.regular }]}>Behind the numbers</Text>
 
               {spoonInsights.days.length > 0 ? (
                 <InsightSection insights={spoonInsights} />

@@ -591,7 +591,7 @@ export default function ReflectScreen() {
           {/* What you did */}
           {completedTasks.length > 0 ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>What you did today</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>What you did</Text>
               <View style={styles.completedList}>
                 {completedTasks.map((t, i) => {
                   const rawCost = t.completedCost ?? t.effectiveCost;
@@ -623,7 +623,7 @@ export default function ReflectScreen() {
 
           {/* Guided prompts */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Optional prompts</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything else?</Text>
             <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none. No pressure.</Text>
 
             <PromptCarousel

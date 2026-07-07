@@ -206,7 +206,7 @@ export default function OnboardingScreen() {
             style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
-            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>That's me</Text>
           </Pressable>
         </View>
       </View>
@@ -249,7 +249,7 @@ export default function OnboardingScreen() {
             onPress={nextStep}
           >
             <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>
-              {hasName ? 'Continue' : 'Skip'}
+              {hasName ? "That's my name" : 'Skip'}
             </Text>
           </Pressable>
         </View>
@@ -325,7 +325,7 @@ export default function OnboardingScreen() {
             onPress={nextStep}
           >
             <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>
-              {selectedConditions.length > 0 ? 'Continue' : 'Skip'}
+              {selectedConditions.length > 0 ? 'Those fit' : 'Skip'}
             </Text>
           </Pressable>
         </View>
@@ -403,7 +403,7 @@ export default function OnboardingScreen() {
             style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
-            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>That works</Text>
           </Pressable>
         </View>
       </View>
@@ -503,7 +503,7 @@ export default function OnboardingScreen() {
             style={({ pressed }) => [styles.primaryBtnSmall, pressed && { opacity: 0.7 }]}
             onPress={nextStep}
           >
-            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Continue</Text>
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>That works for me</Text>
           </Pressable>
         </View>
       </View>

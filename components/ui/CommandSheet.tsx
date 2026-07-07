@@ -36,12 +36,12 @@ type Command = {
 };
 
 const COMMANDS: Command[] = [
-  { key: 'plan',      label: 'Plan today',           icon: 'event-note',    route: null },
-  { key: 'happened',  label: 'Something happened',   icon: 'bolt',          route: null },
-  { key: 'insights',  label: 'Insights',             icon: 'show-chart',    route: '/(tabs)/patterns' },
-  { key: 'report',    label: 'Doctor report',        icon: 'picture-as-pdf', route: '/report' },
-  { key: 'reflect',   label: 'Reflect',              icon: 'edit-note',     route: '/(tabs)/reflect' },
-  { key: 'distract',  label: 'Just distract me',     icon: 'spa',           route: null },
+  { key: 'plan',      label: 'Shape today',          icon: 'event-note',    route: null },
+  { key: 'happened',  label: 'What happened?',       icon: 'bolt',          route: null },
+  { key: 'insights',  label: "What I've noticed",    icon: 'show-chart',    route: '/(tabs)/patterns' },
+  { key: 'report',    label: 'View report',          icon: 'picture-as-pdf', route: '/report' },
+  { key: 'reflect',   label: 'Anything else?',       icon: 'edit-note',     route: '/(tabs)/reflect' },
+  { key: 'distract',  label: 'Choose something gentle', icon: 'spa',        route: null },
   { key: 'settings',  label: 'Settings',             icon: 'tune',          route: '/(tabs)/settings' },
 ];
 

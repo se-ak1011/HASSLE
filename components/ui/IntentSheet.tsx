@@ -145,7 +145,7 @@ export function IntentSheet({ visible, onClose, handlers = {} }: Props) {
                   What happened?
                 </Text>
                 <Text style={[sheetStyles.subheading, { fontFamily: ff.regular }]}>
-                  Say it naturally. Hassle will organise it.
+                  Tap one below, or say it yourself.
                 </Text>
               </View>
               <Image
@@ -220,10 +220,10 @@ export function IntentSheet({ visible, onClose, handlers = {} }: Props) {
               ]}
               onPress={handleContinue}
               accessibilityRole="button"
-              accessibilityLabel="Continue"
+              accessibilityLabel={hasText ? 'That happened' : 'Nothing for now'}
             >
               <Text style={[sheetStyles.continueBtnText, { fontFamily: ff.semibold }]}>
-                Continue
+                {hasText ? 'That happened' : 'Nothing for now'}
               </Text>
             </Pressable>
 
