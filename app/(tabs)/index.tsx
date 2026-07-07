@@ -640,84 +640,15 @@ export default function TodayScreen() {
 
         <ObservationCard text={observationText} />
 
-        {/* Tags */}
-        {day.tags.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagsScroll}
-          >
-            <View style={styles.tagsRow}>
-              {day.tags.map((tag) => (
-                <View
-                  key={tag}
-                  style={[
-                    styles.tagPill,
-                    { borderColor: tagColors[tag] ?? Colors.border },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tagPillText,
-                      { color: tagColors[tag] ?? Colors.textSubtle },
-                      { fontFamily: ff.medium },
-                    ]}
-                  >
-                    {tag}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-        ) : null}
-
-        {/* Energy Bar */}
-        <View style={styles.section}>
-          <EnergyBar
-            mode={day.energyMode}
-            total={day.energyLevel}
-            used={energyUsed}
-            remaining={energyRemaining}
-            isFlare={day.isFlareDay}
-          />
-        </View>
-
-        {/* Inline feedback message */}
+        {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
           <Animated.View style={[styles.feedbackRow, { opacity: fadeAnim }]}>
             <Text style={[styles.feedbackText, { fontFamily: ff.regular }]}>{feedbackMsg}</Text>
           </Animated.View>
         ) : null}
 
-        {/* Flare day toggle */}
-        <View style={[styles.section, styles.flareToggleCard]}>
-          <View style={styles.flareToggleLeft}>
-            <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
-            <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
-              {day.isFlareDay
-                ? 'All task costs are increased by 50%'
-                : 'Toggle on to increase task costs by 50%'}
-            </Text>
-          </View>
-          <Switch
-            value={day.isFlareDay}
-            onValueChange={toggleFlare}
-            trackColor={{ false: Colors.border, true: Colors.flare }}
-            thumbColor={Colors.white}
-            accessibilityLabel="Flare day"
-          />
-        </View>
-
-        {day.isFlareDay ? (
-          <View style={styles.flareMsgSection}>
-            <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-              That’s enough for today.
-            </Text>
-          </View>
-        ) : null}
-
         {/* Pending tasks */}
-        <SectionBlock title="Today&apos;s support" count={pending.length}>
+        <SectionBlock title="Today's support" count={pending.length}>
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
@@ -815,6 +746,77 @@ export default function TodayScreen() {
               ))}
             </View>
           </SectionBlock>
+        ) : null}
+
+        {/* ── Supporting information ─────────────────────────────────── */}
+
+        {/* Today's tags — supporting context */}
+        {day.tags.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tagsScroll}
+          >
+            <View style={styles.tagsRow}>
+              {day.tags.map((tag) => (
+                <View
+                  key={tag}
+                  style={[
+                    styles.tagPill,
+                    { borderColor: tagColors[tag] ?? Colors.border },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagPillText,
+                      { color: tagColors[tag] ?? Colors.textSubtle },
+                      { fontFamily: ff.medium },
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        ) : null}
+
+        {/* Energy bar — supporting info */}
+        <View style={styles.section}>
+          <EnergyBar
+            mode={day.energyMode}
+            total={day.energyLevel}
+            used={energyUsed}
+            remaining={energyRemaining}
+            isFlare={day.isFlareDay}
+          />
+        </View>
+
+        {/* Flare day toggle */}
+        <View style={[styles.section, styles.flareToggleCard]}>
+          <View style={styles.flareToggleLeft}>
+            <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
+            <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
+              {day.isFlareDay
+                ? 'All task costs are increased by 50%'
+                : 'Toggle on to increase task costs by 50%'}
+            </Text>
+          </View>
+          <Switch
+            value={day.isFlareDay}
+            onValueChange={toggleFlare}
+            trackColor={{ false: Colors.border, true: Colors.flare }}
+            thumbColor={Colors.white}
+            accessibilityLabel="Flare day"
+          />
+        </View>
+
+        {day.isFlareDay ? (
+          <View style={styles.flareMsgSection}>
+            <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
+              That's enough for today.
+            </Text>
+          </View>
         ) : null}
 
         {/* End day */}
