@@ -44,7 +44,7 @@ const ACTIVITIES: Activity[] = [
     description: 'A tiny thing to solve. No rush.',
     effort: '2–5 min',
     accentColor: Colors.primary,
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'mug',
@@ -52,7 +52,7 @@ const ACTIVITIES: Activity[] = [
     description: 'Colour something small.',
     effort: '1–3 min',
     accentColor: Colors.flare,
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'drift',
@@ -60,7 +60,7 @@ const ACTIVITIES: Activity[] = [
     description: 'Find one word that feels okay.',
     effort: '1 min',
     accentColor: Colors.primary,
-    implemented: false,
+    implemented: true,
   },
   {
     key: 'orb',
@@ -76,7 +76,7 @@ const ACTIVITIES: Activity[] = [
     description: 'Put a few things where they belong.',
     effort: '2–3 min',
     accentColor: Colors.primary,
-    implemented: false,
+    implemented: true,
   },
 ];
 
@@ -450,6 +450,396 @@ function PlaceholderDetail({ activity, onBack }: { activity: Activity; onBack: (
   );
 }
 
+// ─── Puzzle detail ────────────────────────────────────────────────────────────
+
+const PUZZLE_SIZE = 9;
+const PUZZLE_TILE_COLORS = [
+  Colors.primary, Colors.accent, Colors.flare,
+  Colors.accent, Colors.primary, Colors.primary,
+  Colors.flare,  Colors.accent,  Colors.primary,
+];
+
+function PuzzleDetail({ onBack }: { onBack: () => void }) {
+  const ff = useFontFamily();
+  const [revealed, setRevealed] = React.useState<boolean[]>(Array(PUZZLE_SIZE).fill(false));
+  const anims = useRef(
+    Array.from({ length: PUZZLE_SIZE }, () => new Animated.Value(0))
+  ).current;
+  const done = revealed.every(Boolean);
+
+  function revealTile(i: number) {
+    if (revealed[i]) return;
+    setRevealed(prev => { const next = [...prev]; next[i] = true; return next; });
+    Animated.spring(anims[i], {
+      toValue: 1, friction: 6, tension: 80, useNativeDriver: true,
+    }).start();
+  }
+
+  return (
+    <View style={detail.root}>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Tiny Puzzle</Text>
+      <Text style={[detail.body, { fontFamily: ff.regular }]}>
+        {done ? "You did it. That's all it was." : 'Tap each tile to wake it up.'}
+      </Text>
+      <View style={puzzleDetail.grid}>
+        {Array.from({ length: PUZZLE_SIZE }, (_, i) => (
+          <Pressable
+            key={i}
+            onPress={() => revealTile(i)}
+            style={[
+              puzzleDetail.tile,
+              revealed[i] && { borderColor: PUZZLE_TILE_COLORS[i] + '60' },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Tile ${i + 1}`}
+          >
+            <Animated.View
+              style={[
+                puzzleDetail.tileFill,
+                {
+                  backgroundColor: PUZZLE_TILE_COLORS[i],
+                  opacity: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0, 0.8] }),
+                  transform: [
+                    { scale: anims[i].interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) },
+                  ],
+                },
+              ]}
+            />
+          </Pressable>
+        ))}
+      </View>
+      <Pressable
+        style={({ pressed }) => [detail.backBtn, pressed && { opacity: 0.7 }]}
+        onPress={onBack}
+        accessibilityRole="button"
+      >
+        <Text style={[detail.backText, { fontFamily: ff.medium }]}>Done</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ─── Mug detail ───────────────────────────────────────────────────────────────
+
+const MUG_PALETTE = ['#A06B63', '#78836F', '#6F8295', '#9B8B78', '#7A7A9E', '#5C8C7A'];
+const MUG_SECTION_KEYS = ['body', 'rim', 'handle', 'mark'] as const;
+type MugSectionKey = typeof MUG_SECTION_KEYS[number];
+const MUG_SECTION_LABELS: Record<MugSectionKey, string> = {
+  body: 'Body', rim: 'Rim', handle: 'Handle', mark: 'Mark',
+};
+const MUG_UNSET = Colors.surface;
+
+function MugDetail({ onBack }: { onBack: () => void }) {
+  const ff = useFontFamily();
+  const [pickedColor, setPickedColor] = React.useState(MUG_PALETTE[0]);
+  const [mugColors, setMugColors] = React.useState<Record<MugSectionKey, string>>({
+    body: MUG_UNSET, rim: MUG_UNSET, handle: MUG_UNSET, mark: MUG_UNSET,
+  });
+  const allColored = Object.values(mugColors).every(c => c !== MUG_UNSET);
+
+  function paintSection(key: MugSectionKey) {
+    setMugColors(prev => ({ ...prev, [key]: pickedColor }));
+  }
+
+  return (
+    <View style={detail.root}>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Colour Lola's Mug</Text>
+      <Text style={[detail.body, { fontFamily: ff.regular }]}>
+        {allColored ? "Lola loves it." : "Pick a colour, then tap a part."}
+      </Text>
+
+      {/* Mug visual */}
+      <View style={mugDetail.mugWrap}>
+        <View style={[mugDetail.mugRim, { backgroundColor: mugColors.rim }]} />
+        <View style={mugDetail.mugBodyRow}>
+          <View style={[mugDetail.mugBody, { backgroundColor: mugColors.body }]}>
+            <View
+              style={[
+                mugDetail.mugMark,
+                { backgroundColor: mugColors.mark === MUG_UNSET ? Colors.border : mugColors.mark },
+              ]}
+            />
+          </View>
+          <View
+            style={[
+              mugDetail.mugHandle,
+              { borderColor: mugColors.handle === MUG_UNSET ? Colors.textSubtle : mugColors.handle },
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Colour palette */}
+      <View style={mugDetail.palette}>
+        {MUG_PALETTE.map(c => (
+          <Pressable
+            key={c}
+            style={[
+              mugDetail.swatch,
+              { backgroundColor: c },
+              pickedColor === c && mugDetail.swatchActive,
+            ]}
+            onPress={() => setPickedColor(c)}
+            accessibilityRole="button"
+            accessibilityLabel={`colour ${c}`}
+          />
+        ))}
+      </View>
+
+      {/* Section buttons */}
+      <View style={mugDetail.sections}>
+        {MUG_SECTION_KEYS.map(key => (
+          <Pressable
+            key={key}
+            style={[
+              mugDetail.sectionBtn,
+              { borderColor: mugColors[key] === MUG_UNSET ? Colors.border : mugColors[key] },
+            ]}
+            onPress={() => paintSection(key)}
+            accessibilityRole="button"
+            accessibilityLabel={`Paint ${MUG_SECTION_LABELS[key]}`}
+          >
+            <View
+              style={[
+                mugDetail.sectionDot,
+                {
+                  backgroundColor:
+                    mugColors[key] === MUG_UNSET ? Colors.textSubtle + '40' : mugColors[key],
+                },
+              ]}
+            />
+            <Text style={[mugDetail.sectionLabel, { fontFamily: ff.regular }]}>
+              {MUG_SECTION_LABELS[key]}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [detail.backBtn, pressed && { opacity: 0.7 }]}
+        onPress={onBack}
+        accessibilityRole="button"
+      >
+        <Text style={[detail.backText, { fontFamily: ff.medium }]}>Done</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ─── Word Drift detail ────────────────────────────────────────────────────────
+
+const DRIFT_WORDS_FULL = [
+  'still', 'okay', 'here', 'soft', 'rest',
+  'safe', 'quiet', 'slow', 'enough', 'gentle', 'warm', 'easy',
+];
+
+function WordDriftDetail({
+  onBack,
+  reduceMotion,
+}: {
+  onBack: () => void;
+  reduceMotion: boolean;
+}) {
+  const ff = useFontFamily();
+  const [chosen, setChosen] = React.useState<string | null>(null);
+  const fadeAnims = useRef(DRIFT_WORDS_FULL.map(() => new Animated.Value(1))).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const floatAnims = useRef(DRIFT_WORDS_FULL.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    if (reduceMotion || chosen) return;
+    const animations = floatAnims.map((anim, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 250),
+          Animated.timing(anim, { toValue: 1, duration: 2500 + i * 200, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 2500 + i * 200, useNativeDriver: true }),
+        ])
+      )
+    );
+    animations.forEach(a => a.start());
+    return () => animations.forEach(a => a.stop());
+  }, [reduceMotion, chosen, floatAnims]);
+
+  function chooseWord(word: string, idx: number) {
+    if (chosen) return;
+    setChosen(word);
+    const fades: Animated.CompositeAnimation[] = [];
+    fadeAnims.forEach((anim, i) => {
+      if (i !== idx) {
+        fades.push(
+          Animated.timing(anim, { toValue: 0.12, duration: 700, useNativeDriver: true })
+        );
+      }
+    });
+    Animated.parallel(fades).start();
+    Animated.spring(scaleAnim, {
+      toValue: 1.3, friction: 5, tension: 60, useNativeDriver: true,
+    }).start();
+  }
+
+  return (
+    <View style={detail.root}>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Word Drift</Text>
+      <Text style={[detail.body, { fontFamily: ff.regular }]}>
+        {chosen ? `"${chosen}" — that's yours for now.` : 'Tap the word that feels okay.'}
+      </Text>
+      <View style={driftDetail.wordGrid}>
+        {DRIFT_WORDS_FULL.map((word, i) => (
+          <Animated.View
+            key={word}
+            style={{
+              opacity: fadeAnims[i],
+              transform: [
+                { scale: chosen === word ? scaleAnim : 1 },
+                {
+                  translateY: reduceMotion
+                    ? 0
+                    : floatAnims[i].interpolate({ inputRange: [0, 1], outputRange: [-5, 5] }),
+                },
+              ],
+            }}
+          >
+            <Pressable
+              style={[driftDetail.wordChip, chosen === word && driftDetail.wordChipChosen]}
+              onPress={() => chooseWord(word, i)}
+              accessibilityRole="button"
+              accessibilityLabel={word}
+            >
+              <Text
+                style={[
+                  driftDetail.wordText,
+                  { fontFamily: ff.regular },
+                  chosen === word && driftDetail.wordTextChosen,
+                ]}
+              >
+                {word}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        ))}
+      </View>
+      <Pressable
+        style={({ pressed }) => [detail.backBtn, pressed && { opacity: 0.7 }]}
+        onPress={onBack}
+        accessibilityRole="button"
+      >
+        <Text style={[detail.backText, { fontFamily: ff.medium }]}>Done</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+// ─── Soft Sort detail ─────────────────────────────────────────────────────────
+
+type SortItemData = { id: number; label: string; color: string; placed: 'a' | 'b' | null };
+
+const SORT_ITEMS_SEED: Omit<SortItemData, 'placed'>[] = [
+  { id: 0, label: 'terracotta', color: Colors.flare    },
+  { id: 1, label: 'peach',      color: '#C4897E'       },
+  { id: 2, label: 'sand',       color: '#BFA98A'       },
+  { id: 3, label: 'slate',      color: Colors.accent   },
+  { id: 4, label: 'sage',       color: Colors.primary  },
+  { id: 5, label: 'teal',       color: '#5C8C7A'       },
+];
+
+function SoftSortDetail({ onBack }: { onBack: () => void }) {
+  const ff = useFontFamily();
+  const [items, setItems] = React.useState<SortItemData[]>(
+    SORT_ITEMS_SEED.map(item => ({ ...item, placed: null }))
+  );
+  const [selected, setSelected] = React.useState<number | null>(null);
+  const allPlaced = items.every(it => it.placed !== null);
+
+  function toggleSelect(id: number) {
+    if (allPlaced) return;
+    setSelected(prev => (prev === id ? null : id));
+  }
+
+  function placeInGroup(group: 'a' | 'b') {
+    if (selected === null) return;
+    setItems(prev =>
+      prev.map(it => (it.id === selected ? { ...it, placed: group } : it))
+    );
+    setSelected(null);
+  }
+
+  const tray   = items.filter(it => it.placed === null);
+  const groupA = items.filter(it => it.placed === 'a');
+  const groupB = items.filter(it => it.placed === 'b');
+
+  return (
+    <View style={[detail.root, { justifyContent: 'flex-start', gap: Spacing.lg }]}>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Soft Sort</Text>
+      <Text style={[detail.body, { fontFamily: ff.regular }]}>
+        {allPlaced
+          ? 'Everything has a place.'
+          : selected !== null
+          ? 'Now tap a group to place it.'
+          : 'Tap an item, then choose a group.'}
+      </Text>
+
+      {/* Unsorted tray */}
+      <View style={sortDetail.tray}>
+        {tray.map(it => (
+          <Pressable
+            key={it.id}
+            style={[
+              sortDetail.chip,
+              { borderColor: it.color + '80' },
+              selected === it.id && { backgroundColor: it.color + '25', borderColor: it.color },
+            ]}
+            onPress={() => toggleSelect(it.id)}
+            accessibilityRole="button"
+            accessibilityLabel={it.label}
+          >
+            <View style={[sortDetail.chipDot, { backgroundColor: it.color }]} />
+            <Text style={[sortDetail.chipText, { fontFamily: ff.regular }]}>{it.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Drop zones */}
+      <View style={sortDetail.zones}>
+        <Pressable
+          style={[sortDetail.zone, selected !== null && sortDetail.zoneActive]}
+          onPress={() => placeInGroup('a')}
+          accessibilityRole="button"
+          accessibilityLabel="Group one"
+        >
+          <Text style={[sortDetail.zoneLabel, { fontFamily: ff.medium }]}>here</Text>
+          <View style={sortDetail.zoneItems}>
+            {groupA.map(it => (
+              <View key={it.id} style={[sortDetail.zoneDot, { backgroundColor: it.color }]} />
+            ))}
+          </View>
+        </Pressable>
+        <Pressable
+          style={[sortDetail.zone, selected !== null && sortDetail.zoneActive]}
+          onPress={() => placeInGroup('b')}
+          accessibilityRole="button"
+          accessibilityLabel="Group two"
+        >
+          <Text style={[sortDetail.zoneLabel, { fontFamily: ff.medium }]}>there</Text>
+          <View style={sortDetail.zoneItems}>
+            {groupB.map(it => (
+              <View key={it.id} style={[sortDetail.zoneDot, { backgroundColor: it.color }]} />
+            ))}
+          </View>
+        </Pressable>
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [detail.backBtn, pressed && { opacity: 0.7 }]}
+        onPress={onBack}
+        accessibilityRole="button"
+      >
+        <Text style={[detail.backText, { fontFamily: ff.medium }]}>Done</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 // ─── Rain detail ──────────────────────────────────────────────────────────────
 
 function RainDetail({ onBack, reduceMotion }: { onBack: () => void; reduceMotion: boolean }) {
@@ -599,6 +989,34 @@ export default function QuietTimeScreen() {
       return (
         <View style={[styles.root, { paddingTop: insets.top }]}>
           <OrbDetail onBack={() => setActiveActivity(null)} reduceMotion={reduceMotion} />
+        </View>
+      );
+    }
+    if (activeActivity.key === 'puzzle') {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <PuzzleDetail onBack={() => setActiveActivity(null)} />
+        </View>
+      );
+    }
+    if (activeActivity.key === 'mug') {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <MugDetail onBack={() => setActiveActivity(null)} />
+        </View>
+      );
+    }
+    if (activeActivity.key === 'drift') {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <WordDriftDetail onBack={() => setActiveActivity(null)} reduceMotion={reduceMotion} />
+        </View>
+      );
+    }
+    if (activeActivity.key === 'sort') {
+      return (
+        <View style={[styles.root, { paddingTop: insets.top }]}>
+          <SoftSortDetail onBack={() => setActiveActivity(null)} />
         </View>
       );
     }
@@ -981,5 +1399,216 @@ const detail = StyleSheet.create({
     fontSize: FontSizes.xs,
     color: Colors.text,
     letterSpacing: 1,
+  },
+});
+
+// ─── New activity detail styles ───────────────────────────────────────────────
+
+const puzzleDetail = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    width: 220,
+    justifyContent: 'center',
+  },
+  tile: {
+    width: 60,
+    height: 60,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDark,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileFill: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Radius.md - 2,
+  },
+});
+
+const mugDetail = StyleSheet.create({
+  mugWrap: {
+    alignItems: 'flex-start',
+  },
+  mugRim: {
+    width: 80,
+    height: 10,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    borderWidth: 1.5,
+    borderColor: Colors.textSubtle,
+    backgroundColor: Colors.surface,
+  },
+  mugBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mugBody: {
+    width: 80,
+    height: 100,
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    borderColor: Colors.textSubtle,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    overflow: 'hidden',
+  },
+  mugMark: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  mugHandle: {
+    width: 20,
+    height: 50,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+    borderWidth: 2,
+    borderLeftWidth: 0,
+    borderColor: Colors.textSubtle,
+    marginLeft: -2,
+  },
+  palette: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  swatch: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.full,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  swatchActive: {
+    borderColor: Colors.text,
+  },
+  sections: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+  },
+  sectionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+  },
+  sectionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  sectionLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+});
+
+const driftDetail = StyleSheet.create({
+  wordGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+    maxWidth: 320,
+  },
+  wordChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  wordChipChosen: {
+    backgroundColor: Colors.primaryFaint,
+    borderColor: Colors.primary,
+  },
+  wordText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  wordTextChosen: {
+    color: Colors.primary,
+  },
+});
+
+const sortDetail = StyleSheet.create({
+  tray: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    justifyContent: 'center',
+    minHeight: 48,
+    width: '100%',
+    paddingHorizontal: Spacing.md,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+  },
+  chipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  chipText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+  zones: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    width: '100%',
+    paddingHorizontal: Spacing.md,
+  },
+  zone: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    minHeight: 80,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  zoneActive: {
+    borderColor: Colors.primaryLight,
+  },
+  zoneLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+    letterSpacing: 0.6,
+  },
+  zoneItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    justifyContent: 'center',
+  },
+  zoneDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 });
