@@ -33,6 +33,8 @@ import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
 import { IntentSheet } from '@/components/ui/IntentSheet';
+import { CommandSheet } from '@/components/ui/CommandSheet';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 import { loadClinicalSummary } from '@/services/exportService';
 
 const MIN_REPORT_DAYS = 7;
@@ -44,7 +46,7 @@ const BATTERY_VALUES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 function CheckInView() {
   const insets = useSafeAreaInsets();
-  const { completeCheckIn, prefs, addCustomTag, setFlarePreview } = useDay();
+  const { completeCheckIn, prefs, addCustomTag } = useDay();
   const ff = useFontFamily();
   const { config } = useRegion();
 
@@ -52,8 +54,6 @@ function CheckInView() {
   const [energyLevel, setEnergyLevel] = useState<number | null>(null);
   const [isFlare, setIsFlare] = useState(false);
 
-  // Reset flare-font preview when leaving the check-in screen
-  useEffect(() => () => setFlarePreview(false), [setFlarePreview]);
   const [tags, setTags] = useState<DailyTag[]>([]);
   const [showCustomSpoon, setShowCustomSpoon] = useState(false);
   const [customSpoonInput, setCustomSpoonInput] = useState('');
@@ -159,7 +159,7 @@ function CheckInView() {
         {/* Mode selector */}
         <View style={checkInStyles.section}>
           <Text style={[checkInStyles.label, { fontFamily: ff.medium }]}>
-            How would you like to track energy?
+            How do you track your energy?
           </Text>
           <View style={checkInStyles.modeRow}>
             <Pressable
@@ -297,7 +297,6 @@ function CheckInView() {
                 value={isFlare}
                 onValueChange={(v) => {
                   setIsFlare(v);
-                  setFlarePreview(v);
                 }}
                 trackColor={{ false: Colors.border, true: Colors.flare }}
                 thumbColor={Colors.white}
@@ -448,6 +447,8 @@ export default function TodayScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
+  const [showCommandSheet, setShowCommandSheet] = useState(false);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [movingTask, setMovingTask] = useState<Task | null>(null);
   const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -481,18 +482,34 @@ export default function TodayScreen() {
     if (showCheckIn) {
       return (
         <View style={[styles.root, { paddingTop: insets.top }]}>
+          <View style={styles.headerBar}>
+            <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+              <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+            </Pressable>
+          </View>
           <CheckInView />
+          <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
         </View>
       );
     }
 
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+            <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+          </Pressable>
+        </View>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
         >
-          <AssistantHero title="Morning." subtitle="What would help today?" lola={Lola.sitting} />
+          <AssistantHero
+            title="Morning."
+            subtitle="What would help today?"
+            lola={Lola.sitting}
+            onLolaPress={() => setShowCommandSheet(true)}
+          />
 
           <Pressable
             style={({ pressed }) => [styles.whatHappenedBtn, pressed && { opacity: 0.8 }]}
@@ -538,6 +555,17 @@ export default function TodayScreen() {
           onClose={() => setShowIntentSheet(false)}
           handlers={{ openFlareWorkflow: () => setShowCheckIn(true) }}
         />
+
+        <CommandSheet
+          visible={showCommandSheet}
+          onClose={() => setShowCommandSheet(false)}
+          handlers={{
+            openPlanToday: () => setShowCheckIn(true),
+            openSomethingHappened: () => setShowIntentSheet(true),
+          }}
+        />
+
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     );
   }
@@ -554,21 +582,55 @@ export default function TodayScreen() {
     .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   const isLowEnergy = energyRemaining <= 20;
-  const heroImage = day.isFlareDay || isLowEnergy ? Lola.xeyes : Lola.standing;
-  const heroSentence = day.isFlareDay
-    ? 'Let’s protect your energy.'
-    : isLowEnergy
-    ? 'Today can be smaller.'
-    : 'What would help today?';
-  const observationText = day.isFlareDay
-    ? 'Move one thing if you need to. That is still care.'
-    : moved.length > 0
-    ? 'You have already moved something out of today. That counts as planning.'
-    : pending.length === 0
-    ? 'Nothing urgent is waiting here.'
-    : pending.length === 1
-    ? 'There is one thing left. It can stay small.'
-    : `${pending.length} things are waiting. You only have to choose the next one.`;
+  const isReportReady = reportDaysFound >= MIN_REPORT_DAYS;
+  const isReportBuilding = reportDaysFound > 0 && reportDaysFound < MIN_REPORT_DAYS;
+
+  // ── Adaptive hero ──────────────────────────────────────────────────────────
+  let heroImage = Lola.standing;
+  let heroSentence = 'What would help today?';
+  let heroKicker = 'Today, together.';
+
+  if (day.isFlareDay) {
+    heroImage = Lola.xeyes;
+    heroSentence = 'Protect your energy today.';
+    heroKicker = 'Flare day';
+  } else if (isLowEnergy) {
+    heroImage = Lola.xeyes;
+    heroSentence = "Let's make today smaller.";
+  } else if (isReportReady) {
+    heroImage = Lola.report;
+    heroSentence = 'Your appointment summary is ready.';
+    heroKicker = 'Your summary is ready.';
+  } else if (pending.length === 0) {
+    heroImage = Lola.sitting;
+    heroSentence = 'Nothing urgent is waiting.';
+  } else if (reportDaysFound >= 3) {
+    heroImage = Lola.books;
+    heroSentence = "I've noticed something.";
+    heroKicker = 'Hassle noticed.';
+  }
+
+  // ── Adaptive observation ───────────────────────────────────────────────────
+  let observationText: string;
+  if (isReportReady) {
+    observationText = 'You seem to have enough information for a useful appointment summary.';
+  } else if (day.isFlareDay && completed.length > 0) {
+    observationText = "You've been protecting your energy well. That's real care.";
+  } else if (moved.length >= 2) {
+    observationText = "You've moved tasks a few times recently. That often seems to help.";
+  } else if (moved.length === 1) {
+    observationText = 'Moving something out of today may have made things a little lighter.';
+  } else if (pending.length === 0 && completed.length > 0) {
+    observationText = "You've already done things today. That counts.";
+  } else if (pending.length === 0) {
+    observationText = 'Nothing else needs your attention right now.';
+  } else if (isLowEnergy) {
+    observationText = 'Your energy might be running lower today. The list can stay small.';
+  } else if (pending.length === 1) {
+    observationText = 'There is one thing left. It can stay small.';
+  } else {
+    observationText = `${pending.length} things are waiting. You only have to choose the next one.`;
+  }
 
   function handleCompletePress(task: Task) {
     setPendingCompletion(task);
@@ -590,12 +652,12 @@ export default function TodayScreen() {
 
   async function handleEndDay() {
     showAlert(
-      'End the day?',
-      "Today\u2019s tasks, energy, and reflection will be saved to your history. You\u2019ll be brought back to check-in to start fresh.",
+      'Wrap up today?',
+      "Today\u2019s tasks, energy, and reflections will be saved. You\u2019ll be ready to start fresh tomorrow.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Not yet', style: 'cancel' },
         {
-          text: 'End day',
+          text: 'Yes, wrap up',
           style: 'default',
           onPress: async () => {
             await endDay();
@@ -617,24 +679,69 @@ export default function TodayScreen() {
     'decent day': Colors.success,
   };
 
+  // ── Adaptive action order ──────────────────────────────────────────────────
+  const actionPlan = {
+    key: 'plan',
+    title: 'Plan today',
+    body: 'Add or choose one thing.',
+    iconName: 'event-note',
+    iconColor: Colors.primary,
+    onPress: () => setShowAddModal(true),
+  };
+  const actionStruggling = {
+    key: 'struggling',
+    title: "I'm struggling",
+    body: day.isFlareDay ? "That's enough for today." : 'Protect your energy.',
+    iconName: 'bedtime',
+    iconColor: Colors.flare,
+    onPress: day.isFlareDay ? () => { handleEndDay(); } : () => toggleFlare(true),
+  };
+  const actionReport = {
+    key: 'report',
+    title: 'Doctor report',
+    body: 'Your 30-day summary.',
+    iconName: 'picture-as-pdf',
+    iconColor: Colors.accent,
+    onPress: openReport,
+  };
+  const actionPatterns = {
+    key: 'patterns',
+    title: 'What changed?',
+    body: 'Hassle noticed…',
+    iconName: 'auto-graph',
+    iconColor: Colors.primary,
+    onPress: openPatterns,
+  };
+
+  let orderedActions: typeof actionPlan[];
+  if (day.isFlareDay) {
+    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
+  } else if (isReportReady) {
+    orderedActions = [actionReport, actionPatterns, actionPlan, actionStruggling];
+  } else if (isLowEnergy) {
+    orderedActions = [actionStruggling, actionPlan, actionReport, actionPatterns];
+  } else {
+    orderedActions = [actionPlan, actionPatterns, actionReport, actionStruggling];
+  }
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
         {/* Ambient assistant hero — Today, together */}
         <AssistantHero
+          kicker={heroKicker}
           title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
           subtitle={heroSentence}
           lola={heroImage}
-          badge={
-            day.isFlareDay ? (
-              <View style={styles.flarePill}>
-                <Text style={[styles.flarePillText, { fontFamily: ff.semibold }]}>Flare day</Text>
-              </View>
-            ) : null
-          }
+          onLolaPress={() => setShowCommandSheet(true)}
         />
 
         <Pressable
@@ -646,46 +753,26 @@ export default function TodayScreen() {
         </Pressable>
 
         <View style={styles.actionGrid}>
-          <ActionTile
-            primary
-            title="Plan today"
-            body="Add or choose one thing."
-            icon={<MaterialIcons name="event-note" size={22} color={Colors.background} />}
-            onPress={() => setShowAddModal(true)}
-          />
-          <ActionTile
-            title="I’m struggling"
-            body={day.isFlareDay ? 'That’s enough for today.' : 'Protect your energy.'}
-            icon={<MaterialIcons name="bedtime" size={22} color={Colors.flare} />}
-            onPress={day.isFlareDay ? handleEndDay : () => toggleFlare(true)}
-          />
-          <ActionTile
-            title="Doctor report"
-            body="Your 30-day summary."
-            icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
-            onPress={openReport}
-          />
-          <ActionTile
-            title="What changed?"
-            body="Hassle noticed…"
-            icon={<MaterialIcons name="auto-graph" size={22} color={Colors.primary} />}
-            onPress={openPatterns}
-          />
+          {orderedActions.map((action, i) => {
+            const isPrimary = i === 0;
+            return (
+              <ActionTile
+                key={action.key}
+                primary={isPrimary}
+                title={action.title}
+                body={action.body}
+                icon={
+                  <MaterialIcons
+                    name={action.iconName as React.ComponentProps<typeof MaterialIcons>['name']}
+                    size={22}
+                    color={isPrimary ? Colors.background : action.iconColor}
+                  />
+                }
+                onPress={action.onPress}
+              />
+            );
+          })}
         </View>
-
-        <ObservationCard text={observationText} />
-
-        {/* Contextual report-ready card */}
-        {reportDaysFound >= MIN_REPORT_DAYS ? (
-          <View style={styles.reportCardWrap}>
-            <ReportReadyCard
-              status="ready"
-              title="Doctor report ready."
-              subtitle="You now have enough information for your appointment."
-              primaryAction={{ label: 'View report', onPress: openReport }}
-            />
-          </View>
-        ) : null}
 
         {/* Inline feedback message — shown near task section */}
         {feedbackMsg ? (
@@ -699,10 +786,16 @@ export default function TodayScreen() {
 
           {pending.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🌱</Text>
-              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>Nothing on your list yet.</Text>
+              <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
+              <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
+                {completed.length > 0
+                  ? 'Nothing else needs your attention today.'
+                  : day.isFlareDay
+                  ? 'Take it easy today.'
+                  : 'Nothing on your list yet.'}
+              </Text>
               <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                Nothing urgent. Add only what would help.
+                {day.isFlareDay ? 'Let today stay light.' : 'Add only what would help.'}
               </Text>
             </View>
           ) : (
@@ -727,7 +820,7 @@ export default function TodayScreen() {
             onPress={() => setShowAddModal(true)}
           >
             <MaterialIcons name="add" size={20} color={Colors.primary} />
-            <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add a task</Text>
+            <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add something</Text>
           </Pressable>
         </SectionBlock>
 
@@ -795,7 +888,53 @@ export default function TodayScreen() {
           </SectionBlock>
         ) : null}
 
-        {/* ── Supporting information ─────────────────────────────────── */}
+        {/* ── Recent observations ─────────────────────────────────────── */}
+
+        <ObservationCard text={observationText} />
+
+        {/* Quiet Time — shown on flare days or when energy is low */}
+        {(day.isFlareDay || isLowEnergy) ? (
+          <Pressable
+            style={({ pressed }) => [styles.quietTimeBanner, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push('/quiet-time' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Quiet Time — something gentle"
+          >
+            <MaterialIcons name="spa" size={18} color={Colors.accent} style={{ marginRight: Spacing.sm }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.quietTimeBannerTitle, { fontFamily: ff.medium }]}>
+                Need a quiet minute?
+              </Text>
+              <Text style={[styles.quietTimeBannerSub, { fontFamily: ff.regular }]}>
+                Quiet Time — something gentle
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={18} color={Colors.border} />
+          </Pressable>
+        ) : null}
+
+        {/* Contextual report-ready card */}
+        {isReportReady ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="ready"
+              title="Doctor report ready."
+              subtitle="You now have enough information for your appointment."
+              primaryAction={{ label: 'View report', onPress: openReport }}
+            />
+          </View>
+        ) : isReportBuilding ? (
+          <View style={styles.reportCardWrap}>
+            <ReportReadyCard
+              status="building"
+              title="Building your summary."
+              subtitle="We're quietly building your appointment summary."
+              primaryAction={{ label: 'See what's there', onPress: openReport }}
+            />
+          </View>
+        ) : null}
+
+        {/* ── Optional details ────────────────────────────────────────── */}
 
         {/* Today's tags — supporting context */}
         {day.tags.length > 0 ? (
@@ -876,7 +1015,7 @@ export default function TodayScreen() {
             onPress={handleEndDay}
           >
             <MaterialIcons name="nights-stay" size={16} color={Colors.textSubtle} />
-            <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>End the day</Text>
+            <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>Wrap up today</Text>
           </Pressable>
         </View>
 
@@ -919,6 +1058,17 @@ export default function TodayScreen() {
           openReflect: () => router.push('/(tabs)/reflect' as any),
         }}
       />
+
+      <CommandSheet
+        visible={showCommandSheet}
+        onClose={() => setShowCommandSheet(false)}
+        handlers={{
+          openPlanToday: () => setShowAddModal(true),
+          openSomethingHappened: () => setShowIntentSheet(true),
+        }}
+      />
+
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
@@ -1237,6 +1387,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
+  },
   scroll: {
     paddingBottom: Spacing.xxxl,
   },
@@ -1265,6 +1422,27 @@ const styles = StyleSheet.create({
   reportCardWrap: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
+  },
+  quietTimeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.accentFaint,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.accent + '30',
+  },
+  quietTimeBannerTitle: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  quietTimeBannerSub: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    lineHeight: 18,
   },
   tagsScroll: {
     marginBottom: Spacing.sm,

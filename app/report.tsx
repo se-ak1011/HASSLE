@@ -66,11 +66,10 @@ export default function ReportScreen() {
     }
   }
 
-  const reportStatus = !summary
-    ? 'not_enough'
-    : summary.daysFound < MIN_DAYS_READY
-    ? 'building'
-    : 'ready';
+  // Treat null summary (no history yet) the same as building with 0 days —
+  // the report grows over time; we never hard-block the screen.
+  const daysFound = summary?.daysFound ?? 0;
+  const reportStatus = daysFound < MIN_DAYS_READY ? 'building' : 'ready';
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -92,73 +91,70 @@ export default function ReportScreen() {
             <ActivityIndicator color={Colors.primary} />
           </View>
 
-        ) : reportStatus === 'not_enough' ? (
-          // ── Not enough data ─────────────────────────────────────────────────
-          <View style={styles.stateBlock}>
-            <Image source={Lola.report} style={styles.lolaImg} resizeMode="contain" />
-            <Text style={[styles.stateTitle, { fontFamily: ff.bold }]}>
-              I need a little more time.
-            </Text>
-            <Text style={[styles.stateBody, { fontFamily: ff.regular }]}>
-              Before I can prepare a useful report, I need a few more days to understand how your body
-              works. Keep using Hassle naturally — I'll be quietly paying attention.
-            </Text>
-            <View style={styles.hintCard}>
-              <MaterialIcons name="info-outline" size={15} color={Colors.textSubtle} />
-              <Text style={[styles.hintText, { fontFamily: ff.regular }]}>
-                Complete and end at least {MIN_DAYS_READY} days to unlock your appointment summary.
-              </Text>
-            </View>
-          </View>
-
         ) : reportStatus === 'building' ? (
-          // ── Building understanding ───────────────────────────────────────────
+          // ── Growing report — always shown, even on day 0 ─────────────────────
           <View style={styles.stateBlock}>
             <Image source={Lola.report} style={styles.lolaImg} resizeMode="contain" />
             <Text style={[styles.stateTitle, { fontFamily: ff.bold }]}>
-              We've collected enough to begin.
+              {daysFound === 0
+                ? 'Hassle is beginning to understand your days.'
+                : 'Your report is growing.'}
             </Text>
             <Text style={[styles.stateBody, { fontFamily: ff.regular }]}>
-              I've started recognising patterns from your{' '}
-              <Text style={{ fontFamily: ff.semibold }}>{summary!.daysFound}</Text>{' '}
-              {summary!.daysFound === 1 ? 'day' : 'days'} so far. Keep using Hassle naturally — your
-              appointment summary will be ready in a few more days.
+              {daysFound === 0
+                ? 'Keep using Hassle naturally — I\'ll be quietly paying attention. Your appointment summary will be ready in a few days.'
+                : `I've started recognising patterns from your ${daysFound} ${daysFound === 1 ? 'day' : 'days'} so far. Keep using Hassle naturally — your appointment summary will be ready soon.`}
             </Text>
             <View style={styles.progressRow}>
               <View style={styles.progressBar}>
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${Math.min(100, (summary!.daysFound / MIN_DAYS_READY) * 100)}%` as any },
+                    { width: `${Math.min(100, (daysFound / MIN_DAYS_READY) * 100)}%` as any },
                   ]}
                 />
               </View>
               <Text style={[styles.progressLabel, { fontFamily: ff.medium }]}>
-                {summary!.daysFound} / {MIN_DAYS_READY} days
+                {daysFound} / {MIN_DAYS_READY} days
               </Text>
             </View>
             <View style={styles.miniGrid}>
               <View style={styles.miniStat}>
-                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{summary!.daysFound}</Text>
+                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{daysFound}</Text>
                 <Text style={[styles.miniLabel, { fontFamily: ff.regular }]}>days tracked</Text>
               </View>
               <View style={styles.miniStat}>
-                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{summary!.totalFlareDays}</Text>
+                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{summary?.totalFlareDays ?? 0}</Text>
                 <Text style={[styles.miniLabel, { fontFamily: ff.regular }]}>flare days</Text>
               </View>
               <View style={styles.miniStat}>
-                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{summary!.totalTasksCompleted}</Text>
+                <Text style={[styles.miniValue, { fontFamily: ff.bold }]}>{summary?.totalTasksCompleted ?? 0}</Text>
                 <Text style={[styles.miniLabel, { fontFamily: ff.regular }]}>tasks done</Text>
               </View>
             </View>
+            {summary?.topTags && summary.topTags.length > 0 ? (
+              <View style={styles.miniTagsBlock}>
+                <Text style={[styles.miniTagsLabel, { fontFamily: ff.medium }]}>Recent tags</Text>
+                <View style={styles.miniTagsRow}>
+                  {summary.topTags.slice(0, 4).map((t) => (
+                    <View key={t.tag} style={styles.miniTag}>
+                      <Text style={[styles.miniTagText, { fontFamily: ff.medium }]}>{t.tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </View>
 
         ) : (
           // ── Report ready ─────────────────────────────────────────────────────
           <>
-            {/* Ready card */}
+            {/* Opening question */}
             <View style={styles.heroBlock}>
               <Image source={Lola.report} style={styles.heroLola} resizeMode="contain" />
+              <Text style={[styles.heroQuestion, { fontFamily: ff.bold }]}>
+                Ready to see what we've collected?
+              </Text>
             </View>
 
             <ReportReadyCard
@@ -390,10 +386,43 @@ const styles = StyleSheet.create({
   },
   miniValue: { fontSize: FontSizes.lg, color: Colors.text },
   miniLabel: { fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center' },
+  miniTagsBlock: {
+    alignSelf: 'stretch',
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  miniTagsLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
+  },
+  miniTagsRow: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: Spacing.sm,
+  },
+  miniTag: {
+    backgroundColor: Colors.accentFaint,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  miniTagText: { fontSize: FontSizes.xs, color: Colors.accent },
 
   // ── Ready state ──────────────────────────────────────────────────────────────
-  heroBlock: { alignItems: 'center', paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  heroBlock: { alignItems: 'center', paddingTop: Spacing.md, paddingBottom: Spacing.md, gap: Spacing.sm },
   heroLola: { width: 110, height: 124 },
+  heroQuestion: {
+    fontSize: FontSizes.xl,
+    color: Colors.text,
+    textAlign: 'center',
+    letterSpacing: -0.4,
+    lineHeight: 34,
+    paddingHorizontal: Spacing.lg,
+  },
   readyCard: { marginBottom: Spacing.lg },
   busyRow: {
     flexDirection: 'row',

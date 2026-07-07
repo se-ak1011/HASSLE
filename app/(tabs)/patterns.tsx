@@ -24,6 +24,8 @@ import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { EmptyState } from '@/components/ui/primitives/EmptyState';
+import { NavDrawer } from '@/components/ui/NavDrawer';
+import { CommandSheet } from '@/components/ui/CommandSheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -104,7 +106,7 @@ function buildObservationCards(
     observations.push({
       text: 'You have enough recent history for a useful doctor report.',
       confidenceLabel: 'report ready',
-      actionLabel: 'Preview doctor report',
+      actionLabel: 'View report',
       onPress: onOpenReport,
     });
   }
@@ -470,6 +472,8 @@ export default function PatternsScreen() {
 
   const [history, setHistory] = useState<DayState[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
+  const [showCommandSheet, setShowCommandSheet] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -513,19 +517,47 @@ export default function PatternsScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+        <Pressable onPress={() => setShowCommandSheet(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open Lola">
+          <MaterialIcons name="spa" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
         <AssistantHero
-          title="Hassle noticed…"
-          subtitle="Small patterns, no judgment."
+          kicker="Insights"
+          title="Here's what I've noticed."
+          subtitle="What I've noticed."
           lola={Lola.books}
         />
 
+        {/* Lead observation — shown prominently before anything else */}
+        {!loading && observations.length > 0 ? (
+          <View style={styles.leadObservation}>
+            <Text style={[styles.leadLabel, { fontFamily: ff.regular }]}>I noticed...</Text>
+            <Text style={[styles.leadText, { fontFamily: ff.regular }]}>{observations[0].text}</Text>
+            {observations[0].actionLabel ? (
+              <Pressable
+                onPress={observations[0].onPress}
+                style={({ pressed }) => [styles.leadAction, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.leadActionText, { fontFamily: ff.semibold }]}>
+                  {observations[0].actionLabel}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+
         {/* History insights */}
         <SectionBlock
-          title="Hassle noticed"
+          title="What I've noticed"
           action={
             <Pressable
               onPress={reload}
@@ -554,24 +586,26 @@ export default function PatternsScreen() {
             />
           ) : (
             <>
-              <View style={styles.observationStack}>
-                {observations.map((observation) => (
-                  <ObservationCard
-                    key={`${observation.confidenceLabel}-${observation.text}`}
-                    text={observation.text}
-                    confidenceLabel={observation.confidenceLabel}
-                    actionLabel={observation.actionLabel}
-                    onPress={observation.onPress}
-                    style={styles.observationCard}
-                  />
-                ))}
-              </View>
+              {observations.length > 1 ? (
+                <View style={styles.observationStack}>
+                  {observations.slice(1).map((observation) => (
+                    <ObservationCard
+                      key={`${observation.confidenceLabel}-${observation.text}`}
+                      text={observation.text}
+                      confidenceLabel={observation.confidenceLabel}
+                      actionLabel={observation.actionLabel}
+                      onPress={observation.onPress}
+                      style={styles.observationCard}
+                    />
+                  ))}
+                </View>
+              ) : null}
 
               {history.length >= 7 ? (
                 <View style={styles.reportTileWrap}>
                   <ActionTile
-                    title="Doctor report ready"
-                    body="Preview your recent appointment summary."
+                    title="View report"
+                    body="Your appointment summary is ready."
                     icon={<MaterialIcons name="picture-as-pdf" size={22} color={Colors.accent} />}
                     onPress={openReport}
                     style={styles.reportTile}
@@ -594,7 +628,7 @@ export default function PatternsScreen() {
                 </View>
               ) : null}
 
-              <Text style={[styles.supportingTitle, { fontFamily: ff.semibold }]}>Supporting details</Text>
+              <Text style={[styles.supportingTitle, { fontFamily: ff.regular }]}>Behind the numbers</Text>
 
               {spoonInsights.days.length > 0 ? (
                 <InsightSection insights={spoonInsights} />
@@ -646,6 +680,13 @@ export default function PatternsScreen() {
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
+
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+      <CommandSheet
+        visible={showCommandSheet}
+        onClose={() => setShowCommandSheet(false)}
+        context="insights"
+      />
     </View>
   );
 }
@@ -654,6 +695,14 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   scroll: {
     paddingBottom: Spacing.xxxl,
@@ -735,11 +784,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   supportingTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: Fonts.semibold,
-    color: Colors.text,
+    fontSize: FontSizes.sm,
+    fontWeight: Fonts.medium,
+    color: Colors.textSubtle,
     marginBottom: Spacing.md,
-    letterSpacing: -0.2,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase' as const,
   },
   refreshBtn: {
     padding: 4,
@@ -785,5 +835,34 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.accent,
     lineHeight: 20,
+  },
+  leadObservation: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  leadLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+    marginBottom: Spacing.sm,
+  },
+  leadText: {
+    fontSize: FontSizes.md,
+    color: Colors.text,
+    lineHeight: 34,
+    letterSpacing: -0.2,
+  },
+  leadAction: {
+    marginTop: Spacing.md,
+  },
+  leadActionText: {
+    fontSize: FontSizes.sm,
+    color: Colors.primary,
   },
 });

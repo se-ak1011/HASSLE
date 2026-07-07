@@ -7,11 +7,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
@@ -21,6 +19,9 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { DayState } from '@/constants/types';
 import { Lola } from '@/constants/lola';
 import { formatDateStringForRegion } from '@/services/regionFormat';
+import { AssistantHero } from '@/components/ui/AssistantHero';
+import { MaterialIcons } from '@expo/vector-icons';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -293,7 +294,7 @@ function SummaryRow({
 
 // ─── Read-Only Past Day View ──────────────────────────────────────────────────
 
-function PastDayView({ pastDay }: { pastDay: DayState }) {
+function PastDayView({ pastDay, onOpenMenu }: { pastDay: DayState; onOpenMenu?: () => void }) {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
 
@@ -310,28 +311,30 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Reflection</Text>
-          <View style={styles.pastDayBadge}>
-            <MaterialIcons name="history" size={13} color={Colors.accent} />
-            <Text style={styles.pastDayBadgeText}>{formatDate(pastDay.date)}</Text>
-          </View>
-          <Text style={styles.subtitle}>
-            {pastDay.isFlareDay
+        {/* Opening — Lola + question */}
+        <AssistantHero
+          kicker={formatDate(pastDay.date)}
+          title="Anything worth remembering?"
+          subtitle={
+            pastDay.isFlareDay
               ? 'Getting through that day counted.'
-              : 'A look back at how that day went.'}
-          </Text>
-        </View>
+              : 'A look back at how that day went.'
+          }
+          lola={Lola.sitting}
+        />
 
-        {/* Summary + Lola, side by side */}
-        <View style={styles.summaryLolaRow}>
+        {/* Summary stats */}
+        <View style={styles.summaryBlock}>
           <SummaryRow dayData={pastDay} used={used} remaining={remaining} />
-          <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
         </View>
 
         {/* Flare card */}
@@ -439,23 +442,26 @@ function PastDayView({ pastDay }: { pastDay: DayState }) {
 
 // ─── No History Empty State ───────────────────────────────────────────────────
 
-function EmptyReflectView() {
+function EmptyReflectView({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.emptyRoot}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Reflect</Text>
-        </View>
-        <View style={styles.emptyBox}>
-          <View style={styles.emptyIconCircle}>
-            <MaterialIcons name="edit-note" size={28} color={Colors.primary} />
-          </View>
-          <Text style={styles.emptyTitle}>Your reflections will appear here.</Text>
-          <Text style={styles.emptyDesc}>
-            Once you finish a day, you will be able to look back here anytime.
-          </Text>
-        </View>
+      <View style={styles.headerBar}>
+        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
+      <AssistantHero
+        kicker="Reflect"
+        title="Anything worth remembering?"
+        subtitle="Once you finish a day, you can look back here anytime."
+        lola={Lola.sitting}
+      />
+      <View style={styles.emptyBox}>
+        <Text style={styles.emptyTitle}>No pressure to write anything.</Text>
+        <Text style={styles.emptyDesc}>
+          Reflections live here after you end a day. Come back whenever it helps.
+        </Text>
       </View>
     </View>
   );
@@ -468,6 +474,8 @@ export default function ReflectScreen() {
   const { day, energyUsed, energyRemaining, saveJournal } = useDay();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
+
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   // Local editable state for the active day
   const [journal, setJournal] = useState(day?.journalEntry ?? '');
@@ -512,9 +520,19 @@ export default function ReflectScreen() {
       );
     }
     if (pastDay) {
-      return <PastDayView pastDay={pastDay} />;
+      return (
+        <>
+          <PastDayView pastDay={pastDay} onOpenMenu={() => setShowNavDrawer(true)} />
+          <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+        </>
+      );
     }
-    return <EmptyReflectView />;
+    return (
+      <>
+        <EmptyReflectView onOpenMenu={() => setShowNavDrawer(true)} />
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+      </>
+    );
   }
 
   // ── Case 2: Active day — full editable reflection ───────────────────────────
@@ -532,25 +550,31 @@ export default function ReflectScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <View style={styles.headerBar}>
+          <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+            <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+          </Pressable>
+        </View>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { fontFamily: ff.bold }]}>Anything happen today?</Text>
-            <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
-              {day.isFlareDay
-                ? 'Getting through today counts.'
-                : 'Nothing has to be perfect.'}
-            </Text>
-          </View>
+          {/* Opening — Lola + question */}
+          <AssistantHero
+            kicker="Reflect"
+            title="Anything worth remembering?"
+            subtitle={
+              day.isFlareDay
+                ? 'Getting through today counts. Only add what feels useful.'
+                : 'Only if it helps. No pressure.'
+            }
+            lola={Lola.sitting}
+          />
 
-          {/* Summary + Lola, side by side */}
-          <View style={styles.summaryLolaRow}>
+          {/* Summary stats */}
+          <View style={styles.summaryBlock}>
             <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
-            <Image source={Lola.sitting} style={styles.lolaSide} resizeMode="contain" />
           </View>
 
           {/* Flare day card */}
@@ -579,8 +603,8 @@ export default function ReflectScreen() {
 
           {/* Free journal — surfaced first as the primary entry point */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything worth remembering?</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Just for you.</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything worth noting?</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Only you will see this.</Text>
             <TextInput
               style={styles.journalInput}
               value={journal}
@@ -596,7 +620,7 @@ export default function ReflectScreen() {
           {/* What you did */}
           {completedTasks.length > 0 ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>What you did today</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>What you did</Text>
               <View style={styles.completedList}>
                 {completedTasks.map((t, i) => {
                   const rawCost = t.completedCost ?? t.effectiveCost;
@@ -628,8 +652,8 @@ export default function ReflectScreen() {
 
           {/* Guided prompts */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Guided prompts</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none.</Text>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Anything else?</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Swipe through — answer any, all, or none. No pressure.</Text>
 
             <PromptCarousel
               prompts={[
@@ -649,11 +673,13 @@ export default function ReflectScreen() {
             ]}
             onPress={handleSave}
           >
-            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save reflection</Text>
+            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save, if you're ready</Text>
           </Pressable>
 
           <View style={{ height: insets.bottom + Spacing.xl }} />
         </ScrollView>
+
+        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -665,6 +691,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   centerContent: {
     justifyContent: 'center',
@@ -723,6 +756,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  summaryBlock: {
+    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
   },
   summaryColumn: {

@@ -37,6 +37,7 @@ import {
 } from '@/services/notificationService';
 import { useRegion } from '@/localization/RegionContext';
 import { REGIONS } from '@/localization/region';
+import { NavDrawer } from '@/components/ui/NavDrawer';
 
 const SUPPORT_EMAIL = 'drainedstore@gmail.com';
 const APP_VERSION = '1.0.0';
@@ -422,6 +423,7 @@ export default function SettingsScreen() {
   const [exporting, setExporting] = useState(false);
   const [exportingClinical, setExportingClinical] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   async function handleClinicalExport() {
     if (!isPlus) {
@@ -504,6 +506,11 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
+          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
+        </Pressable>
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -515,7 +522,7 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { fontFamily: ff.bold }]}>Settings</Text>
           <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>
-            Simple controls for a simple app.
+            Everything at your pace.
           </Text>
         </View>
 
@@ -733,6 +740,7 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
@@ -743,6 +751,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
   },
   scroll: {
     paddingBottom: Spacing.xxxl,
