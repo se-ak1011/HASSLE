@@ -5,7 +5,6 @@ import {
   ScrollView,
   Pressable,
   Switch,
-  Platform,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { Image } from 'expo-image';

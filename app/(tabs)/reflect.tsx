@@ -497,7 +497,7 @@ export default function ReflectScreen() {
       setNotDone(day.guidedPrompts?.notDone ?? '');
       setSymptoms(day.guidedPrompts?.symptoms ?? '');
     }
-  }, [day?.date]);
+  }, [day]);
 
   // Load most recent completed day from history when no active day exists (or day not yet started)
   useEffect(() => {
@@ -673,7 +673,7 @@ export default function ReflectScreen() {
             ]}
             onPress={handleSave}
           >
-            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save, if you're ready</Text>
+            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save, if you&apos;re ready</Text>
           </Pressable>
 
           <View style={{ height: insets.bottom + Spacing.xl }} />

@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Modal, View, StyleSheet, Pressable, ScrollView, Animated } from 'react-native';
 import { Text } from './AppText';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
+import { Colors, Spacing, FontSizes } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,18 +23,14 @@ type NavItem = {
 // ─── Navigation items ─────────────────────────────────────────────────────────
 
 const MAIN_ITEMS: NavItem[] = [
-  { label: 'Home',          icon: 'home',            route: '/(tabs)/index' },
-  { label: 'Insights',      icon: 'show-chart',      route: '/(tabs)/patterns' },
-  { label: 'Reflect',       icon: 'edit-note',       route: '/(tabs)/reflect' },
-  { label: 'Quiet Time',    icon: 'spa',             route: '/quiet-time' },
-  { label: 'Research',      icon: 'menu-book',       route: '/library' },
-  { label: 'Directory',     icon: 'local-hospital',  route: '/directory' },
-  { label: 'Doctor Report', icon: 'picture-as-pdf',  route: '/report' },
+  { label: 'Home',      icon: 'home',           route: '/' },
+  { label: 'Library',   icon: 'menu-book',      route: '/library' },
+  { label: 'Directory', icon: 'local-hospital', route: '/directory' },
 ];
 
 const MORE_ITEMS: NavItem[] = [
-  { label: 'Plus',     icon: 'auto-awesome',   route: '/(tabs)/plus' },
-  { label: 'Settings', icon: 'tune',           route: '/(tabs)/settings' },
+  { label: 'Plus',     icon: 'auto-awesome',   route: '/plus' },
+  { label: 'Settings', icon: 'tune',           route: '/settings' },
   { label: 'Account',  icon: 'person-outline', route: '/account' },
 ];
 
@@ -46,7 +42,8 @@ const SLIDE_DURATION = 220;
 /** Normalise the pathname so both "/quiet-time" and "quiet-time" match. */
 function routeMatches(pathname: string, route: string): boolean {
   // For tab routes like "/(tabs)/index" compare after stripping the group segment
-  const norm = (s: string) => s.replace(/\/\(tabs\)/, '').replace(/^\//, '');
+  const norm = (s: string) =>
+    s.replace(/\/\(tabs\)/, '').replace(/\/index$/, '').replace(/^\//, '');
   return norm(pathname) === norm(route);
 }
 
@@ -76,6 +73,10 @@ export function NavDrawer({ visible, onClose }: NavDrawerProps) {
 
   function handleNav(route: string) {
     onClose();
+    if (route === '/') {
+      router.replace('/' as any);
+      return;
+    }
     router.push(route as any);
   }
 

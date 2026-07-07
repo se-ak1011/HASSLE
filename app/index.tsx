@@ -21,7 +21,7 @@ export default function EntryScreen() {
     } else {
       router.replace('/(tabs)' as any);
     }
-  }, [isLoading, prefs?.hasCompletedOnboarding]);
+  }, [isLoading, prefs?.hasCompletedOnboarding, router]);
 
   return (
     <View

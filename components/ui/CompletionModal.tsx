@@ -94,7 +94,7 @@ export function CompletionModal({
 
           <View style={styles.dismissWrap}>
             <Text style={[styles.dismissHint, { fontFamily: ff.regular }]}>
-              Skipping will mark it as "about right".
+              Skipping will mark it as &quot;about right&quot;.
             </Text>
             <Pressable style={styles.dismissBtn} onPress={onDismiss}>
               <Text style={[styles.dismissText, { fontFamily: ff.medium }]}>Skip for now</Text>

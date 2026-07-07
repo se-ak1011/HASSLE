@@ -12,7 +12,7 @@ import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Radius, Fonts } from '@/constants/theme';
+import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { Lola } from '@/constants/lola';
 
@@ -94,6 +94,8 @@ function useReduceMotion() {
 
 // ─── Animated previews ────────────────────────────────────────────────────────
 
+const PUZZLE_PREVIEW_PIECES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
 /** Raindrops slowly falling down a dark-window surface */
 function RainPreview({ reduceMotion }: { reduceMotion: boolean }) {
   const drops = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -145,12 +147,11 @@ function RainPreview({ reduceMotion }: { reduceMotion: boolean }) {
 
 /** Grid pieces gently settling into place */
 function PuzzlePreview({ reduceMotion }: { reduceMotion: boolean }) {
-  const pieces = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-  const anims = useRef(pieces.map(() => new Animated.Value(0))).current;
+  const anims = useRef(PUZZLE_PREVIEW_PIECES.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
     if (reduceMotion) return;
-    const animations = pieces.map((_, i) =>
+    const animations = PUZZLE_PREVIEW_PIECES.map((_, i) =>
       Animated.loop(
         Animated.sequence([
           Animated.delay(i * 300 + 400),
@@ -167,7 +168,7 @@ function PuzzlePreview({ reduceMotion }: { reduceMotion: boolean }) {
 
   return (
     <View style={preview.puzzle}>
-      {pieces.map((_, i) => (
+      {PUZZLE_PREVIEW_PIECES.map((_, i) => (
         <Animated.View
           key={i}
           style={[
@@ -543,7 +544,7 @@ function MugDetail({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={detail.root}>
-      <Text style={[detail.title, { fontFamily: ff.bold }]}>Colour Lola's Mug</Text>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Colour Lola&apos;s Mug</Text>
       <Text style={[detail.body, { fontFamily: ff.regular }]}>
         {allColored ? "Lola loves it." : "Pick a colour, then tap a part."}
       </Text>

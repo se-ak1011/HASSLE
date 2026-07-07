@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -40,11 +40,11 @@ type Command = {
 const BASE_COMMANDS: Command[] = [
   { key: 'plan',      label: 'Shape today',             icon: 'event-note',    route: null },
   { key: 'happened',  label: 'What happened?',          icon: 'bolt',          route: null },
-  { key: 'insights',  label: "What I've noticed",       icon: 'show-chart',    route: '/(tabs)/patterns' },
+  { key: 'insights',  label: "What I've noticed",       icon: 'show-chart',    route: '/patterns' },
   { key: 'report',    label: 'View report',             icon: 'picture-as-pdf', route: '/report' },
-  { key: 'reflect',   label: 'Anything else?',          icon: 'edit-note',     route: '/(tabs)/reflect' },
+  { key: 'reflect',   label: 'Anything else?',          icon: 'edit-note',     route: '/reflect' },
   { key: 'distract',  label: 'Choose something gentle', icon: 'spa',           route: '/quiet-time' },
-  { key: 'settings',  label: 'Settings',                icon: 'tune',          route: '/(tabs)/settings' },
+  { key: 'settings',  label: 'Settings',                icon: 'tune',          route: '/settings' },
 ];
 
 /** Commands surfaced first on the Insights screen */
