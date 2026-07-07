@@ -1,10 +1,10 @@
 /**
  * app/onboarding.tsx
  *
- * First-launch onboarding that feels like meeting Lola, not registration.
+ * Conversation-first onboarding: talk → Lola listens → Lola organises → confirm.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { router } from 'expo-router';
@@ -16,9 +16,8 @@ import { useDay } from '@/hooks/useDay';
 import { ReminderFrequency, PHYSICAL_CONDITIONS, MENTAL_LOAD_CONDITIONS } from '@/constants/types';
 import { Companion } from '@/constants/companion';
 import { useRegion } from '@/localization/RegionContext';
-import { REGIONS } from '@/localization/region';
+import { Region } from '@/localization/region';
 
-const TOTAL_STEPS = 4;
 const INTRO_EXAMPLES = [
   "I've got fibromyalgia.",
   'I have two children.',
@@ -28,119 +27,127 @@ const INTRO_EXAMPLES = [
   'My biggest problem is showering.',
 ];
 
+type ExtractedProfile = {
+  name: string;
+  region: Region | null;
+  physicalConditions: string[];
+  mentalLoadConditions: string[];
+};
+
+function normalise(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function conditionAliases(condition: string): string[] {
+  const base = normalise(condition);
+  const aliases: Record<string, string[]> = {
+    'me cfs': ['me cfs', 'cfs', 'chronic fatigue'],
+    'pots dysautonomia': ['pots', 'dysautonomia'],
+    'eds hypermobility': ['eds', 'ehlers danlos', 'hypermobility'],
+    'chronic migraine': ['migraine', 'migraines', 'chronic migraine'],
+    'long covid': ['long covid', 'longcovid'],
+    'ptsd trauma': ['ptsd', 'trauma'],
+    'sensory processing issues': ['sensory processing', 'sensory issues', 'sensory overload'],
+  };
+  return aliases[base] ?? [base];
+}
+
+function extractName(text: string): string {
+  const match = text.match(/(?:my name is|i am|i'm|im)\s+([a-zA-Z][a-zA-Z' -]{0,38})/i);
+  if (!match) return '';
+  return match[1]
+    .split(/[.,;!?\n]/)[0]
+    .replace(/\b(and|with|but|who|i|have|has|am)\b.*$/i, '')
+    .trim();
+}
+
+function extractRegion(text: string): Region | null {
+  const lower = text.toLowerCase();
+  if (/\b(united kingdom|uk|britain|england|scotland|wales)\b/.test(lower)) return 'GB';
+  if (/\b(united states|usa|u\.s\.|america|american)\b/.test(lower)) return 'US';
+  return null;
+}
+
+function extractConditions(text: string, options: string[]) {
+  const normalizedText = ` ${normalise(text)} `;
+  return options.filter((condition) =>
+    condition !== 'Other' && conditionAliases(condition).some((alias) => normalizedText.includes(` ${alias} `))
+  );
+}
+
+function extractProfile(transcript: string): ExtractedProfile {
+  return {
+    name: extractName(transcript),
+    region: extractRegion(transcript),
+    physicalConditions: extractConditions(transcript, PHYSICAL_CONDITIONS),
+    mentalLoadConditions: extractConditions(transcript, MENTAL_LOAD_CONDITIONS),
+  };
+}
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
   const { completeOnboarding } = useDay();
   const { region, setRegion } = useRegion();
 
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState('');
-  const [selectedPhysicalConditions, setSelectedPhysicalConditions] = useState<string[]>([]);
-  const [selectedMentalLoadConditions, setSelectedMentalLoadConditions] = useState<string[]>([]);
-  const [lolaIntro, setLolaIntro] = useState('');
-  const [showTypeInput, setShowTypeInput] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [reviewing, setReviewing] = useState(false);
+  const [showTyping, setShowTyping] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const extracted = useMemo(() => extractProfile(transcript), [transcript]);
+  const [nameOverride, setNameOverride] = useState('');
+  const [physicalOverride, setPhysicalOverride] = useState<string[] | null>(null);
+  const [mentalOverride, setMentalOverride] = useState<string[] | null>(null);
+  const [regionOverride, setRegionOverride] = useState<Region | null>(null);
 
-  function toggleFromList(condition: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
-    setter((prev) =>
-      prev.includes(condition) ? prev.filter((c) => c !== condition) : [...prev, condition]
-    );
+  const name = nameOverride || extracted.name;
+  const physicalConditions = physicalOverride ?? extracted.physicalConditions;
+  const mentalLoadConditions = mentalOverride ?? extracted.mentalLoadConditions;
+  const selectedRegion = regionOverride ?? extracted.region ?? region;
+
+  function beginReview() {
+    setNameOverride(extracted.name);
+    setPhysicalOverride(extracted.physicalConditions);
+    setMentalOverride(extracted.mentalLoadConditions);
+    setRegionOverride(extracted.region ?? region);
+    setReviewing(true);
   }
 
-  function nextStep() {
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  function toggleCondition(condition: string, group: 'physical' | 'mental') {
+    const current = group === 'physical' ? physicalConditions : mentalLoadConditions;
+    const next = current.includes(condition) ? current.filter((c) => c !== condition) : [...current, condition];
+    if (group === 'physical') setPhysicalOverride(next);
+    else setMentalOverride(next);
   }
 
-  function prevStep() {
-    setStep((s) => Math.max(s - 1, 1));
-  }
-
-  async function handleFinish() {
+  async function handleConfirm() {
     if (finishing) return;
     setFinishing(true);
     const finalFrequency: ReminderFrequency = 'off';
+    setRegion(selectedRegion);
     await completeOnboarding(
       [],
       { enabled: false, frequency: finalFrequency },
       {
         name,
-        physicalConditions: selectedPhysicalConditions,
-        mentalLoadConditions: selectedMentalLoadConditions,
-        conditions: [...selectedPhysicalConditions, ...selectedMentalLoadConditions],
-        lolaIntro,
+        physicalConditions,
+        mentalLoadConditions,
+        conditions: [...physicalConditions, ...mentalLoadConditions],
+        lolaIntro: transcript,
       }
     );
     router.replace('/(tabs)');
   }
 
-  function ProgressDots() {
+  function ConditionReview({ title, options, selected, group }: { title: string; options: string[]; selected: string[]; group: 'physical' | 'mental' }) {
     return (
-      <View style={styles.dots}>
-        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-          <View key={i} style={[styles.dot, i + 1 === step && styles.dotActive, i + 1 < step && styles.dotDone]} />
-        ))}
-      </View>
-    );
-  }
-
-  function StepWelcome() {
-    return (
-      <View style={styles.stepContent}>
-        <View style={styles.lolaBlock}>
-          <Image source={Companion.FirstLaunch} style={styles.waveLola} resizeMode="contain" />
-        </View>
-        <Text style={[styles.heroHi, { fontFamily: ff.bold }]}>Hi.</Text>
-        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>I&apos;m Lola.</Text>
-        <Text style={[styles.stepBody, { fontFamily: ff.regular }]}>I&apos;m here to make difficult days a little smaller.</Text>
-        <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={nextStep}>
-          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Let&apos;s begin</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  function StepNameRegion() {
-    return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>What should Lola call you?</Text>
-        <TextInput
-          style={[styles.input, { fontFamily: ff.regular }]}
-          value={name}
-          onChangeText={setName}
-          placeholder="Preferred name"
-          placeholderTextColor={Colors.textSubtle}
-          autoCapitalize="words"
-          autoCorrect={false}
-          maxLength={40}
-        />
-
-        <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Region</Text>
-        <View style={styles.regionRow}>
-          {REGIONS.filter((r) => r.code === 'US' || r.code === 'GB').map((r) => {
-            const selected = region === r.code;
-            return (
-              <Pressable key={r.code} style={[styles.regionCard, selected && styles.regionCardSelected]} onPress={() => setRegion(r.code)}>
-                <Text style={[styles.regionText, selected && styles.regionTextSelected, { fontFamily: ff.semibold }]}>{r.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <NavButtons onNext={nextStep} nextLabel="Done" />
-      </View>
-    );
-  }
-
-  function ConditionSection({ title, options, selected, onToggle }: { title: string; options: string[]; selected: string[]; onToggle: (condition: string) => void }) {
-    return (
-      <View style={styles.conditionSection}>
+      <View style={styles.reviewGroup}>
         <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>{title}</Text>
         <View style={styles.chipWrap}>
           {options.map((condition) => {
             const isSelected = selected.includes(condition);
             return (
-              <Pressable key={`${title}-${condition}`} style={[styles.conditionChip, isSelected && styles.conditionChipSelected]} onPress={() => onToggle(condition)}>
+              <Pressable key={`${title}-${condition}`} style={[styles.conditionChip, isSelected && styles.conditionChipSelected]} onPress={() => toggleCondition(condition, group)}>
                 <Text style={[styles.conditionText, isSelected && styles.conditionTextSelected, { fontFamily: ff.medium }]}>{condition}</Text>
               </Pressable>
             );
@@ -150,28 +157,65 @@ export default function OnboardingScreen() {
     );
   }
 
-  function StepConditions() {
+  if (reviewing) {
     return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Tell Lola what matters.</Text>
-        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Only what helps. You can skip anything.</Text>
-        <ConditionSection title="Physical / Disability" options={PHYSICAL_CONDITIONS} selected={selectedPhysicalConditions} onToggle={(condition) => toggleFromList(condition, setSelectedPhysicalConditions)} />
-        <ConditionSection title="Neurodivergence / Mental Health" options={MENTAL_LOAD_CONDITIONS} selected={selectedMentalLoadConditions} onToggle={(condition) => toggleFromList(condition, setSelectedMentalLoadConditions)} />
-        <NavButtons onNext={nextStep} nextLabel="Continue" />
+      <View style={[styles.root, { paddingTop: insets.top }]}> 
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={styles.lolaBlockSmall}>
+            <Image source={Companion.Loading} style={styles.smallLola} resizeMode="contain" />
+          </View>
+          <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Lola organised this.</Text>
+          <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Check what feels right. Anything uncertain is left blank and editable.</Text>
+
+          <View style={styles.card}>
+            <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Name</Text>
+            <TextInput style={[styles.input, { fontFamily: ff.regular }]} value={name} onChangeText={setNameOverride} placeholder="Preferred name" placeholderTextColor={Colors.textSubtle} />
+
+            <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Region</Text>
+            <View style={styles.regionRow}>
+              {(['US', 'GB'] as Region[]).map((code) => {
+                const selected = selectedRegion === code;
+                return (
+                  <Pressable key={code} style={[styles.regionCard, selected && styles.regionCardSelected]} onPress={() => setRegionOverride(code)}>
+                    <Text style={[styles.regionText, selected && styles.regionTextSelected, { fontFamily: ff.semibold }]}>{code === 'US' ? 'United States' : 'United Kingdom'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <ConditionReview title="Physical / Disability" options={PHYSICAL_CONDITIONS} selected={physicalConditions} group="physical" />
+          <ConditionReview title="Neurodivergence / Mental Health" options={MENTAL_LOAD_CONDITIONS} selected={mentalLoadConditions} group="mental" />
+
+          <View style={styles.card}>
+            <Text style={[styles.sectionLabel, { fontFamily: ff.semibold }]}>Source transcript</Text>
+            <TextInput style={[styles.transcriptReview, { fontFamily: ff.regular }]} value={transcript} onChangeText={setTranscript} multiline textAlignVertical="top" placeholder="What you told Lola" placeholderTextColor={Colors.textSubtle} />
+          </View>
+
+          <Pressable style={[styles.primaryBtn, finishing && { opacity: 0.6 }]} onPress={handleConfirm} disabled={finishing}>
+            <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>{finishing ? 'Saving...' : 'Looks right'}</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryBtn} onPress={() => setReviewing(false)}>
+            <Text style={[styles.secondaryBtnText, { fontFamily: ff.semibold }]}>Back to transcript</Text>
+          </Pressable>
+        </ScrollView>
       </View>
     );
   }
 
-  function StepTellLola() {
-    return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Tell Lola.</Text>
-        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Whatever feels useful.</Text>
+  return (
+    <View style={[styles.root, { paddingTop: insets.top }]}> 
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.lolaBlock}>
+          <Image source={Companion.FirstLaunch} style={styles.waveLola} resizeMode="contain" />
+        </View>
+        <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Tell Lola about yourself.</Text>
+        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Talk first. Lola will quietly organise what she can.</Text>
 
-        <Pressable style={[styles.micButton, styles.micButtonDisabled]} onPress={() => setShowTypeInput(true)} accessibilityRole="button" accessibilityLabel="Tell Lola by voice">
-          <MaterialIcons name="mic" size={42} color={Colors.text} />
-          <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>Voice notes coming soon</Text>
-          <Text style={[styles.micHint, { fontFamily: ff.regular }]}>For now, type it exactly as you&apos;d say it.</Text>
+        <Pressable style={styles.micButton} onPress={() => setShowTyping(true)} accessibilityRole="button" accessibilityLabel="Tell Lola by voice">
+          <MaterialIcons name="mic" size={46} color={Colors.text} />
+          <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>Start with voice</Text>
+          <Text style={[styles.micHint, { fontFamily: ff.regular }]}>Voice transcription is not available in this build yet. Type it exactly as you would say it.</Text>
         </Pressable>
 
         <View style={styles.examplesBox}>
@@ -180,56 +224,27 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
-        {!showTypeInput ? (
-          <Pressable style={styles.secondaryBtn} onPress={() => setShowTypeInput(true)}>
+        {!showTyping ? (
+          <Pressable style={styles.secondaryBtn} onPress={() => setShowTyping(true)}>
             <Text style={[styles.secondaryBtnText, { fontFamily: ff.semibold }]}>Type instead</Text>
           </Pressable>
         ) : (
           <TextInput
             style={[styles.introInput, { fontFamily: ff.regular }]}
-            value={lolaIntro}
-            onChangeText={setLolaIntro}
+            value={transcript}
+            onChangeText={setTranscript}
             placeholder="Tell Lola anything useful…"
             placeholderTextColor={Colors.textSubtle}
             multiline
             textAlignVertical="top"
-            maxLength={800}
+            maxLength={1200}
           />
         )}
 
-        <View style={styles.futureNote}>
-          <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>Saved locally as entered. No AI extraction yet.</Text>
-        </View>
-
-        <NavButtons onNext={handleFinish} nextLabel={finishing ? 'Saving...' : 'Start using Hassle'} nextDisabled={finishing} />
-      </View>
-    );
-  }
-
-  function NavButtons({ onNext, nextLabel, nextDisabled }: { onNext: () => void; nextLabel: string; nextDisabled?: boolean }) {
-    return (
-      <View style={styles.navRow}>
-        {step > 1 ? (
-          <Pressable style={styles.backBtn} onPress={prevStep}>
-            <MaterialIcons name="arrow-back" size={18} color={Colors.textMuted} />
-            <Text style={[styles.backBtnText, { fontFamily: ff.medium }]}>Back</Text>
-          </Pressable>
-        ) : <View />}
-        <Pressable style={[styles.primaryBtnSmall, nextDisabled && { opacity: 0.6 }]} onPress={onNext} disabled={nextDisabled}>
-          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>{nextLabel}</Text>
+        <Pressable style={[styles.primaryBtn, transcript.trim().length === 0 && styles.primaryBtnDisabled]} onPress={beginReview} disabled={transcript.trim().length === 0}>
+          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>Let Lola organise this</Text>
         </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.root, { paddingTop: insets.top }]}> 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <ProgressDots />
-        {step === 1 ? StepWelcome() : null}
-        {step === 2 ? StepNameRegion() : null}
-        {step === 3 ? StepConditions() : null}
-        {step === 4 ? StepTellLola() : null}
+        <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>No backend. No LLM parsing in this build. The transcript stays local and becomes your source document.</Text>
       </ScrollView>
     </View>
   );
@@ -237,46 +252,38 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
-  dotActive: { backgroundColor: Colors.primary, width: 22 },
-  dotDone: { backgroundColor: Colors.primaryLight },
-  stepContent: { paddingTop: Spacing.lg, gap: Spacing.lg },
-  lolaBlock: { alignItems: 'center', paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl, gap: Spacing.lg },
+  lolaBlock: { alignItems: 'center', paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
+  lolaBlockSmall: { alignItems: 'center', paddingTop: Spacing.md },
   waveLola: { width: 190, height: 190 },
-  heroHi: { fontSize: FontSizes.xxxl, color: Colors.text, lineHeight: 52, letterSpacing: -1 },
+  smallLola: { width: 120, height: 140 },
   stepTitle: { fontSize: FontSizes.xxl, fontWeight: Fonts.bold, color: Colors.text, letterSpacing: -0.5 },
   stepSubtitle: { fontSize: FontSizes.base, color: Colors.textMuted, lineHeight: 24 },
-  stepBody: { fontSize: FontSizes.lg, color: Colors.textMuted, lineHeight: 30 },
-  input: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingVertical: 14, paddingHorizontal: Spacing.md, fontSize: FontSizes.base, color: Colors.text },
-  sectionLabel: { fontSize: FontSizes.sm, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.7 },
-  regionRow: { gap: Spacing.sm },
-  regionCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, padding: Spacing.md },
-  regionCardSelected: { backgroundColor: Colors.primaryFaint, borderColor: Colors.primary },
-  regionText: { fontSize: FontSizes.base, color: Colors.text },
-  regionTextSelected: { color: Colors.primary },
-  conditionSection: { gap: Spacing.sm },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  conditionChip: { borderRadius: Radius.full, paddingVertical: 10, paddingHorizontal: Spacing.md, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
-  conditionChipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  conditionText: { fontSize: FontSizes.sm, color: Colors.text },
-  conditionTextSelected: { color: Colors.background },
-  micButton: { alignItems: 'center', justifyContent: 'center', minHeight: 170, borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Colors.primary, backgroundColor: Colors.primaryFaint, gap: Spacing.sm, padding: Spacing.lg },
-  micButtonDisabled: { opacity: 0.95 },
+  micButton: { alignItems: 'center', justifyContent: 'center', minHeight: 190, borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Colors.primary, backgroundColor: Colors.primaryFaint, gap: Spacing.sm, padding: Spacing.lg },
   micLabel: { fontSize: FontSizes.lg, color: Colors.text, textAlign: 'center' },
   micHint: { fontSize: FontSizes.sm, color: Colors.textSubtle, textAlign: 'center', lineHeight: 20 },
   examplesBox: { gap: 6, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md },
   exampleText: { fontSize: FontSizes.sm, color: Colors.textSecondary, lineHeight: 20 },
   secondaryBtn: { alignSelf: 'center', paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg },
   secondaryBtnText: { fontSize: FontSizes.base, color: Colors.primary },
-  introInput: { minHeight: 150, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingVertical: 14, paddingHorizontal: Spacing.md, fontSize: FontSizes.base, color: Colors.text, lineHeight: 24 },
-  futureNote: { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md },
-  futureNoteText: { fontSize: FontSizes.sm, color: Colors.textSubtle, lineHeight: 20, textAlign: 'center' },
-  navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md, marginTop: Spacing.sm },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: Spacing.sm, paddingRight: Spacing.md },
-  backBtnText: { fontSize: FontSizes.base, color: Colors.textMuted, fontWeight: Fonts.medium },
-  primaryBtn: { backgroundColor: Colors.primary, borderRadius: Radius.lg, paddingVertical: 16, alignItems: 'center', marginTop: Spacing.sm },
-  primaryBtnSmall: { backgroundColor: Colors.primary, borderRadius: Radius.lg, paddingVertical: 14, paddingHorizontal: Spacing.xl, alignItems: 'center', flex: 1 },
+  introInput: { minHeight: 170, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingVertical: 14, paddingHorizontal: Spacing.md, fontSize: FontSizes.base, color: Colors.text, lineHeight: 24 },
+  primaryBtn: { backgroundColor: Colors.primary, borderRadius: Radius.lg, paddingVertical: 16, alignItems: 'center' },
+  primaryBtnDisabled: { opacity: 0.45 },
   primaryBtnText: { fontSize: FontSizes.base, fontWeight: Fonts.semibold, color: Colors.background, letterSpacing: 0.2 },
+  futureNoteText: { fontSize: FontSizes.sm, color: Colors.textSubtle, lineHeight: 20, textAlign: 'center' },
+  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, gap: Spacing.md },
+  input: { backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, paddingVertical: 12, paddingHorizontal: Spacing.md, fontSize: FontSizes.base, color: Colors.text },
+  sectionLabel: { fontSize: FontSizes.sm, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.7 },
+  regionRow: { gap: Spacing.sm },
+  regionCard: { backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.border, padding: Spacing.md },
+  regionCardSelected: { backgroundColor: Colors.primaryFaint, borderColor: Colors.primary },
+  regionText: { fontSize: FontSizes.base, color: Colors.text },
+  regionTextSelected: { color: Colors.primary },
+  reviewGroup: { gap: Spacing.sm },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  conditionChip: { borderRadius: Radius.full, paddingVertical: 10, paddingHorizontal: Spacing.md, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
+  conditionChipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  conditionText: { fontSize: FontSizes.sm, color: Colors.text },
+  conditionTextSelected: { color: Colors.background },
+  transcriptReview: { minHeight: 110, backgroundColor: Colors.surfaceElevated, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, fontSize: FontSizes.base, color: Colors.text, lineHeight: 24 },
 });
