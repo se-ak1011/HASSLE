@@ -9,12 +9,12 @@ import {
   Image,
 } from 'react-native';
 import { Text } from '@/components/ui/AppText';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { Companion } from '@/constants/companion';
+import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -964,7 +964,6 @@ function OrbDetail({ onBack, reduceMotion }: { onBack: () => void; reduceMotion:
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function QuietTimeScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
   const reduceMotion = useReduceMotion();
@@ -1032,14 +1031,7 @@ export default function QuietTimeScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <MaterialIcons name="arrow-back" size={24} color={Colors.text} />
-        </Pressable>
+        <HomeBackButton />
         <View style={{ width: 24 }} />
       </View>
 

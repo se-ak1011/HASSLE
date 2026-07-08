@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
@@ -7,38 +7,31 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { Companion } from '@/constants/companion';
-import { NavDrawer } from '@/components/ui/NavDrawer';
+import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 const LIFE_ITEMS = [
   { label: 'Doctor Report', detail: 'Prepare the notes you can take to a clinician.', icon: 'picture-as-pdf', route: '/report' },
   { label: 'Directory', detail: 'Find care and support people when this is ready.', icon: 'local-hospital', route: '/directory' },
   { label: 'Library', detail: 'Plain-language resources for later.', icon: 'menu-book', route: '/library' },
-  { label: 'Plus', detail: 'Research and extra tools that support Hassle.', icon: 'auto-awesome', route: '/plus' },
 ];
 
 export default function LifeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
-  const [showNavDrawer, setShowNavDrawer] = useState(false);
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}> 
       <View style={styles.header}>
-        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-          <MaterialIcons name="menu" size={24} color={Colors.textSubtle} />
-        </Pressable>
+        <HomeBackButton />
         <Text style={[styles.headerTitle, { fontFamily: ff.semibold }]}>Life</Text>
-        <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
-          <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
-        </Pressable>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Image source={Companion.Life} style={styles.heroImg} resizeMode="contain" />
           <Text style={[styles.title, { fontFamily: ff.bold }]}>Life admin, in one place.</Text>
-          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Reports, care-finding, resources, and Plus live here.</Text>
+          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Reports, care-finding, and resources live here.</Text>
         </View>
 
         <View style={styles.list}>
@@ -63,7 +56,6 @@ export default function LifeScreen() {
         </View>
       </ScrollView>
 
-      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }

@@ -11,7 +11,7 @@ import { Companion } from '@/constants/companion';
 import { PaywallModal } from '@/components/ui/PaywallModal';
 import { PLUS_TRIAL_DAYS } from '@/constants/pricing';
 import { AssistantHero } from '@/components/ui/AssistantHero';
-import { NavDrawer } from '@/components/ui/NavDrawer';
+import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 export default function PlusScreen() {
   const router = useRouter();
@@ -19,7 +19,6 @@ export default function PlusScreen() {
   const ff = useFontFamily();
   const { isPlus } = usePlus();
   const [showPaywall, setShowPaywall] = useState(false);
-  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   function openFeature(path: string) {
     if (!isPlus) {
@@ -32,9 +31,7 @@ export default function PlusScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
-        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-        </Pressable>
+        <HomeBackButton />
       </View>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
@@ -128,7 +125,6 @@ export default function PlusScreen() {
       </ScrollView>
 
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
-      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );
 }
