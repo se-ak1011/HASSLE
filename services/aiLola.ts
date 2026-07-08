@@ -99,32 +99,45 @@ function canonicalConditions(values: string[], options: string[]): string[] {
     const normalized = normaliseLabel(value);
     if (!normalized) continue;
 
-    if (/\baudhd\b/.test(normalized)) {
-      if (hasOption(options, 'AuDHD')) add('AuDHD');
-      else {
-        add('ADHD');
-        add('Autism');
-      }
+    if (/\b(au\s*adhd|audhd|autistic\s+adhd|adhd\s+autism|autism\s+adhd)\b/.test(normalized)) {
+      add('ADHD');
+      add('Autism');
+      add('AuDHD');
       continue;
     }
 
-    if (/\b(me|cfs|me cfs|chronic fatigue)\b/.test(normalized)) {
+    if (/\b(me|cfs|me cfs|m e cfs|myalgic encephalomyelitis|chronic fatigue|post exertional malaise|pem)\b/.test(normalized)) {
       add('ME/CFS');
       continue;
     }
 
-    if (/\b(fibro|fibromyalgia)\b/.test(normalized)) {
+    if (/\b(fibro|fibromyalgia|widespread pain)\b/.test(normalized)) {
       add('Fibromyalgia');
       continue;
     }
 
-    if (/\b(eds|ehlers danlos|hypermobility)\b/.test(normalized)) {
-      add('EDS / hypermobility');
+    if (/\b(eds|h?eds|ehlers danlos|ehlers danlos syndrome|hypermobile|hypermobility|joint instability)\b/.test(normalized)) {
+      add('Ehlers-Danlos Syndrome / hypermobility');
       continue;
     }
 
-    if (/\b(pots|dysautonomia)\b/.test(normalized)) {
+    if (/\b(pots|postural orthostatic tachycardia|orthostatic intolerance|dysautonomia|tachycardia on standing)\b/.test(normalized)) {
       add('POTS / dysautonomia');
+      continue;
+    }
+
+    if (/\b(long covid|longcovid|post covid|post viral|postviral)\b/.test(normalized)) {
+      add('Long COVID');
+      continue;
+    }
+
+    if (/\b(cptsd|complex ptsd|complex trauma)\b/.test(normalized)) {
+      add('CPTSD');
+      continue;
+    }
+
+    if (/\b(ptsd|post traumatic stress|trauma)\b/.test(normalized)) {
+      add('PTSD / trauma');
       continue;
     }
 
