@@ -23,7 +23,7 @@ import { EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constan
 import { Companion } from '@/constants/companion';
 import { IntentSheet } from '@/components/ui/IntentSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
-import { LolaMenu } from '@/components/ui/LolaMenu';
+import { CompanionOrbit } from '@/components/ui/CompanionOrbit';
 
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
@@ -464,15 +464,15 @@ export default function TodayScreen() {
         >
           <View style={styles.homeIntro}>
             <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>Morning.</Text>
-            <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>Choose where Lola can help.</Text>
+            <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>Tap Lola when you need something.</Text>
           </View>
-          <LolaMenu
+          <CompanionOrbit
             companion={Companion.Home}
             chips={[
-              { key: 'body', label: 'Body', position: 'upperLeft', onPress: () => router.push('/body' as any) },
-              { key: 'mind', label: 'Mind', position: 'upperRight', onPress: () => router.push('/reflect' as any) },
-              { key: 'life', label: 'Life', position: 'lowerLeft', onPress: () => router.push('/life' as any) },
-              { key: 'quiet', label: 'Quiet Time', position: 'lowerRight', onPress: () => router.push('/quiet-time' as any), highlighted: true },
+              { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
+              { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
+              { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
+              { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
             ]}
           />
         </ScrollView>
@@ -539,13 +539,13 @@ export default function TodayScreen() {
           </Text>
           <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>{heroSentence}</Text>
         </View>
-        <LolaMenu
+        <CompanionOrbit
           companion={heroImage}
           chips={[
-            { key: 'body', label: 'Body', position: 'upperLeft', onPress: () => router.push('/body' as any) },
-            { key: 'mind', label: 'Mind', position: 'upperRight', onPress: () => router.push('/reflect' as any) },
-            { key: 'life', label: 'Life', position: 'lowerLeft', onPress: () => router.push('/life' as any) },
-            { key: 'quiet', label: 'Quiet Time', position: 'lowerRight', onPress: () => router.push('/quiet-time' as any), highlighted: true },
+            { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
+            { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
+            { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
+            { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
           ]}
         />
 

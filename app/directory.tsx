@@ -47,13 +47,13 @@ export default function DirectoryScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Image source={Companion.Directory} style={styles.heroImg} resizeMode="contain" />
-          <Text style={[styles.title, { fontFamily: ff.bold }]}>Finding people who get invisible illness.</Text>
-          <Text style={[styles.body, { fontFamily: ff.regular }]}>This directory is being built. Listings should be checked before booking.</Text>
+          <Text style={[styles.title, { fontFamily: ff.bold }]}>Directory seeds for your own review.</Text>
+          <Text style={[styles.body, { fontFamily: ff.regular }]}>Public-info listings can change. Check current details before booking.</Text>
         </View>
 
         <View style={styles.noticeCard}>
           <MaterialIcons name="info-outline" size={18} color={Colors.accent} />
-          <Text style={[styles.noticeText, { fontFamily: ff.regular }]}>These are static US-first public-info seeds for review. Hassle does not endorse or recommend any listing.</Text>
+          <Text style={[styles.noticeText, { fontFamily: ff.regular }]}>Public-info seeds for review. Check current details before booking. Hassle does not endorse or recommend any clinician or listing.</Text>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
@@ -81,7 +81,7 @@ export default function DirectoryScreen() {
                   <Text style={[styles.entryClinic, { fontFamily: ff.regular }]}>{entry.clinicName}</Text>
                 </View>
                 <View style={styles.statusBadge}>
-                  <Text style={[styles.statusText, { fontFamily: ff.medium }]}>{entry.verificationStatus}</Text>
+                  <Text style={[styles.statusText, { fontFamily: ff.medium }]}>{entry.verificationStatus === 'public-info-seed' ? 'Public-info seed' : 'Unverified public listing'}</Text>
                 </View>
               </View>
               <Text style={[styles.entryMeta, { fontFamily: ff.regular }]}>{entry.profession} · {entry.city}, {entry.regionState}</Text>

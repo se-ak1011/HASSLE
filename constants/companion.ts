@@ -7,8 +7,11 @@
  */
 
 export const Companion = {
-  /** Home screen — resting, ready state */
-  Home: require('@/assets/companion/idle.png'),
+  /** Home screen — the main tappable navigation presence. Swap this one key when the dedicated Home Lola lands. */
+  Home: require('@/assets/companion/wave.png'),
+
+  /** App-level splash/onboarding visual. Swap when the character sheet asset lands; native splash config stays untouched. */
+  Splash: require('@/assets/companion/wave.png'),
 
   /** First launch / onboarding welcome */
   FirstLaunch: require('@/assets/companion/wave.png'),
@@ -48,6 +51,11 @@ export const Companion = {
 
   /** Body support / pacing / tasks */
   Body: require('@/assets/companion/support.png'),
+  BodyPain: require('@/assets/companion/comfort.png'),
+  BodyFatigue: require('@/assets/companion/blanket.png'),
+  BodySymptoms: require('@/assets/companion/clipboard.png'),
+  BodyMedication: require('@/assets/companion/coffee.png'),
+  BodySelfCare: require('@/assets/companion/stretch.png'),
 
   /** Life admin hub */
   Life: require('@/assets/companion/walking.png'),

@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase';
-import { UserPreferences } from '@/constants/types';
+import { MENTAL_LOAD_CONDITIONS, PHYSICAL_CONDITIONS, UserPreferences } from '@/constants/types';
 
 export type LolaMode =
   | 'onboarding_extract'
@@ -76,6 +76,65 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean);
 }
 
+
+function normaliseLabel(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function hasOption(options: string[], label: string): boolean {
+  const normalized = normaliseLabel(label);
+  return options.some((option) => normaliseLabel(option) === normalized);
+}
+
+function addIfAvailable(target: string[], options: string[], label: string) {
+  const match = options.find((option) => normaliseLabel(option) === normaliseLabel(label));
+  if (match && !target.includes(match)) target.push(match);
+}
+
+function canonicalConditions(values: string[], options: string[]): string[] {
+  const canonical: string[] = [];
+  const add = (label: string) => addIfAvailable(canonical, options, label);
+
+  for (const value of values) {
+    const normalized = normaliseLabel(value);
+    if (!normalized) continue;
+
+    if (/\baudhd\b/.test(normalized)) {
+      if (hasOption(options, 'AuDHD')) add('AuDHD');
+      else {
+        add('ADHD');
+        add('Autism');
+      }
+      continue;
+    }
+
+    if (/\b(me|cfs|me cfs|chronic fatigue)\b/.test(normalized)) {
+      add('ME/CFS');
+      continue;
+    }
+
+    if (/\b(fibro|fibromyalgia)\b/.test(normalized)) {
+      add('Fibromyalgia');
+      continue;
+    }
+
+    if (/\b(eds|ehlers danlos|hypermobility)\b/.test(normalized)) {
+      add('EDS / hypermobility');
+      continue;
+    }
+
+    if (/\b(pots|dysautonomia)\b/.test(normalized)) {
+      add('POTS / dysautonomia');
+      continue;
+    }
+
+    const direct = options.find((option) => normaliseLabel(option) === normalized);
+    if (direct && !canonical.includes(direct)) canonical.push(direct);
+  }
+
+  return canonical;
+}
+
 function asRegion(value: unknown): AiLolaRegion | null {
   if (value === 'US') return 'US';
   if (value === 'UK' || value === 'GB') return 'UK';
@@ -99,9 +158,10 @@ export function normalizeOnboardingExtractResult(data: unknown): OnboardingExtra
     ...EMPTY_PROFILE,
     preferredName: asNullableString(record.preferredName ?? record.name),
     countryRegion: asRegion(record.countryRegion ?? record.region),
-    physicalConditions: asStringArray(record.physicalConditions),
-    neurodivergentMentalLoadConditions: asStringArray(
-      record.neurodivergentMentalLoadConditions ?? record.mentalLoadConditions
+    physicalConditions: canonicalConditions(asStringArray(record.physicalConditions), PHYSICAL_CONDITIONS),
+    neurodivergentMentalLoadConditions: canonicalConditions(
+      asStringArray(record.neurodivergentMentalLoadConditions ?? record.mentalLoadConditions),
+      MENTAL_LOAD_CONDITIONS
     ),
     family: asStringArray(record.family),
     pets: asStringArray(record.pets),
@@ -117,10 +177,25 @@ export function normalizeOnboardingExtractResult(data: unknown): OnboardingExtra
 }
 
 export async function invokeLola<TResult = unknown, TData = unknown>(request: LolaRequest<TData>): Promise<LolaResponse<TResult>> {
-  const { data, error } = await supabase.functions.invoke('ai-lola', { body: request });
-  if (error) return { ok: false, mode: request.mode, error: error.message, fallback: true };
-  if (data && typeof data === 'object' && 'ok' in data) return data as LolaResponse<TResult>;
-  return { ok: true, mode: request.mode, result: data as TResult };
+  try {
+    const { data, error } = await supabase.functions.invoke('ai-lola', { body: request });
+    if (error) {
+      if (__DEV__) console.warn('[ai-lola] invoke failed', { mode: request.mode, message: error.message });
+      return { ok: false, mode: request.mode, error: error.message, fallback: true };
+    }
+    if (data && typeof data === 'object' && 'ok' in data) return data as LolaResponse<TResult>;
+    if (data && typeof data === 'object' && 'result' in data) {
+      return { ok: true, mode: request.mode, result: (data as { result: TResult }).result };
+    }
+    if (data && typeof data === 'object' && 'data' in data) {
+      return { ok: true, mode: request.mode, result: (data as { data: TResult }).data };
+    }
+    return { ok: true, mode: request.mode, result: data as TResult };
+  } catch (caught) {
+    const message = caught instanceof Error ? caught.message : 'Lola could not connect right now';
+    if (__DEV__) console.warn('[ai-lola] unexpected failure', { mode: request.mode, message });
+    return { ok: false, mode: request.mode, error: message, fallback: true };
+  }
 }
 
 export async function extractOnboardingProfileWithLola(data: OnboardingExtractData): Promise<OnboardingExtractedProfile> {

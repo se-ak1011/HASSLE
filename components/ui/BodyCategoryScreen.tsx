@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ type BodyCategoryScreenProps = {
   secondaryTitle?: string;
   secondaryChips?: string[];
   textPlaceholder?: string;
+  companion?: ImageSourcePropType;
 };
 
 type BodyAiResult = {
@@ -46,6 +47,7 @@ export function BodyCategoryScreen({
   secondaryTitle,
   secondaryChips = [],
   textPlaceholder = 'Tell Lola in your own words...',
+  companion = Companion.Body,
 }: BodyCategoryScreenProps) {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
@@ -62,19 +64,25 @@ export function BodyCategoryScreen({
     setLoading(true);
     setError(null);
     setLolaNote(null);
-    const response = await tellLolaAboutBody({
-      category,
-      selected: {
-        primary: selectedPrimary,
-        secondary: selectedSecondary,
-      },
-      transcript,
-      voiceRequested,
-      instruction: 'Summarise this body conversation into structured information while preserving the original transcript.',
-    });
+    let response: Awaited<ReturnType<typeof tellLolaAboutBody>>;
+    try {
+      response = await tellLolaAboutBody({
+        category,
+        selected: {
+          primary: selectedPrimary,
+          secondary: selectedSecondary,
+        },
+        transcript,
+        voiceRequested,
+        instruction: 'Summarise this body conversation into structured information while preserving the original transcript.',
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'Lola could not listen right now.';
+      response = { ok: false, error: message, fallback: true };
+    }
     setLoading(false);
     if (!response.ok) {
-      setError(response.error ?? 'Lola could not listen right now.');
+      setError(response.error ?? 'Lola could not listen right now. Saved locally — try Lola again later.');
       return;
     }
     setLolaNote(resultToText(response.result));
@@ -96,7 +104,7 @@ export function BodyCategoryScreen({
         </View>
 
         <View style={styles.lolaWrap}>
-          <Image source={Companion.Body} style={styles.lola} resizeMode="contain" accessibilityLabel="Lola" />
+          <Image source={companion} style={styles.lola} resizeMode="contain" accessibilityLabel="Lola" />
         </View>
 
         <View style={styles.chipGroup}>

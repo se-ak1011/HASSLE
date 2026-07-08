@@ -11,7 +11,7 @@ import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 const LIFE_ITEMS = [
   { label: 'Doctor Report', detail: 'Prepare the notes you can take to a clinician.', icon: 'picture-as-pdf', route: '/report' },
-  { label: 'Directory', detail: 'Find care and support people when this is ready.', icon: 'local-hospital', route: '/directory' },
+  { label: 'Directory', detail: 'Public-info seeds to review before booking — not recommendations.', icon: 'local-hospital', route: '/directory' },
   { label: 'Library', detail: 'Plain-language resources for later.', icon: 'menu-book', route: '/library' },
 ];
 
@@ -30,8 +30,8 @@ export default function LifeScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <Image source={Companion.Life} style={styles.heroImg} resizeMode="contain" />
-          <Text style={[styles.title, { fontFamily: ff.bold }]}>Life admin, in one place.</Text>
-          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Reports, care-finding, and resources live here.</Text>
+          <Text style={[styles.title, { fontFamily: ff.bold }]}>Life tools, in one place.</Text>
+          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Doctor reports, directory seeds, and plain-language resources live here.</Text>
         </View>
 
         <View style={styles.list}>
