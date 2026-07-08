@@ -24,7 +24,7 @@ import { ObservationCard } from '@/components/ui/ObservationCard';
 import { SectionBlock } from '@/components/ui/SectionBlock';
 import { ActionTile } from '@/components/ui/ActionTile';
 import { EmptyState } from '@/components/ui/primitives/EmptyState';
-import { NavDrawer } from '@/components/ui/NavDrawer';
+import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { CommandSheet } from '@/components/ui/CommandSheet';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -472,7 +472,6 @@ export default function PatternsScreen() {
 
   const [history, setHistory] = useState<DayState[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNavDrawer, setShowNavDrawer] = useState(false);
   const [showCommandSheet, setShowCommandSheet] = useState(false);
 
   const reload = useCallback(async () => {
@@ -518,9 +517,7 @@ export default function PatternsScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
-        <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-        </Pressable>
+        <HomeBackButton />
         <Pressable onPress={() => setShowCommandSheet(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open Lola">
           <MaterialIcons name="spa" size={22} color={Colors.textSubtle} />
         </Pressable>
@@ -681,7 +678,6 @@ export default function PatternsScreen() {
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
 
-      <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       <CommandSheet
         visible={showCommandSheet}
         onClose={() => setShowCommandSheet(false)}

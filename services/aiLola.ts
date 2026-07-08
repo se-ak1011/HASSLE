@@ -130,3 +130,27 @@ export async function extractOnboardingProfileWithLola(data: OnboardingExtractDa
   if (!response.ok) throw new Error(response.error ?? 'Lola could not organise onboarding');
   return normalizeOnboardingExtractResult(response.result);
 }
+
+export async function reflectWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'journal_reflect', data });
+}
+
+export async function summarizeDoctorReportWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'doctor_report', data });
+}
+
+export async function summarizeDayWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'daily_summary', data });
+}
+
+export async function getTaskSupportWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'task_support', data });
+}
+
+export async function detectPatternsWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'pattern_detection', data });
+}
+
+export async function writeFutureLetterWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'future_letter', data });
+}

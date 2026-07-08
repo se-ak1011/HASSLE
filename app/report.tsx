@@ -9,6 +9,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAlert } from '@/template';
 import { Companion } from '@/constants/companion';
 import { ReportReadyCard } from '@/components/ui/ReportReadyCard';
+import { summarizeDoctorReportWithLola } from '@/services/aiLola';
 import {
   loadClinicalSummary,
   exportClinicalReport,
@@ -29,7 +30,8 @@ export default function ReportScreen() {
 
   const [summary, setSummary] = useState<ClinicalSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<'save' | 'print' | null>(null);
+  const [busy, setBusy] = useState<'save' | 'print' | 'ai' | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
 
   useEffect(() => {
     loadClinicalSummary(RANGE_DAYS)
@@ -64,6 +66,19 @@ export default function ReportScreen() {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function handleAiSummary() {
+    if (busy || !summary) return;
+    setBusy('ai');
+    const response = await summarizeDoctorReportWithLola({ summary, rangeDays: RANGE_DAYS });
+    setBusy(null);
+    if (!response.ok) {
+      showAlert('Lola is offline', response.error ?? 'Could not generate an AI summary right now.');
+      return;
+    }
+    const result = response.result;
+    setAiSummary(typeof result === 'string' ? result : JSON.stringify(result, null, 2));
   }
 
   // Treat null summary (no history yet) the same as building with 0 days —
@@ -167,11 +182,26 @@ export default function ReportScreen() {
               style={styles.readyCard}
             />
 
+            <View style={styles.aiCard}>
+              <Text style={[styles.aiTitle, { fontFamily: ff.semibold }]}>Lola AI summary</Text>
+              {aiSummary ? <Text style={[styles.aiBody, { fontFamily: ff.regular }]}>{aiSummary}</Text> : null}
+              <Pressable
+                style={({ pressed }) => [styles.aiButton, pressed && { opacity: 0.75 }]}
+                onPress={handleAiSummary}
+                disabled={busy === 'ai'}
+                accessibilityRole="button"
+                accessibilityLabel="Generate Lola AI summary"
+              >
+                {busy === 'ai' ? <ActivityIndicator color={Colors.background} size="small" /> : <MaterialIcons name="auto-awesome" size={17} color={Colors.background} />}
+                <Text style={[styles.aiButtonText, { fontFamily: ff.semibold }]}>{aiSummary ? 'Regenerate with Lola' : 'Generate with Lola'}</Text>
+              </Pressable>
+            </View>
+
             {busy ? (
               <View style={styles.busyRow}>
                 <ActivityIndicator size="small" color={Colors.primary} />
                 <Text style={[styles.busyText, { fontFamily: ff.regular }]}>
-                  {busy === 'save' ? 'Preparing your PDF…' : 'Opening print…'}
+                  {busy === 'save' ? 'Preparing your PDF…' : busy === 'print' ? 'Opening print…' : 'Asking Lola…'}
                 </Text>
               </View>
             ) : null}
@@ -510,4 +540,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
+
+  aiCard: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm, marginTop: Spacing.md },
+  aiTitle: { color: Colors.text, fontSize: FontSizes.lg },
+  aiBody: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 21 },
+  aiButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.primary, borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: 10 },
+  aiButtonText: { color: Colors.background, fontSize: FontSizes.sm },
 });
