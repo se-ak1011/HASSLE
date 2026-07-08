@@ -5,11 +5,12 @@ import { DayProvider } from '@/contexts/DayContext';
 import { PlusProvider } from '@/contexts/PlusContext';
 import { AccountProvider } from '@/contexts/AccountContext';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { billing } from '@/services/billing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RegionProvider } from '@/localization/RegionContext';
+import { LolaWakeSplash } from '@/components/ui/LolaWakeSplash';
 
 // Keep the native splash up until we explicitly hide it, so we control when it
 // goes away (rather than racing the router). Paired with the unconditional
@@ -24,6 +25,7 @@ export default function RootLayout() {
   });
 
   const ready = fontsLoaded || !!fontError;
+  const [showLolaWakeSplash, setShowLolaWakeSplash] = useState(true);
 
   // Keep the native Expo splash visible until the app is ready. We no longer
   // render a second in-app loading splash, which prevents the previous
@@ -66,6 +68,9 @@ export default function RootLayout() {
                     <Stack.Screen name="body-self-care" />
                     <Stack.Screen name="ai-coach" />
                   </Stack>
+                  {showLolaWakeSplash ? (
+                    <LolaWakeSplash onDone={() => setShowLolaWakeSplash(false)} />
+                  ) : null}
                 </AccountProvider>
               </PlusProvider>
             </DayProvider>
