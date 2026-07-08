@@ -57,9 +57,12 @@ function normalise(value: string) {
 function conditionAliases(condition: string): string[] {
   const base = normalise(condition);
   const aliases: Record<string, string[]> = {
-    'me cfs': ['me cfs', 'cfs', 'chronic fatigue'],
+    'me cfs': ['me cfs', 'cfs', 'chronic fatigue', 'myalgic encephalomyelitis'],
     'pots dysautonomia': ['pots', 'dysautonomia'],
     'eds hypermobility': ['eds', 'ehlers danlos', 'hypermobility'],
+    'fibromyalgia': ['fibromyalgia', 'fibro'],
+    'adhd': ['adhd', 'audhd'],
+    'autism': ['autism', 'autistic', 'audhd'],
     'chronic migraine': ['migraine', 'migraines', 'chronic migraine'],
     'long covid': ['long covid', 'longcovid'],
     'ptsd trauma': ['ptsd', 'trauma'],
@@ -86,9 +89,13 @@ function extractRegion(text: string): Region | null {
 
 function extractConditions(text: string, options: string[]) {
   const normalizedText = ` ${normalise(text)} `;
-  return options.filter((condition) =>
+  const selected = options.filter((condition) =>
     condition !== 'Other' && conditionAliases(condition).some((alias) => normalizedText.includes(` ${alias} `))
   );
+  if (/\bME\b/.test(text) && options.includes('ME/CFS') && !selected.includes('ME/CFS')) {
+    selected.push('ME/CFS');
+  }
+  return selected;
 }
 
 function extractProfile(transcript: string): ExtractedProfile {

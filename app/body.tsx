@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSizes } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
-import { LolaMenu } from '@/components/ui/LolaMenu';
+import { CompanionOrbit } from '@/components/ui/CompanionOrbit';
 import { Companion } from '@/constants/companion';
 
 export default function BodyScreen() {
@@ -26,15 +26,15 @@ export default function BodyScreen() {
           <Text style={[styles.title, { fontFamily: ff.bold }]}>Body</Text>
           <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>How&apos;s your body today?</Text>
         </View>
-        <LolaMenu
+        <CompanionOrbit
           companion={Companion.Body}
           size="page"
           chips={[
-            { key: 'pain', label: 'Pain', position: 'top', onPress: () => router.push('/body-pain' as any) },
-            { key: 'fatigue', label: 'Fatigue', position: 'middleLeft', onPress: () => router.push('/body-fatigue' as any) },
-            { key: 'symptoms', label: 'Symptoms', position: 'middleRight', onPress: () => router.push('/body-symptoms' as any) },
-            { key: 'medication', label: 'Medication', position: 'lowerLeft', onPress: () => router.push('/body-medication' as any) },
-            { key: 'self-care', label: 'Self-care', position: 'lowerRight', onPress: () => router.push('/body-self-care' as any), highlighted: true },
+            { key: 'pain', label: 'Pain', onPress: () => router.push('/body-pain' as any) },
+            { key: 'fatigue', label: 'Fatigue', onPress: () => router.push('/body-fatigue' as any) },
+            { key: 'symptoms', label: 'Symptoms', onPress: () => router.push('/body-symptoms' as any) },
+            { key: 'medication', label: 'Medication', onPress: () => router.push('/body-medication' as any) },
+            { key: 'self-care', label: 'Self-care', onPress: () => router.push('/body-self-care' as any), highlighted: true },
           ]}
         />
       </ScrollView>

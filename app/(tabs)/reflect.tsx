@@ -21,6 +21,7 @@ import { Companion } from '@/constants/companion';
 import { formatDateStringForRegion } from '@/services/regionFormat';
 import { AssistantHero } from '@/components/ui/AssistantHero';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
+import { reflectWithLola } from '@/services/aiLola';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -477,6 +478,9 @@ export default function ReflectScreen() {
   const [helped, setHelped] = useState(day?.guidedPrompts?.helped ?? '');
   const [notDone, setNotDone] = useState(day?.guidedPrompts?.notDone ?? '');
   const [symptoms, setSymptoms] = useState(day?.guidedPrompts?.symptoms ?? '');
+  const [lolaReflection, setLolaReflection] = useState<string | null>(null);
+  const [lolaError, setLolaError] = useState<string | null>(null);
+  const [askingLola, setAskingLola] = useState(false);
 
   // Past day fallback — loaded from history when no active day
   const [pastDay, setPastDay] = useState<DayState | null>(null);
@@ -529,11 +533,43 @@ export default function ReflectScreen() {
 
   // ── Case 2: Active day — full editable reflection ───────────────────────────
 
-  const completedTasks = day.tasks.filter((t) => t.status === 'completed');
+  const activeDay = day;
+  const completedTasks = activeDay.tasks.filter((t) => t.status === 'completed');
 
   function handleSave() {
     saveJournal(journal, { drained, helped, notDone, symptoms });
     showAlert('Saved', 'Your reflection has been saved.');
+  }
+
+  async function handleTellLola() {
+    if (askingLola) return;
+    const hasReflection = [journal, drained, helped, notDone, symptoms].some((value) => value.trim().length > 0);
+    if (!hasReflection) {
+      setLolaError('Write or dictate a little first, then Lola can reflect it back.');
+      return;
+    }
+    setAskingLola(true);
+    setLolaError(null);
+    setLolaReflection(null);
+    const response = await reflectWithLola({
+      date: activeDay.date,
+      isFlareDay: activeDay.isFlareDay,
+      tags: activeDay.tags,
+      journal,
+      guidedPrompts: { drained, helped, notDone, symptoms },
+    });
+    setAskingLola(false);
+    if (!response.ok) {
+      setLolaError(response.error ?? 'Lola could not respond right now. Your reflection can still be saved.');
+      return;
+    }
+    const result = response.result;
+    if (typeof result === 'string') setLolaReflection(result);
+    else if (result && typeof result === 'object' && 'summary' in result && typeof (result as { summary?: unknown }).summary === 'string') {
+      setLolaReflection((result as { summary: string }).summary);
+    } else if (result && typeof result === 'object' && 'message' in result && typeof (result as { message?: unknown }).message === 'string') {
+      setLolaReflection((result as { message: string }).message);
+    } else setLolaReflection('Lola has read this and is with you. Save anything you want to keep.');
   }
 
   return (
@@ -555,7 +591,7 @@ export default function ReflectScreen() {
             kicker="Reflect"
             title="Anything worth remembering?"
             subtitle={
-              day.isFlareDay
+              activeDay.isFlareDay
                 ? 'Getting through today counts. Only add what feels useful.'
                 : 'Only if it helps. No pressure.'
             }
@@ -564,11 +600,11 @@ export default function ReflectScreen() {
 
           {/* Summary stats */}
           <View style={styles.summaryBlock}>
-            <SummaryRow dayData={day} used={energyUsed} remaining={energyRemaining} />
+            <SummaryRow dayData={activeDay} used={energyUsed} remaining={energyRemaining} />
           </View>
 
           {/* Flare day card */}
-          {day.isFlareDay ? (
+          {activeDay.isFlareDay ? (
             <View style={[styles.section, styles.flareCard]}>
               <Text style={styles.flareCardText}>
                 This was a flare day. Getting through it at all is enough.
@@ -578,11 +614,11 @@ export default function ReflectScreen() {
           ) : null}
 
           {/* Tags */}
-          {day.tags.length > 0 ? (
+          {activeDay.tags.length > 0 ? (
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>How you felt today</Text>
               <View style={styles.tagsRow}>
-                {day.tags.map((tag) => (
+                {activeDay.tags.map((tag) => (
                   <View key={tag} style={styles.tagChip}>
                     <Text style={[styles.tagChipText, { fontFamily: ff.medium }]}>{tag}</Text>
                   </View>
@@ -614,7 +650,7 @@ export default function ReflectScreen() {
               <View style={styles.completedList}>
                 {completedTasks.map((t, i) => {
                   const rawCost = t.completedCost ?? t.effectiveCost;
-                  const costDisplay = formatCost(rawCost, day.energyMode);
+                  const costDisplay = formatCost(rawCost, activeDay.energyMode);
                   return (
                     <View
                       key={t.id}
@@ -653,6 +689,24 @@ export default function ReflectScreen() {
                 { key: 'symptoms', label: 'Any symptom changes to note?', value: symptoms, onChangeText: setSymptoms },
               ]}
             />
+          </View>
+
+          {/* Tell Lola */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Want Lola to hear it?</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Dictation works through your normal keyboard mic where your device supports it.</Text>
+            <Pressable
+              style={({ pressed }) => [styles.tellLolaBtn, askingLola && styles.tellLolaBtnDisabled, pressed && !askingLola && { opacity: 0.75 }]}
+              onPress={handleTellLola}
+              disabled={askingLola}
+              accessibilityRole="button"
+              accessibilityLabel="Tell Lola"
+            >
+              {askingLola ? <ActivityIndicator color={Colors.background} size="small" /> : null}
+              <Text style={[styles.tellLolaBtnText, { fontFamily: ff.semibold }]}>{askingLola ? 'Lola is listening...' : 'Tell Lola'}</Text>
+            </Pressable>
+            {lolaReflection ? <Text style={[styles.lolaReflection, { fontFamily: ff.regular }]}>{lolaReflection}</Text> : null}
+            {lolaError ? <Text style={[styles.lolaError, { fontFamily: ff.regular }]}>{lolaError}</Text> : null}
           </View>
 
           {/* Save */}
@@ -902,6 +956,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     lineHeight: 24,
   },
+  tellLolaBtn: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, backgroundColor: Colors.primary, borderRadius: Radius.full, paddingHorizontal: Spacing.lg, paddingVertical: 11 },
+  tellLolaBtnDisabled: { opacity: 0.55 },
+  tellLolaBtnText: { color: Colors.background, fontSize: FontSizes.base },
+  lolaReflection: { marginTop: Spacing.sm, color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 21, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md },
+  lolaError: { marginTop: Spacing.sm, color: Colors.danger, fontSize: FontSizes.sm, lineHeight: 20 },
   saveBtn: {
     marginHorizontal: Spacing.lg,
     backgroundColor: Colors.primary,
