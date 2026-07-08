@@ -13,6 +13,7 @@ import {
 import { Text } from '@/components/ui/AppText';
 import { Colors, FontSizes, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export type CompanionOrbitChip = {
   key: string;
@@ -59,7 +60,7 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const reduceMotion = useReducedMotion();
   const progress = useRef(new Animated.Value(0)).current;
   const breath = useRef(new Animated.Value(0)).current;
   const tapPulse = useRef(new Animated.Value(0)).current;
@@ -73,6 +74,7 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     const radiusY = size === 'home' ? 168 : 142;
     return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY };
   }, [size, width]);
+
 
   useEffect(() => {
     let mounted = true;
@@ -103,8 +105,8 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(breath, { toValue: 0, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 1, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -119,8 +121,8 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(tapPulse, { toValue: 1, duration: 2200, easing: Easing.out(Easing.sin), useNativeDriver: true }),
-        Animated.timing(tapPulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(tapPulse, { toValue: 1, duration: 2200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(tapPulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -217,12 +219,26 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
             pressed && styles.lolaPressed,
           ]}
         >
-          <Image
-            source={companion}
-            style={{ width: metrics.lolaWidth, height: metrics.lolaHeight }}
-            resizeMode="contain"
-            accessibilityLabel={accessibilityLabel}
-          />
+          <Animated.View
+            pointerEvents="none"
+            style={
+              reduceMotion
+                ? null
+                : {
+                    transform: [
+                      { translateY: breath.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) },
+                      { scale: breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.008] }) },
+                    ],
+                  }
+            }
+          >
+            <Image
+              source={companion}
+              style={{ width: metrics.lolaWidth, height: metrics.lolaHeight }}
+              resizeMode="contain"
+              accessibilityLabel={accessibilityLabel}
+            />
+          </Animated.View>
         </Pressable>
       </View>
     </View>
