@@ -1,5 +1,6 @@
-import { ReactNode, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Animated,
   GestureResponderEvent,
@@ -11,7 +12,6 @@ import {
 } from 'react-native';
 import { Animation, Colors, TouchTarget } from '@/constants/theme';
 import { HapticPolicy, triggerHaptic } from './haptics';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 type InteractivePressableProps = Omit<PressableProps, 'children' | 'style'> & {
   children: ReactNode;
@@ -38,8 +38,14 @@ export function InteractivePressable({
 }: InteractivePressableProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(1)).current;
-  const reduceMotion = useReducedMotion();
+  const [reduceMotion, setReduceMotion] = useState(false);
   const isDisabled = disabled || loading;
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => subscription.remove();
+  }, []);
 
   const animate = (pressed: boolean) => {
     Animated.parallel([
