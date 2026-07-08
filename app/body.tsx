@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSizes } from '@/constants/theme';
+import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { CompanionOrbit } from '@/components/ui/CompanionOrbit';
@@ -25,6 +25,14 @@ export default function BodyScreen() {
         <View style={styles.copy}>
           <Text style={[styles.title, { fontFamily: ff.bold }]}>Body</Text>
           <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>How&apos;s your body today?</Text>
+        </View>
+        <View style={styles.contextCard}>
+          <Text style={[styles.contextTitle, { fontFamily: ff.semibold }]}>Today&apos;s body summary</Text>
+          <Text style={[styles.contextText, { fontFamily: ff.regular }]}>Lola can help you notice pain, fatigue, symptoms, medication, or one gentle care step without turning it into a big task.</Text>
+          <View style={styles.reminderRow}>
+            <Text style={[styles.reminder, { fontFamily: ff.medium }]}>Water nearby?</Text>
+            <Text style={[styles.reminder, { fontFamily: ff.medium }]}>Meds checked?</Text>
+          </View>
         </View>
         <CompanionOrbit
           companion={Companion.Body}
@@ -48,6 +56,11 @@ const styles = StyleSheet.create({
   headerTitle: { color: Colors.text, fontSize: FontSizes.lg },
   scroll: { paddingHorizontal: Spacing.lg },
   copy: { alignItems: 'center', gap: Spacing.xs, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
+  contextCard: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
+  contextTitle: { color: Colors.text, fontSize: FontSizes.base },
+  contextText: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 20 },
+  reminderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  reminder: { color: Colors.primary, fontSize: FontSizes.xs, backgroundColor: Colors.primaryFaint, borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 6 },
   title: { color: Colors.text, fontSize: FontSizes.xxxl, lineHeight: 44, letterSpacing: -0.8 },
   subtitle: { color: Colors.textMuted, fontSize: FontSizes.base, lineHeight: 24 },
 });

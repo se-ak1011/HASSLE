@@ -1,7 +1,7 @@
 /**
  * Hassle — Library content.
  *
- * Article-style entries for the in-app reading library (a Hassle Plus feature).
+ * Article-style entries for the free in-app reading library.
  * Every entry links out to a REAL, verified source — peer-reviewed studies,
  * clinical guidelines, or, where labeled, lived-experience essays.
  *

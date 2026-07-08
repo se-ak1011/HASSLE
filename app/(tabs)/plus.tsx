@@ -21,10 +21,6 @@ export default function PlusScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
 
   function openFeature(path: string) {
-    if (!isPlus) {
-      setShowPaywall(true);
-      return;
-    }
     router.push(path as any);
   }
 
@@ -39,8 +35,8 @@ export default function PlusScreen() {
       >
         <AssistantHero
           kicker="Hassle Plus"
-          title={isPlus ? 'You have everything.' : 'A little more, when you need it.'}
-          subtitle={isPlus ? 'Thank you for supporting Hassle.' : 'Everything core stays free.'}
+          title={isPlus ? 'Long-term insight is active.' : 'Deeper patterns, when you want them.'}
+          subtitle={isPlus ? 'Thank you for supporting Hassle.' : 'Day-to-day coping stays free.'}
           lola={Companion.Settings}
           style={{ marginHorizontal: -Spacing.lg }}
         />
@@ -51,10 +47,10 @@ export default function PlusScreen() {
             onPress={() => setShowPaywall(true)}
           >
             <Text style={[styles.upsellTitle, { fontFamily: ff.semibold }]}>
-              Extra tools, and a way to support Hassle
+              Long-term insight, and a way to support Hassle
             </Text>
             <Text style={[styles.upsellBody, { fontFamily: ff.regular }]}>
-              The whole core app stays free. Plus adds the features below — try it free for{' '}
+              Everyday support stays free. Plus focuses on summaries, trends, exports, and shared-care insight — try it free for{' '}
               {PLUS_TRIAL_DAYS} days.
             </Text>
             <View style={styles.upsellBtn}>
@@ -65,62 +61,38 @@ export default function PlusScreen() {
           </Pressable>
         )}
 
-        {/* Reading library */}
-        <Pressable
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-          onPress={() => openFeature('/library')}
-        >
-          <Image source={Companion.Library} style={styles.thumb} resizeMode="contain" />
-          <View style={styles.cardText}>
-            <View style={styles.cardTitleRow}>
-              <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Reading library</Text>
-              {!isPlus ? <LockTag ff={ff} /> : null}
+        {/* Plus insight features */}
+        {[
+          ['Weekly AI summaries', 'A gentle weekly recap of energy, symptoms, tasks, and reflections.'],
+          ['Monthly health summaries', 'Longer-range health context for planning and appointments.'],
+          ['Trend + correlation analysis', 'Symptom trends, possible correlations, and long-term charts.'],
+          ['Unlimited history + PDF exports', 'Keep more history and export polished summaries when needed.'],
+          ['Family profiles + shared care', 'Support households, carers, widgets, and advanced analytics over time.'],
+        ].map(([title, sub]) => (
+          <View key={title} style={styles.card}>
+            <Image source={Companion.Report} style={styles.thumb} resizeMode="contain" />
+            <View style={styles.cardText}>
+              <View style={styles.cardTitleRow}>
+                <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>{title}</Text>
+                {!isPlus ? <LockTag ff={ff} /> : null}
+              </View>
+              <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>{sub}</Text>
             </View>
-            <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>
-              Plain-language reads, each linked to a real study.
-            </Text>
+            <MaterialIcons name={isPlus ? 'check-circle' : 'lock'} size={isPlus ? 22 : 16} color={Colors.textSubtle} />
           </View>
-          <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 22 : 16} color={Colors.textSubtle} />
-        </Pressable>
+        ))}
 
-        {/* Specialist directory */}
-        <Pressable
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-          onPress={() => openFeature('/directory')}
-        >
-          <Image source={Companion.Directory} style={styles.thumb} resizeMode="contain" />
-          <View style={styles.cardText}>
-            <View style={styles.cardTitleRow}>
-              <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Specialist directory</Text>
-              {!isPlus ? <LockTag ff={ff} /> : null}
-            </View>
-            <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>
-              Clinicians who understand invisible illness. Coming soon.
-            </Text>
-          </View>
-          <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 22 : 16} color={Colors.textSubtle} />
-        </Pressable>
-
-        {/* Doctor-visit report */}
-        <Pressable
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-          onPress={() => openFeature('/report')}
-        >
+        <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={() => openFeature('/report')}>
           <Image source={Companion.Report} style={styles.thumb} resizeMode="contain" />
           <View style={styles.cardText}>
-            <View style={styles.cardTitleRow}>
-              <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Doctor-visit report</Text>
-              {!isPlus ? <LockTag ff={ff} /> : null}
-            </View>
-            <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>
-              A 30-day clinical PDF — trends plus a symptom log for appointments.
-            </Text>
+            <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Doctor Report</Text>
+            <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>Free day-to-day coping export for appointments.</Text>
           </View>
-          <MaterialIcons name={isPlus ? 'chevron-right' : 'lock'} size={isPlus ? 22 : 16} color={Colors.textSubtle} />
+          <MaterialIcons name="chevron-right" size={22} color={Colors.textSubtle} />
         </Pressable>
 
         <Text style={[styles.footnote, { fontFamily: ff.regular }]}>
-          Everything you already use stays free. Plus only adds the above and helps fund development.
+          Body, Mind, Quiet Time, Life, Doctor Report, Directory, and Library stay free. Plus is for longer-term insight and helps fund development.
         </Text>
       </ScrollView>
 
