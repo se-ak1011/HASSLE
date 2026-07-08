@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
+import { Colors, Spacing, FontSizes } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { LolaMenu } from '@/components/ui/LolaMenu';
@@ -23,24 +22,21 @@ export default function BodyScreen() {
         <View style={{ width: 24 }} />
       </View>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]} showsVerticalScrollIndicator={false}>
+        <View style={styles.copy}>
+          <Text style={[styles.title, { fontFamily: ff.bold }]}>Body</Text>
+          <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>How&apos;s your body today?</Text>
+        </View>
         <LolaMenu
-          companion={Companion.GentleMovement}
+          companion={Companion.Body}
           size="page"
           chips={[
-            { key: 'coach', label: 'AI Coach', position: 'upperLeft', onPress: () => router.push('/ai-coach' as any), highlighted: true },
-            { key: 'redesign', label: 'Redesign soon', position: 'upperRight', onPress: () => {} },
-            { key: 'quiet', label: 'Quiet Time', position: 'lowerLeft', onPress: () => router.push('/quiet-time' as any) },
-            { key: 'life', label: 'Life', position: 'lowerRight', onPress: () => router.push('/life' as any) },
+            { key: 'pain', label: 'Pain', position: 'top', onPress: () => router.push('/body-pain' as any) },
+            { key: 'fatigue', label: 'Fatigue', position: 'middleLeft', onPress: () => router.push('/body-fatigue' as any) },
+            { key: 'symptoms', label: 'Symptoms', position: 'middleRight', onPress: () => router.push('/body-symptoms' as any) },
+            { key: 'medication', label: 'Medication', position: 'lowerLeft', onPress: () => router.push('/body-medication' as any) },
+            { key: 'self-care', label: 'Self-care', position: 'lowerRight', onPress: () => router.push('/body-self-care' as any), highlighted: true },
           ]}
         />
-        <View style={styles.card}>
-          <Text style={[styles.title, { fontFamily: ff.bold }]}>Body support is being redesigned.</Text>
-          <Text style={[styles.body, { fontFamily: ff.regular }]}>The old spoons, battery, and day-planning tracker is out of the main flow. Lola can hold this place until the new prompt is ready.</Text>
-          <Pressable style={({ pressed }) => [styles.button, pressed && { opacity: 0.75 }]} onPress={() => router.push('/ai-coach' as any)} accessibilityRole="button" accessibilityLabel="Open AI Coach">
-            <MaterialIcons name="auto-awesome" size={18} color={Colors.background} />
-            <Text style={[styles.buttonText, { fontFamily: ff.semibold }]}>Talk to Lola</Text>
-          </Pressable>
-        </View>
       </ScrollView>
     </View>
   );
@@ -51,9 +47,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
   headerTitle: { color: Colors.text, fontSize: FontSizes.lg },
   scroll: { paddingHorizontal: Spacing.lg },
-  card: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.md },
-  title: { color: Colors.text, fontSize: FontSizes.xxl, lineHeight: 34 },
-  body: { color: Colors.textMuted, fontSize: FontSizes.base, lineHeight: 24 },
-  button: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.primary, borderRadius: Radius.full, paddingHorizontal: Spacing.lg, paddingVertical: 12 },
-  buttonText: { color: Colors.background, fontSize: FontSizes.base },
+  copy: { alignItems: 'center', gap: Spacing.xs, paddingTop: Spacing.xl, paddingBottom: Spacing.md },
+  title: { color: Colors.text, fontSize: FontSizes.xxxl, lineHeight: 44, letterSpacing: -0.8 },
+  subtitle: { color: Colors.textMuted, fontSize: FontSizes.base, lineHeight: 24 },
 });

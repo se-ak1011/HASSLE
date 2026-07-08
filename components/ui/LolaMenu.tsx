@@ -7,7 +7,7 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 export type LolaMenuChip = {
   key: string;
   label: string;
-  position: 'upperLeft' | 'upperRight' | 'lowerLeft' | 'lowerRight';
+  position: 'top' | 'upperLeft' | 'upperRight' | 'middleLeft' | 'middleRight' | 'lowerLeft' | 'lowerRight' | 'bottom';
   onPress: () => void;
   highlighted?: boolean;
 };
@@ -20,14 +20,22 @@ type LolaMenuProps = {
 
 function chipPosition(position: LolaMenuChip['position']) {
   switch (position) {
+    case 'top':
+      return styles.topChip;
     case 'upperLeft':
       return styles.upperLeft;
     case 'upperRight':
       return styles.upperRight;
+    case 'middleLeft':
+      return styles.middleLeft;
+    case 'middleRight':
+      return styles.middleRight;
     case 'lowerLeft':
       return styles.lowerLeft;
     case 'lowerRight':
       return styles.lowerRight;
+    case 'bottom':
+      return styles.bottomChip;
   }
 }
 
@@ -129,6 +137,9 @@ const styles = StyleSheet.create({
   chipTextHighlighted: {
     color: Colors.background,
   },
+  topChip: {
+    top: 26,
+  },
   upperLeft: {
     left: 4,
     top: 92,
@@ -137,6 +148,14 @@ const styles = StyleSheet.create({
     right: 4,
     top: 76,
   },
+  middleLeft: {
+    left: 0,
+    top: 150,
+  },
+  middleRight: {
+    right: 0,
+    top: 150,
+  },
   lowerLeft: {
     left: 18,
     bottom: 86,
@@ -144,5 +163,8 @@ const styles = StyleSheet.create({
   lowerRight: {
     right: 0,
     bottom: 70,
+  },
+  bottomChip: {
+    bottom: 28,
   },
 });

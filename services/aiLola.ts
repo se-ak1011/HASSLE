@@ -9,7 +9,8 @@ export type LolaMode =
   | 'chat'
   | 'task_support'
   | 'pattern_detection'
-  | 'future_letter';
+  | 'future_letter'
+  | 'body';
 
 export type AiLolaRegion = 'US' | 'UK';
 
@@ -153,4 +154,21 @@ export async function detectPatternsWithLola<TData = unknown>(data: TData): Prom
 
 export async function writeFutureLetterWithLola<TData = unknown>(data: TData): Promise<LolaResponse> {
   return invokeLola({ mode: 'future_letter', data });
+}
+
+export type BodyLolaCategory = 'pain' | 'fatigue' | 'symptoms' | 'medication' | 'self-care';
+
+export type BodyLolaData = {
+  category: BodyLolaCategory;
+  selected: {
+    primary: string[];
+    secondary?: string[];
+  };
+  transcript: string;
+  voiceRequested?: boolean;
+  instruction: string;
+};
+
+export async function tellLolaAboutBody(data: BodyLolaData): Promise<LolaResponse> {
+  return invokeLola({ mode: 'body', data });
 }
