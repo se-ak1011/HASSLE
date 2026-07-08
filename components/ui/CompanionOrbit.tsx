@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   ImageSourcePropType,
   Pressable,
@@ -11,6 +12,7 @@ import {
 import { Text } from '@/components/ui/AppText';
 import { Colors, FontSizes, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export type CompanionOrbitChip = {
   key: string;
@@ -56,17 +58,22 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
   const ff = useFontFamily();
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const reduceMotion = useReducedMotion();
   const progress = useRef(new Animated.Value(0)).current;
+  const breath = useRef(new Animated.Value(0)).current;
+  const tapPulse = useRef(new Animated.Value(0)).current;
 
   const metrics = useMemo(() => {
-    const zoneWidth = Math.min(width - Spacing.lg * 2, size === 'home' ? 370 : 340);
-    const zoneHeight = size === 'home' ? 430 : 350;
-    const lolaWidth = size === 'home' ? 210 : 170;
-    const lolaHeight = size === 'home' ? 270 : 220;
-    const radiusX = Math.max(118, Math.min(zoneWidth / 2 - 58, size === 'home' ? 145 : 128));
-    const radiusY = size === 'home' ? 155 : 130;
+    const zoneWidth = Math.min(width - Spacing.lg * 2, size === 'home' ? 390 : 350);
+    const zoneHeight = size === 'home' ? 455 : 375;
+    const lolaWidth = size === 'home' ? 218 : 174;
+    const lolaHeight = size === 'home' ? 280 : 226;
+    const radiusX = Math.max(122, Math.min(zoneWidth / 2 - 64, size === 'home' ? 154 : 134));
+    const radiusY = size === 'home' ? 168 : 142;
     return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY };
   }, [size, width]);
+
 
   useEffect(() => {
     Animated.spring(progress, {
@@ -77,7 +84,40 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     }).start();
   }, [open, progress]);
 
+  useEffect(() => {
+    if (reduceMotion) {
+      breath.stopAnimation();
+      breath.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breath, { toValue: 1, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [breath, reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion || size !== 'home' || hasOpened || open) {
+      tapPulse.stopAnimation();
+      tapPulse.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(tapPulse, { toValue: 1, duration: 2200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        Animated.timing(tapPulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hasOpened, open, reduceMotion, size, tapPulse]);
+
   function toggleOpen() {
+    setHasOpened(true);
     setOpen((current) => !current);
   }
 
@@ -137,6 +177,19 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
           );
         })}
 
+        {size === 'home' && !hasOpened && !reduceMotion ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.tapPulse,
+              {
+                opacity: tapPulse.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0.16, 0.32, 0] }),
+                transform: [{ scale: tapPulse.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1.28] }) }],
+              },
+            ]}
+          />
+        ) : null}
+
         <Pressable
           onPress={toggleOpen}
           accessibilityRole="button"
@@ -144,12 +197,26 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
           accessibilityState={{ expanded: open }}
           style={({ pressed }) => [styles.lolaButton, pressed && styles.lolaPressed]}
         >
-          <Image
-            source={companion}
-            style={{ width: metrics.lolaWidth, height: metrics.lolaHeight }}
-            resizeMode="contain"
-            accessibilityLabel={accessibilityLabel}
-          />
+          <Animated.View
+            pointerEvents="none"
+            style={
+              reduceMotion
+                ? null
+                : {
+                    transform: [
+                      { translateY: breath.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) },
+                      { scale: breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.008] }) },
+                    ],
+                  }
+            }
+          >
+            <Image
+              source={companion}
+              style={{ width: metrics.lolaWidth, height: metrics.lolaHeight }}
+              resizeMode="contain"
+              accessibilityLabel={accessibilityLabel}
+            />
+          </Animated.View>
         </Pressable>
       </View>
     </View>
@@ -186,6 +253,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(120, 131, 111, 0.06)',
   },
+  tapPulse: {
+    position: 'absolute',
+    width: 236,
+    height: 236,
+    borderRadius: 118,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    backgroundColor: 'rgba(120, 131, 111, 0.05)',
+    zIndex: 1,
+  },
   anchorDot: {
     width: 10,
     height: 10,
@@ -198,8 +275,8 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   chip: {
-    minWidth: 96,
-    maxWidth: 132,
+    minWidth: 92,
+    maxWidth: 128,
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,7 +286,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
     backgroundColor: 'rgba(42, 45, 49, 0.88)',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 9,
     ...Shadow.soft,
   },

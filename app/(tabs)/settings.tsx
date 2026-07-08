@@ -448,10 +448,6 @@ export default function SettingsScreen() {
   const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   async function handleClinicalExport() {
-    if (!isPlus) {
-      setShowPaywall(true);
-      return;
-    }
     if (exportingClinical) return;
     setExportingClinical(true);
     try {
@@ -698,20 +694,16 @@ export default function SettingsScreen() {
                 <Text style={styles.rowLabel}>
                   {exportingClinical ? 'Generating report…' : 'Doctor-visit report'}
                 </Text>
-                {!isPlus ? (
-                  <View style={styles.plusTag}>
-                    <Text style={[styles.plusTagText, { fontFamily: ff.semibold }]}>PLUS</Text>
-                  </View>
-                ) : null}
+
               </View>
               <Text style={styles.rowSublabel}>
-                Last 30 days — trends plus a symptom &amp; reflection log for appointments.
+                Last 30 days — a symptom &amp; reflection log for appointments.
               </Text>
             </View>
             {!exportingClinical ? (
               <MaterialIcons
-                name={isPlus ? 'chevron-right' : 'lock'}
-                size={isPlus ? 20 : 16}
+                name='chevron-right'
+                size={20}
                 color={Colors.textSubtle}
               />
             ) : null}

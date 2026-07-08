@@ -593,7 +593,7 @@ export default function ReflectScreen() {
             subtitle={
               activeDay.isFlareDay
                 ? 'Getting through today counts. Only add what feels useful.'
-                : 'Only if it helps. No pressure.'
+                : 'Mood summary, grounding notes, and anything you type can live here. No pressure.'
             }
             lola={Companion.Reflect}
           />
@@ -694,7 +694,7 @@ export default function ReflectScreen() {
           {/* Tell Lola */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { fontFamily: ff.semibold }]}>Want Lola to hear it?</Text>
-            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Dictation works through your normal keyboard mic where your device supports it.</Text>
+            <Text style={[styles.sectionSubtitle, { fontFamily: ff.regular }]}>Optional. Use your keyboard mic if transcription is available; if not, typing here keeps everything working.</Text>
             <Pressable
               style={({ pressed }) => [styles.tellLolaBtn, askingLola && styles.tellLolaBtnDisabled, pressed && !askingLola && { opacity: 0.75 }]}
               onPress={handleTellLola}

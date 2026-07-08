@@ -33,32 +33,32 @@ const ACTIVITIES: Activity[] = [
   {
     key: 'rain',
     title: 'Rain Window',
-    description: 'Watch the rain for a minute.',
-    effort: '1–2 min',
+    description: 'Watch rain move down the window.',
+    effort: 'Any time',
     accentColor: Colors.accent,
     implemented: true,
   },
   {
     key: 'puzzle',
-    title: 'Tiny Puzzle',
-    description: 'A tiny thing to solve. No rush.',
-    effort: '2–5 min',
+    title: 'Arrange Stones',
+    description: 'Place a few stones until they feel settled.',
+    effort: 'Any time',
     accentColor: Colors.primary,
     implemented: true,
   },
   {
     key: 'mug',
-    title: "Colour Lola's Mug",
-    description: 'Colour something small.',
-    effort: '1–3 min',
+    title: "Mindful Colouring",
+    description: 'Add colour to something small.',
+    effort: 'Any time',
     accentColor: Colors.flare,
     implemented: true,
   },
   {
     key: 'drift',
-    title: 'Word Drift',
-    description: 'Find one word that feels okay.',
-    effort: '1 min',
+    title: 'Cloud Watching',
+    description: 'Let soft words drift by like clouds.',
+    effort: 'Any time',
     accentColor: Colors.primary,
     implemented: true,
   },
@@ -72,9 +72,9 @@ const ACTIVITIES: Activity[] = [
   },
   {
     key: 'sort',
-    title: 'Soft Sort',
-    description: 'Put a few things where they belong.',
-    effort: '2–3 min',
+    title: 'Folding Blankets',
+    description: 'Fold soft shapes into quieter piles.',
+    effort: 'Any time',
     accentColor: Colors.primary,
     implemented: true,
   },
@@ -478,7 +478,7 @@ function PuzzleDetail({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={detail.root}>
-      <Text style={[detail.title, { fontFamily: ff.bold }]}>Tiny Puzzle</Text>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Arrange Stones</Text>
       <Text style={[detail.body, { fontFamily: ff.regular }]}>
         {done ? "You did it. That's all it was." : 'Tap each tile to wake it up.'}
       </Text>
@@ -627,7 +627,7 @@ function MugDetail({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── Word Drift detail ────────────────────────────────────────────────────────
+// ─── Cloud Watching detail ────────────────────────────────────────────────────────
 
 const DRIFT_WORDS_FULL = [
   'still', 'okay', 'here', 'soft', 'rest',
@@ -681,7 +681,7 @@ function WordDriftDetail({
 
   return (
     <View style={detail.root}>
-      <Text style={[detail.title, { fontFamily: ff.bold }]}>Word Drift</Text>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Cloud Watching</Text>
       <Text style={[detail.body, { fontFamily: ff.regular }]}>
         {chosen ? `"${chosen}" — that's yours for now.` : 'Tap the word that feels okay.'}
       </Text>
@@ -731,7 +731,7 @@ function WordDriftDetail({
   );
 }
 
-// ─── Soft Sort detail ─────────────────────────────────────────────────────────
+// ─── Folding Blankets detail ─────────────────────────────────────────────────────────
 
 type SortItemData = { id: number; label: string; color: string; placed: 'a' | 'b' | null };
 
@@ -771,7 +771,7 @@ function SoftSortDetail({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={[detail.root, { justifyContent: 'flex-start', gap: Spacing.lg }]}>
-      <Text style={[detail.title, { fontFamily: ff.bold }]}>Soft Sort</Text>
+      <Text style={[detail.title, { fontFamily: ff.bold }]}>Folding Blankets</Text>
       <Text style={[detail.body, { fontFamily: ff.regular }]}>
         {allPlaced
           ? 'Everything has a place.'
@@ -889,7 +889,7 @@ function RainDetail({ onBack, reduceMotion }: { onBack: () => void; reduceMotion
       </View>
       <View style={detail.overlay}>
         <Text style={[detail.rainLabel, { fontFamily: ff.regular }]}>
-          Watch the rain for a minute.
+          Watch rain move down the window.
         </Text>
         <Pressable
           style={({ pressed }) => [detail.backBtn, pressed && { opacity: 0.7 }]}

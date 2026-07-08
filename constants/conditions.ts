@@ -16,7 +16,7 @@
 export const CONDITION_SYMPTOM_TAGS: Record<string, string[]> = {
   Fibromyalgia: ['pain', 'fatigue', 'brain fog', 'poor sleep', 'stiffness'],
   'ME/CFS': ['post-exertional malaise', 'fatigue', 'brain fog', 'crash', 'unrefreshing sleep'],
-  'EDS / hypermobility': ['joint pain', 'subluxation', 'fatigue', 'brain fog', 'dizzy'],
+  'Ehlers-Danlos Syndrome / hypermobility': ['joint pain', 'subluxation', 'fatigue', 'brain fog', 'dizzy'],
   'POTS / dysautonomia': ['dizzy', 'tachycardia', 'lightheaded', 'faint'],
   ADHD: ['overwhelmed', 'distracted', 'hyperfocused', 'executive dysfunction'],
   Autism: ['overstimulated', 'shutdown', 'sensory overload', 'social fatigue'],
