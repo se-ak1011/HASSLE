@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Easing,
   Image,
@@ -74,6 +75,18 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY };
   }, [size, width]);
 
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled?.().then((enabled) => {
+      if (mounted) setReduceMotion(Boolean(enabled));
+    });
+    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', setReduceMotion);
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
 
   useEffect(() => {
     Animated.spring(progress, {
@@ -195,7 +208,16 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
           accessibilityRole="button"
           accessibilityLabel={open ? 'Close Lola actions' : 'Open Lola actions'}
           accessibilityState={{ expanded: open }}
-          style={({ pressed }) => [styles.lolaButton, pressed && styles.lolaPressed]}
+          style={({ pressed }) => [
+            styles.lolaButton,
+            !reduceMotion && {
+              transform: [
+                { translateY: breath.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) },
+                { scale: breath.interpolate({ inputRange: [0, 1], outputRange: [1, 1.008] }) },
+              ],
+            },
+            pressed && styles.lolaPressed,
+          ]}
         >
           <Animated.View
             pointerEvents="none"
