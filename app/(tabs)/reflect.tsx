@@ -20,8 +20,7 @@ import { DayState } from '@/constants/types';
 import { Companion } from '@/constants/companion';
 import { formatDateStringForRegion } from '@/services/regionFormat';
 import { AssistantHero } from '@/components/ui/AssistantHero';
-import { MaterialIcons } from '@expo/vector-icons';
-import { NavDrawer } from '@/components/ui/NavDrawer';
+import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 // ─── Prompt Input Component ───────────────────────────────────────────────────
 
@@ -312,9 +311,7 @@ function PastDayView({ pastDay, onOpenMenu }: { pastDay: DayState; onOpenMenu?: 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
-        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-        </Pressable>
+        <HomeBackButton />
       </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -447,9 +444,7 @@ function EmptyReflectView({ onOpenMenu }: { onOpenMenu?: () => void }) {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
-        <Pressable onPress={onOpenMenu} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-          <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-        </Pressable>
+        <HomeBackButton />
       </View>
       <AssistantHero
         kicker="Reflect"
@@ -475,7 +470,6 @@ export default function ReflectScreen() {
   const { showAlert } = useAlert();
   const ff = useFontFamily();
 
-  const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   // Local editable state for the active day
   const [journal, setJournal] = useState(day?.journalEntry ?? '');
@@ -522,15 +516,13 @@ export default function ReflectScreen() {
     if (pastDay) {
       return (
         <>
-          <PastDayView pastDay={pastDay} onOpenMenu={() => setShowNavDrawer(true)} />
-          <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+          <PastDayView pastDay={pastDay} onOpenMenu={() => {}} />
         </>
       );
     }
     return (
       <>
-        <EmptyReflectView onOpenMenu={() => setShowNavDrawer(true)} />
-        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
+        <EmptyReflectView onOpenMenu={() => {}} />
       </>
     );
   }
@@ -551,9 +543,7 @@ export default function ReflectScreen() {
     >
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.headerBar}>
-          <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
-            <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-          </Pressable>
+          <HomeBackButton />
         </View>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -679,7 +669,6 @@ export default function ReflectScreen() {
           <View style={{ height: insets.bottom + Spacing.xl }} />
         </ScrollView>
 
-        <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     </KeyboardAvoidingView>
   );

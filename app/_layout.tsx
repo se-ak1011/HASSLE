@@ -58,6 +58,8 @@ export default function RootLayout() {
                     <Stack.Screen name="report" />
                     <Stack.Screen name="quiet-time" />
                     <Stack.Screen name="life" />
+                    <Stack.Screen name="body" />
+                    <Stack.Screen name="ai-coach" />
                   </Stack>
                 </AccountProvider>
               </PlusProvider>

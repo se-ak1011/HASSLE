@@ -1,42 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   Pressable,
   Switch,
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Image,
-  Modal,
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
 import { useRegion } from '@/localization/RegionContext';
-import { EnergyBar } from '@/components/ui/EnergyBar';
-import { TaskCard } from '@/components/ui/TaskCard';
 import { AddTaskModal } from '@/components/ui/AddTaskModal';
-import { MoveTaskModal } from '@/components/ui/MoveTaskModal';
-import { formatShortDate } from '@/services/dates';
-import { CompletionModal } from '@/components/ui/CompletionModal';
-import { Task, CompletionFeeling, EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
+import { EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constants/types';
 import { Companion } from '@/constants/companion';
-import { AssistantHero } from '@/components/ui/AssistantHero';
-import { SectionBlock } from '@/components/ui/SectionBlock';
 import { IntentSheet } from '@/components/ui/IntentSheet';
-import { CommandSheet } from '@/components/ui/CommandSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
-
-const LOLA_TAP_HINT_KEY = 'hassle_lola_tap_hint_seen';
+import { LolaMenu } from '@/components/ui/LolaMenu';
 
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
@@ -428,19 +415,12 @@ function CheckInView() {
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ body?: string }>();
   const { showAlert } = useAlert();
   const ff = useFontFamily();
   const {
     day,
     prefs,
-    energyUsed,
     energyRemaining,
-    completeTask,
-    moveTask,
-    unmoveTask,
-    scheduledTasks,
-    removeScheduled,
     toggleFlare,
     endDay,
   } = useDay();
@@ -448,94 +428,7 @@ export default function TodayScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
-  const [showCommandSheet, setShowCommandSheet] = useState(false);
-  const [showPlanSheet, setShowPlanSheet] = useState(false);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
-  const [movingTask, setMovingTask] = useState<Task | null>(null);
-  const [pendingCompletion, setPendingCompletion] = useState<Task | null>(null);
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const hintOpacity = useRef(new Animated.Value(0)).current;
-  const [showLolaHint, setShowLolaHint] = useState(false);
-
-  useEffect(() => {
-    if (!feedbackMsg) return;
-    Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(2400),
-      Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-    ]).start(() => setFeedbackMsg(null));
-  }, [feedbackMsg, fadeAnim]);
-
-  useEffect(() => {
-    let mounted = true;
-    AsyncStorage.getItem(LOLA_TAP_HINT_KEY).then((seen) => {
-      if (mounted && seen !== 'true') setShowLolaHint(true);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!showLolaHint) {
-      pulseAnim.stopAnimation();
-      hintOpacity.stopAnimation();
-      pulseAnim.setValue(1);
-      hintOpacity.setValue(0);
-      return;
-    }
-
-    Animated.timing(hintOpacity, {
-      toValue: 1,
-      duration: 700,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start();
-
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.025,
-          duration: 1600,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1600,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.delay(900),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [hintOpacity, pulseAnim, showLolaHint]);
-
-  function handleLolaPress() {
-    if (showLolaHint) {
-      setShowLolaHint(false);
-      AsyncStorage.setItem(LOLA_TAP_HINT_KEY, 'true');
-    }
-    setShowCommandSheet(true);
-  }
-
-  const lolaHint = showLolaHint ? (
-    <Animated.View style={[styles.tapHint, { opacity: hintOpacity }]}>
-      <Text style={[styles.tapHintText, { fontFamily: ff.semibold }]}>Tap Lola</Text>
-    </Animated.View>
-  ) : null;
-
-  const lolaPulseStyle = showLolaHint ? { transform: [{ scale: pulseAnim }] } : undefined;
-
-  const hasBodyParam = params.body === '1';
-
-  useEffect(() => {
-    if (hasBodyParam) setShowPlanSheet(true);
-  }, [hasBodyParam]);
 
   if (!day || !day.checkedIn) {
     if (showCheckIn) {
@@ -569,15 +462,18 @@ export default function TodayScreen() {
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}
           showsVerticalScrollIndicator={false}
         >
-          <AssistantHero
-            kicker=""
-            title="Morning."
-            subtitle="What would help today?"
-            lola={Companion.Home}
-            lolaSize="xlarge"
-            lolaHint={lolaHint}
-            lolaAnimatedStyle={lolaPulseStyle}
-            onLolaPress={handleLolaPress}
+          <View style={styles.homeIntro}>
+            <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>Morning.</Text>
+            <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>Choose where Lola can help.</Text>
+          </View>
+          <LolaMenu
+            companion={Companion.Home}
+            chips={[
+              { key: 'body', label: 'Body', position: 'upperLeft', onPress: () => router.push('/body' as any) },
+              { key: 'mind', label: 'Mind', position: 'upperRight', onPress: () => router.push('/reflect' as any) },
+              { key: 'life', label: 'Life', position: 'lowerLeft', onPress: () => router.push('/life' as any) },
+              { key: 'quiet', label: 'Quiet Time', position: 'lowerRight', onPress: () => router.push('/quiet-time' as any), highlighted: true },
+            ]}
           />
         </ScrollView>
 
@@ -587,61 +483,22 @@ export default function TodayScreen() {
           handlers={{ openFlareWorkflow: () => setShowCheckIn(true) }}
         />
 
-        <CommandSheet
-          visible={showCommandSheet}
-          onClose={() => setShowCommandSheet(false)}
-          handlers={{
-            openBody: () => setShowCheckIn(true),
-            openPlanToday: () => setShowCheckIn(true),
-            openSomethingHappened: () => setShowIntentSheet(true),
-          }}
-        />
 
         <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
       </View>
     );
   }
 
-  const pending = day.tasks.filter((t) => t.status === 'pending');
-  const completed = day.tasks.filter((t) => t.status === 'completed');
-  const moved = day.tasks.filter((t) => t.status === 'moved');
-
-  // "Coming up" = tasks rescheduled to a future date that aren't already shown
-  // in today's "Moved ahead" list (those were moved today and have undo there).
-  const movedIds = new Set(moved.map((t) => t.id));
-  const upcoming = scheduledTasks
-    .filter((s) => !movedIds.has(s.task.id))
-    .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 
   const isLowEnergy = energyRemaining <= 20;
   let heroImage = Companion.Home;
   let heroSentence = 'What would help today?';
-  let heroKicker = '';
-
   if (day.isFlareDay) {
     heroImage = Companion.Flare;
     heroSentence = 'Protect your energy today.';
   } else if (isLowEnergy) {
     heroImage = Companion.Flare;
     heroSentence = "Let's make today smaller.";
-  }
-
-  function handleCompletePress(task: Task) {
-    setPendingCompletion(task);
-  }
-
-  function handleFeelingSelected(feeling: CompletionFeeling, feedback: string) {
-    if (!pendingCompletion) return;
-    completeTask(pendingCompletion.id, feeling);
-    setPendingCompletion(null);
-    fadeAnim.setValue(0);
-    setFeedbackMsg(feedback);
-  }
-
-  function handleDismissCompletion() {
-    if (!pendingCompletion) return;
-    completeTask(pendingCompletion.id, 'right');
-    setPendingCompletion(null);
   }
 
   async function handleEndDay() {
@@ -661,22 +518,6 @@ export default function TodayScreen() {
     );
   }
 
-  const tagColors: Record<string, string> = {
-    pain: Colors.flare,
-    fatigue: Colors.accent,
-    'brain fog': Colors.textSubtle,
-    overstimulated: Colors.accent,
-    anxious: Colors.accent,
-    rested: Colors.success,
-    nauseous: Colors.textMuted,
-    'low mood': Colors.textSubtle,
-    'decent day': Colors.success,
-  };
-
-  function openPlanToday() {
-    setShowPlanSheet(true);
-  }
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
@@ -692,248 +533,32 @@ export default function TodayScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Ambient assistant hero — Today, together */}
-        <AssistantHero
-          kicker={heroKicker}
-          title={prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
-          subtitle={heroSentence}
-          lola={heroImage}
-          lolaSize="xlarge"
-          lolaHint={lolaHint}
-          lolaAnimatedStyle={lolaPulseStyle}
-          onLolaPress={handleLolaPress}
+        <View style={styles.homeIntro}>
+          <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>
+            {prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
+          </Text>
+          <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>{heroSentence}</Text>
+        </View>
+        <LolaMenu
+          companion={heroImage}
+          chips={[
+            { key: 'body', label: 'Body', position: 'upperLeft', onPress: () => router.push('/body' as any) },
+            { key: 'mind', label: 'Mind', position: 'upperRight', onPress: () => router.push('/reflect' as any) },
+            { key: 'life', label: 'Life', position: 'lowerLeft', onPress: () => router.push('/life' as any) },
+            { key: 'quiet', label: 'Quiet Time', position: 'lowerRight', onPress: () => router.push('/quiet-time' as any), highlighted: true },
+          ]}
         />
 
-        {feedbackMsg ? (
-          <Animated.View style={[styles.feedbackRow, { opacity: fadeAnim }]}>
-            <Text style={[styles.feedbackText, { fontFamily: ff.regular }]}>{feedbackMsg}</Text>
-          </Animated.View>
-        ) : null}
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
 
-      <Modal
-        visible={showPlanSheet}
-        animationType="slide"
-        onRequestClose={() => setShowPlanSheet(false)}
-      >
-        <View style={[styles.root, { paddingTop: insets.top }]}>
-          <View style={styles.planHeader}>
-            <Text style={[styles.planTitle, { fontFamily: ff.bold }]}>Today&apos;s plan</Text>
-            <Pressable
-              onPress={() => setShowPlanSheet(false)}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Close today's plan"
-            >
-              <MaterialIcons name="close" size={22} color={Colors.textSubtle} />
-            </Pressable>
-          </View>
-
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <SectionBlock title="Today's Support" count={pending.length}>
-              {pending.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyIcon}>{completed.length > 0 ? '✨' : '🌱'}</Text>
-                  <Text style={[styles.emptyText, { fontFamily: ff.medium }]}>
-                    {completed.length > 0
-                      ? 'Nothing else needs your attention today.'
-                      : day.isFlareDay
-                      ? 'Take it easy today.'
-                      : 'Nothing on your list yet.'}
-                  </Text>
-                  <Text style={[styles.emptySubtext, { fontFamily: ff.regular }]}>
-                    {day.isFlareDay ? 'Let today stay light.' : 'Add only what would help.'}
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.taskList}>
-                  {pending.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      mode={day.energyMode}
-                      onComplete={() => handleCompletePress(task)}
-                      onMove={() => setMovingTask(task)}
-                    />
-                  ))}
-                </View>
-              )}
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.addTaskBtn,
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => setShowAddModal(true)}
-              >
-                <MaterialIcons name="add" size={20} color={Colors.primary} />
-                <Text style={[styles.addTaskText, { fontFamily: ff.medium }]}>Add something</Text>
-              </Pressable>
-            </SectionBlock>
-
-            {completed.length > 0 ? (
-              <SectionBlock title="Done today" count={completed.length}>
-                <View style={styles.taskList}>
-                  {completed.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      mode={day.energyMode}
-                      onComplete={() => {}}
-                      onMove={() => {}}
-                    />
-                  ))}
-                </View>
-              </SectionBlock>
-            ) : null}
-
-            {moved.length > 0 ? (
-              <SectionBlock title="Moved ahead" count={moved.length}>
-                <View style={styles.taskList}>
-                  {moved.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      mode={day.energyMode}
-                      onComplete={() => {}}
-                      onMove={() => {}}
-                      onRevert={() => unmoveTask(task.id)}
-                    />
-                  ))}
-                </View>
-              </SectionBlock>
-            ) : null}
-
-            {upcoming.length > 0 ? (
-              <SectionBlock title="Coming up" count={upcoming.length}>
-                <View style={styles.taskList}>
-                  {upcoming.map((s) => (
-                    <View key={s.task.id} style={styles.comingCard}>
-                      <View style={styles.comingInfo}>
-                        <Text style={[styles.comingName, { fontFamily: ff.medium }]}>{s.task.name}</Text>
-                        <View style={styles.comingDateRow}>
-                          <MaterialIcons name="event" size={13} color={Colors.accent} />
-                          <Text style={[styles.comingDate, { fontFamily: ff.regular }]}>
-                            {formatShortDate(s.scheduledFor)}
-                          </Text>
-                        </View>
-                      </View>
-                      <Pressable
-                        onPress={() => removeScheduled(s.task.id)}
-                        hitSlop={10}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Cancel scheduled "${s.task.name}"`}
-                      >
-                        <MaterialIcons name="close" size={18} color={Colors.textSubtle} />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              </SectionBlock>
-            ) : null}
-
-            {day.tags.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsScroll}>
-                <View style={styles.tagsRow}>
-                  {day.tags.map((tag) => (
-                    <View
-                      key={tag}
-                      style={[
-                        styles.tagPill,
-                        { borderColor: tagColors[tag] ?? Colors.border },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.tagPillText,
-                          { color: tagColors[tag] ?? Colors.textSubtle },
-                          { fontFamily: ff.medium },
-                        ]}
-                      >
-                        {tag}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            ) : null}
-
-            <View style={styles.section}>
-              <EnergyBar
-                mode={day.energyMode}
-                total={day.energyLevel}
-                used={energyUsed}
-                remaining={energyRemaining}
-                isFlare={day.isFlareDay}
-              />
-            </View>
-
-            <View style={[styles.section, styles.flareToggleCard]}>
-              <View style={styles.flareToggleLeft}>
-                <Text style={[styles.flareToggleTitle, { fontFamily: ff.medium }]}>Flare day</Text>
-                <Text style={[styles.flareToggleDesc, { fontFamily: ff.regular }]}>
-                  {day.isFlareDay
-                    ? 'All task costs are increased by 50%'
-                    : 'Toggle on to increase task costs by 50%'}
-                </Text>
-              </View>
-              <Switch
-                value={day.isFlareDay}
-                onValueChange={toggleFlare}
-                trackColor={{ false: Colors.border, true: Colors.flare }}
-                thumbColor={Colors.white}
-                accessibilityLabel="Flare day"
-              />
-            </View>
-
-            {day.isFlareDay ? (
-              <View style={styles.flareMsgSection}>
-                <Text style={[styles.flareMsg, { fontFamily: ff.regular }]}>
-                  That&apos;s enough for today.
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={styles.section}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.endDayBtn,
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={handleEndDay}
-              >
-                <MaterialIcons name="nights-stay" size={16} color={Colors.textSubtle} />
-                <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>Wrap up today</Text>
-              </Pressable>
-            </View>
-
-            <View style={{ height: insets.bottom + Spacing.xl }} />
-          </ScrollView>
-        </View>
-      </Modal>
 
       <AddTaskModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
       />
 
-      <CompletionModal
-        visible={pendingCompletion !== null}
-        taskName={pendingCompletion?.name ?? ''}
-        onSelect={handleFeelingSelected}
-        onDismiss={handleDismissCompletion}
-      />
-
-      <MoveTaskModal
-        visible={movingTask !== null}
-        taskName={movingTask?.name ?? ''}
-        onClose={() => setMovingTask(null)}
-        onPick={(date) => {
-          if (movingTask) moveTask(movingTask.id, date);
-          setMovingTask(null);
-        }}
-      />
 
       <IntentSheet
         visible={showIntentSheet}
@@ -950,14 +575,6 @@ export default function TodayScreen() {
         }}
       />
 
-      <CommandSheet
-        visible={showCommandSheet}
-        onClose={() => setShowCommandSheet(false)}
-        handlers={{
-          openPlanToday,
-          openSomethingHappened: () => setShowIntentSheet(true),
-        }}
-      />
 
       <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
@@ -1274,24 +891,25 @@ const checkInStyles = StyleSheet.create({
 // ─── Today Styles ─────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  tapHint: {
-    alignSelf: 'center',
-    marginBottom: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-  },
-  tapHintText: {
-    fontSize: FontSizes.xs,
-    color: Colors.textSecondary,
-    letterSpacing: 0.2,
-  },
   root: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  homeIntro: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  homeTitle: {
+    color: Colors.text,
+    fontSize: 44,
+    lineHeight: 50,
+    letterSpacing: -1.2,
+  },
+  homeSubtitle: {
+    color: Colors.textMuted,
+    fontSize: FontSizes.lg,
+    lineHeight: 28,
   },
   headerBar: {
     flexDirection: 'row',
