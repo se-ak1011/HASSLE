@@ -80,7 +80,7 @@ export const DIRECTORY_CONDITION_FILTERS = [
   'ME/CFS',
   'Long COVID',
   'POTS / dysautonomia',
-  'EDS / hypermobility',
+  'Ehlers-Danlos Syndrome / hypermobility',
   'chronic pain',
   'fibromyalgia',
   'migraine',

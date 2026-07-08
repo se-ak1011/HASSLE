@@ -34,6 +34,11 @@ export default function LifeScreen() {
           <Text style={[styles.subtitle, { fontFamily: ff.regular }]}>Doctor reports, directory seeds, and plain-language resources live here.</Text>
         </View>
 
+        <View style={styles.contextCard}>
+          <Text style={[styles.contextTitle, { fontFamily: ff.semibold }]}>Useful before choices</Text>
+          <Text style={[styles.contextText, { fontFamily: ff.regular }]}>Recent reports, saved resources, and reminders stay here so care admin feels less scattered. These day-to-day tools are free.</Text>
+        </View>
+
         <View style={styles.list}>
           {LIFE_ITEMS.map((item) => (
             <Pressable
@@ -69,6 +74,9 @@ const styles = StyleSheet.create({
   heroImg: { width: 160, height: 190 },
   title: { marginTop: Spacing.md, fontSize: FontSizes.xxl, color: Colors.text, textAlign: 'center' },
   subtitle: { marginTop: Spacing.sm, fontSize: FontSizes.base, lineHeight: 24, color: Colors.textSubtle, textAlign: 'center' },
+  contextCard: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.sm, gap: Spacing.sm },
+  contextTitle: { fontSize: FontSizes.base, color: Colors.text },
+  contextText: { fontSize: FontSizes.sm, lineHeight: 20, color: Colors.textMuted },
   list: { gap: Spacing.sm, marginTop: Spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   rowPressed: { opacity: 0.7 },

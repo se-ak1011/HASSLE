@@ -59,12 +59,12 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
   const progress = useRef(new Animated.Value(0)).current;
 
   const metrics = useMemo(() => {
-    const zoneWidth = Math.min(width - Spacing.lg * 2, size === 'home' ? 370 : 340);
-    const zoneHeight = size === 'home' ? 430 : 350;
-    const lolaWidth = size === 'home' ? 210 : 170;
-    const lolaHeight = size === 'home' ? 270 : 220;
-    const radiusX = Math.max(118, Math.min(zoneWidth / 2 - 58, size === 'home' ? 145 : 128));
-    const radiusY = size === 'home' ? 155 : 130;
+    const zoneWidth = Math.min(width - Spacing.lg * 2, size === 'home' ? 390 : 350);
+    const zoneHeight = size === 'home' ? 455 : 375;
+    const lolaWidth = size === 'home' ? 218 : 174;
+    const lolaHeight = size === 'home' ? 280 : 226;
+    const radiusX = Math.max(122, Math.min(zoneWidth / 2 - 64, size === 'home' ? 154 : 134));
+    const radiusY = size === 'home' ? 168 : 142;
     return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY };
   }, [size, width]);
 
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   chip: {
-    minWidth: 96,
-    maxWidth: 132,
+    minWidth: 92,
+    maxWidth: 128,
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
     backgroundColor: 'rgba(42, 45, 49, 0.88)',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 9,
     ...Shadow.soft,
   },
