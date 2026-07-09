@@ -11,7 +11,7 @@ export const Companion = {
   Home: require('@/assets/companion/wave.png'),
 
   /** App-level splash/onboarding visual. Swap when the character sheet asset lands; native splash config stays untouched. */
-  Splash: require('@/assets/companion/wave.png'),
+  Splash: require('@/assets/companion/lola-asleep.png'),
 
   /** First launch / onboarding welcome */
   FirstLaunch: require('@/assets/companion/wave.png'),

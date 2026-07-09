@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Text } from '@/components/ui/AppText';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
@@ -14,15 +13,11 @@ import { AssistantHero } from '@/components/ui/AssistantHero';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 export default function PlusScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
   const { isPlus } = usePlus();
   const [showPaywall, setShowPaywall] = useState(false);
 
-  function openFeature(path: string) {
-    router.push(path as any);
-  }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -66,8 +61,7 @@ export default function PlusScreen() {
           ['Weekly AI summaries', 'A gentle weekly recap of energy, symptoms, tasks, and reflections.'],
           ['Monthly health summaries', 'Longer-range health context for planning and appointments.'],
           ['Trend + correlation analysis', 'Symptom trends, possible correlations, and long-term charts.'],
-          ['Unlimited history + PDF exports', 'Keep more history and export polished summaries when needed.'],
-          ['Family profiles + shared care', 'Support households, carers, widgets, and advanced analytics over time.'],
+          ['Extended PDF exports', 'Export polished longer-term summaries when needed.'],
         ].map(([title, sub]) => (
           <View key={title} style={styles.card}>
             <Image source={Companion.Report} style={styles.thumb} resizeMode="contain" />
@@ -82,17 +76,9 @@ export default function PlusScreen() {
           </View>
         ))}
 
-        <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={() => openFeature('/report')}>
-          <Image source={Companion.Report} style={styles.thumb} resizeMode="contain" />
-          <View style={styles.cardText}>
-            <Text style={[styles.cardTitle, { fontFamily: ff.semibold }]}>Doctor Report</Text>
-            <Text style={[styles.cardSub, { fontFamily: ff.regular }]}>Free day-to-day coping export for appointments.</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={22} color={Colors.textSubtle} />
-        </Pressable>
 
         <Text style={[styles.footnote, { fontFamily: ff.regular }]}>
-          Body, Mind, Quiet Time, Life, Doctor Report, Directory, and Library stay free. Plus is for longer-term insight and helps fund development.
+          Body, Mind, Quiet Time, Life, Doctor Report, Directory, and Library stay free. Plus is only for longer-term insight and helps fund development.
         </Text>
       </ScrollView>
 

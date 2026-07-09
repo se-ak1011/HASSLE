@@ -22,22 +22,9 @@ interface Benefit {
 }
 
 const BENEFITS: Benefit[] = [
-  {
-    icon: 'description',
-    title: 'Doctor-visit reports',
-    desc: 'A clean, longer-range PDF of your energy, flares, symptoms and patterns to bring to appointments.',
-  },
-  {
-    icon: 'menu-book',
-    title: 'Invisible-illness library',
-    desc: 'Plain-language reading on chronic and neurodivergent conditions, each linked to the real study behind it.',
-  },
-  {
-    icon: 'place',
-    title: 'Specialist directory',
-    desc: 'Find clinicians who actually understand invisible illness.',
-    soon: true,
-  },
+  { icon: 'auto-graph', title: 'Weekly AI summaries', desc: 'Gentle weekly recaps of energy, symptoms, tasks, and reflections.' },
+  { icon: 'insights', title: 'Trend + correlation analysis', desc: 'Longer-range patterns and possible correlations for planning ahead.' },
+  { icon: 'picture-as-pdf', title: 'Extended PDF exports', desc: 'Polished longer-term summaries when you want extra appointment context.' },
 ];
 
 export function PaywallModal({ visible, onClose }: Props) {
