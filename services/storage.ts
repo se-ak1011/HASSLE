@@ -178,3 +178,25 @@ export async function clearAllData(): Promise<void> {
     // silent
   }
 }
+
+const GARDEN_STATE = 'hassle_garden_state_v1';
+const QUIET_TIME_STATE = 'hassle_quiet_time_state_v1';
+
+export async function loadJsonState<T>(key: 'garden' | 'quietTime', fallback: T): Promise<T> {
+  const storageKey = key === 'garden' ? GARDEN_STATE : QUIET_TIME_STATE;
+  try {
+    const raw = await AsyncStorage.getItem(storageKey);
+    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function saveJsonState<T>(key: 'garden' | 'quietTime', value: T): Promise<void> {
+  const storageKey = key === 'garden' ? GARDEN_STATE : QUIET_TIME_STATE;
+  try {
+    await AsyncStorage.setItem(storageKey, JSON.stringify(value));
+  } catch {
+    // silent
+  }
+}
