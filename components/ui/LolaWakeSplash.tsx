@@ -1,7 +1,7 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { Colors } from '@/constants/theme';
 
-const SLEEPING_LOLA = require('@/assets/companion/lola-asleep.png');
+const SLEEPING_LOLA = require('@/assets/companion/lola-asleep Background Removed.png');
 
 type LolaWakeSplashProps = { onDone: () => void };
 
