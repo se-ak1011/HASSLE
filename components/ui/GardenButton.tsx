@@ -6,7 +6,11 @@ import { Colors, Radius } from '@/constants/theme';
 export function GardenButton() {
   const router = useRouter();
   const pathname = usePathname();
+<<<<<<< HEAD
   if (pathname === '/garden' || pathname === '/onboarding') return null;
+=======
+  if (pathname === '/garden' || pathname === '/onboarding' || pathname === '/') return null;
+>>>>>>> origin/main
   return (
     <Pressable
       accessibilityRole="button"
