@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { Text } from '@/components/ui/AppText';
 import { Colors, FontSizes, Fonts, Spacing } from '@/constants/theme';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 type LolaPanelProps = {
   image: ImageSourcePropType;
@@ -14,19 +15,7 @@ type LolaPanelProps = {
 
 export function LolaPanel({ image, size = 'medium', alignment = 'center', title, subtitle, style }: LolaPanelProps) {
   const breath = useRef(new Animated.Value(0)).current;
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    AccessibilityInfo.isReduceMotionEnabled?.().then((enabled) => {
-      if (mounted) setReduceMotion(Boolean(enabled));
-    });
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', setReduceMotion);
-    return () => {
-      mounted = false;
-      sub?.remove?.();
-    };
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (reduceMotion) {
@@ -36,8 +25,8 @@ export function LolaPanel({ image, size = 'medium', alignment = 'center', title,
     }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breath, { toValue: 1, duration: 3600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(breath, { toValue: 0, duration: 3600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 1, duration: 3600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(breath, { toValue: 0, duration: 3600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
     loop.start();
