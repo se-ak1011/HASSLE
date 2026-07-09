@@ -11,6 +11,7 @@ import { billing } from '@/services/billing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RegionProvider } from '@/localization/RegionContext';
 import { LolaWakeSplash } from '@/components/ui/LolaWakeSplash';
+import { GardenButton } from '@/components/ui/GardenButton';
 
 // Keep the native splash up until we explicitly hide it, so we control when it
 // goes away (rather than racing the router). Paired with the unconditional
@@ -59,6 +60,7 @@ export default function RootLayout() {
                     <Stack.Screen name="directory" />
                     <Stack.Screen name="report" />
                     <Stack.Screen name="quiet-time" />
+                    <Stack.Screen name="garden" />
                     <Stack.Screen name="life" />
                     <Stack.Screen name="body" />
                     <Stack.Screen name="body-pain" />
@@ -68,6 +70,7 @@ export default function RootLayout() {
                     <Stack.Screen name="body-self-care" />
                     <Stack.Screen name="ai-coach" />
                   </Stack>
+                  <GardenButton />
                   {showLolaWakeSplash ? (
                     <LolaWakeSplash onDone={() => setShowLolaWakeSplash(false)} />
                   ) : null}
