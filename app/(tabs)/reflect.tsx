@@ -12,7 +12,6 @@ import { Text, TextInput } from '@/components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSizes, Fonts, Radius } from '@/constants/theme';
 import { useDay } from '@/hooks/useDay';
-import { useAlert } from '@/template';
 import { formatCost } from '@/services/formatCost';
 import { loadHistory } from '@/services/storage';
 import { useFontFamily } from '@/hooks/useFontFamily';
@@ -79,14 +78,14 @@ const promptStyles = StyleSheet.create({
   },
   input: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     fontSize: FontSizes.base,
     color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
-    minHeight: 80,
-    lineHeight: 22,
+    minHeight: 180,
+    lineHeight: 24,
   },
   readOnlyBox: {
     backgroundColor: Colors.surface,
@@ -468,7 +467,6 @@ function EmptyReflectView({ onOpenMenu }: { onOpenMenu?: () => void }) {
 export default function ReflectScreen() {
   const insets = useSafeAreaInsets();
   const { day, energyUsed, energyRemaining, saveJournal } = useDay();
-  const { showAlert } = useAlert();
   const ff = useFontFamily();
 
 
@@ -536,10 +534,14 @@ export default function ReflectScreen() {
   const activeDay = day;
   const completedTasks = activeDay.tasks.filter((t) => t.status === 'completed');
 
-  function handleSave() {
-    saveJournal(journal, { drained, helped, notDone, symptoms });
-    showAlert('Saved', 'Your reflection has been saved.');
-  }
+
+  useEffect(() => {
+    if (!day?.checkedIn) return;
+    const timeout = setTimeout(() => {
+      saveJournal(journal, { drained, helped, notDone, symptoms });
+    }, 450);
+    return () => clearTimeout(timeout);
+  }, [day?.checkedIn, drained, helped, journal, notDone, saveJournal, symptoms]);
 
   async function handleTellLola() {
     if (askingLola) return;
@@ -637,7 +639,7 @@ export default function ReflectScreen() {
               onChangeText={setJournal}
               multiline
               numberOfLines={6}
-              placeholder="Whatever comes to mind..."
+              placeholder="Write as much or as little as you like..."
               placeholderTextColor={Colors.textSubtle}
               textAlignVertical="top"
             />
@@ -708,17 +710,6 @@ export default function ReflectScreen() {
             {lolaReflection ? <Text style={[styles.lolaReflection, { fontFamily: ff.regular }]}>{lolaReflection}</Text> : null}
             {lolaError ? <Text style={[styles.lolaError, { fontFamily: ff.regular }]}>{lolaError}</Text> : null}
           </View>
-
-          {/* Save */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.saveBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={handleSave}
-          >
-            <Text style={[styles.saveBtnText, { fontFamily: ff.semibold }]}>Save, if you&apos;re ready</Text>
-          </Pressable>
 
           <View style={{ height: insets.bottom + Spacing.xl }} />
         </ScrollView>
@@ -934,13 +925,13 @@ const styles = StyleSheet.create({
   },
   journalInput: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     fontSize: FontSizes.base,
     color: Colors.text,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.border,
-    minHeight: 140,
+    minHeight: 190,
     lineHeight: 24,
   },
   journalReadOnly: {
@@ -961,18 +952,6 @@ const styles = StyleSheet.create({
   tellLolaBtnText: { color: Colors.background, fontSize: FontSizes.base },
   lolaReflection: { marginTop: Spacing.sm, color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 21, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md },
   lolaError: { marginTop: Spacing.sm, color: Colors.danger, fontSize: FontSizes.sm, lineHeight: 20 },
-  saveBtn: {
-    marginHorizontal: Spacing.lg,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  saveBtnText: {
-    fontSize: FontSizes.base,
-    fontWeight: Fonts.semibold,
-    color: Colors.background,
-  },
   emptyBox: {
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.xl,
