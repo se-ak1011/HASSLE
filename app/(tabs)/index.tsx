@@ -35,7 +35,10 @@ import { CompanionOrbit, CompanionOrbitChip } from '@/components/ui/CompanionOrb
 
 type HomeDailyCheckIn = {
   date: string;
-  battery: number;
+  energyMode: EnergyMode;
+  energyLevel: number;
+  /** Legacy battery value kept so older saved check-ins can still be read. */
+  battery?: number;
   affecting: string[];
   mustDo: string[];
 };
@@ -68,7 +71,12 @@ async function loadHomeDailyCheckIn(): Promise<HomeDailyCheckIn | null> {
     const raw = await AsyncStorage.getItem(HOME_CHECK_IN_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as HomeDailyCheckIn;
-    return parsed.date === localDateString() ? parsed : null;
+    if (parsed.date !== localDateString()) return null;
+    return {
+      ...parsed,
+      energyMode: parsed.energyMode ?? 'battery',
+      energyLevel: parsed.energyLevel ?? parsed.battery ?? 70,
+    };
   } catch {
     return null;
   }
@@ -89,24 +97,58 @@ function toggleSelection(value: string, selected: string[], setSelected: (next: 
 function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (checkIn: HomeDailyCheckIn) => void }) {
   const ff = useFontFamily();
   const [step, setStep] = useState(1);
-  const [battery, setBattery] = useState(70);
+  const [energyMode, setEnergyMode] = useState<EnergyMode>('battery');
+  const [energyLevel, setEnergyLevel] = useState(70);
+  const [showCustomSpoon, setShowCustomSpoon] = useState(false);
+  const [customSpoonInput, setCustomSpoonInput] = useState('');
   const [affecting, setAffecting] = useState<string[]>([]);
   const [mustDo, setMustDo] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) return;
     setStep(1);
-    setBattery(70);
+    setEnergyMode('battery');
+    setEnergyLevel(70);
+    setShowCustomSpoon(false);
+    setCustomSpoonInput('');
     setAffecting([]);
     setMustDo([]);
   }, [visible]);
+
+  function handleEnergyModeSelect(nextMode: EnergyMode) {
+    setEnergyMode(nextMode);
+    setShowCustomSpoon(false);
+    setCustomSpoonInput('');
+    setEnergyLevel(nextMode === 'battery' ? 70 : 6);
+  }
+
+  function handleCustomSpoonPress() {
+    setShowCustomSpoon(true);
+    setCustomSpoonInput(energyMode === 'spoon' && energyLevel > 12 ? String(energyLevel) : '');
+  }
+
+  function handleCustomSpoonChange(text: string) {
+    const digits = text.replace(/[^0-9]/g, '').slice(0, 2);
+    setCustomSpoonInput(digits);
+    const nextValue = parseInt(digits, 10);
+    if (!Number.isNaN(nextValue)) {
+      setEnergyLevel(nextValue);
+    }
+  }
 
   function handlePrimaryPress() {
     if (step < 3) {
       setStep((current) => current + 1);
       return;
     }
-    onSave({ date: localDateString(), battery, affecting, mustDo });
+    onSave({
+      date: localDateString(),
+      energyMode,
+      energyLevel,
+      battery: energyMode === 'battery' ? energyLevel : undefined,
+      affecting,
+      mustDo,
+    });
   }
 
   return (
@@ -117,18 +159,68 @@ function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (che
           {step === 1 ? (
             <View style={homeCheckInStyles.sectionBlock}>
               <Text style={[homeCheckInStyles.title, { fontFamily: ff.bold }]}>How are you feeling today?</Text>
-              <Text style={[homeCheckInStyles.batteryValue, { fontFamily: ff.bold }]}>{battery}%</Text>
-              <Slider
-                value={battery}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                minimumTrackTintColor={Colors.primary}
-                maximumTrackTintColor={Colors.border}
-                thumbTintColor={Colors.primary}
-                onValueChange={setBattery}
-                accessibilityLabel="Battery percentage"
-              />
+              <View style={homeCheckInStyles.energyModeRow}>
+                <Pressable
+                  style={[homeCheckInStyles.energyModeChip, energyMode === 'battery' && homeCheckInStyles.energyModeChipActive]}
+                  onPress={() => handleEnergyModeSelect('battery')}
+                  accessibilityRole="button"
+                >
+                  <Text style={[homeCheckInStyles.energyModeText, energyMode === 'battery' && homeCheckInStyles.energyModeTextActive, { fontFamily: ff.medium }]}>🔋 Battery</Text>
+                </Pressable>
+                <Pressable
+                  style={[homeCheckInStyles.energyModeChip, energyMode === 'spoon' && homeCheckInStyles.energyModeChipActive]}
+                  onPress={() => handleEnergyModeSelect('spoon')}
+                  accessibilityRole="button"
+                >
+                  <Text style={[homeCheckInStyles.energyModeText, energyMode === 'spoon' && homeCheckInStyles.energyModeTextActive, { fontFamily: ff.medium }]}>🥄 Spoons</Text>
+                </Pressable>
+              </View>
+              {energyMode === 'battery' ? (
+                <>
+                  <Text style={[homeCheckInStyles.batteryValue, { fontFamily: ff.bold }]}>{energyLevel}%</Text>
+                  <Slider
+                    value={energyLevel}
+                    minimumValue={0}
+                    maximumValue={100}
+                    step={1}
+                    minimumTrackTintColor={Colors.primary}
+                    maximumTrackTintColor={Colors.border}
+                    thumbTintColor={Colors.primary}
+                    onValueChange={setEnergyLevel}
+                    accessibilityLabel="Battery percentage"
+                  />
+                </>
+              ) : (
+                <>
+                  <Text style={[homeCheckInStyles.batteryValue, { fontFamily: ff.bold }]}>{energyLevel} spoon{energyLevel === 1 ? '' : 's'}</Text>
+                  <View style={homeCheckInStyles.spoonGrid}>
+                    {Array.from({ length: 13 }, (_, value) => (
+                      <Pressable
+                        key={value}
+                        style={[homeCheckInStyles.spoonChip, !showCustomSpoon && energyLevel === value && homeCheckInStyles.spoonChipActive]}
+                        onPress={() => { setEnergyLevel(value); setShowCustomSpoon(false); setCustomSpoonInput(''); }}
+                      >
+                        <Text style={[homeCheckInStyles.spoonChipText, !showCustomSpoon && energyLevel === value && homeCheckInStyles.spoonChipTextActive, { fontFamily: ff.medium }]}>{value}</Text>
+                      </Pressable>
+                    ))}
+                    <Pressable style={[homeCheckInStyles.spoonChip, showCustomSpoon && homeCheckInStyles.spoonChipActive]} onPress={handleCustomSpoonPress}>
+                      <Text style={[homeCheckInStyles.spoonChipText, showCustomSpoon && homeCheckInStyles.spoonChipTextActive, { fontFamily: ff.medium }]}>Custom</Text>
+                    </Pressable>
+                  </View>
+                  {showCustomSpoon ? (
+                    <TextInput
+                      style={[homeCheckInStyles.customSpoonInput, { fontFamily: ff.regular }]}
+                      value={customSpoonInput}
+                      onChangeText={handleCustomSpoonChange}
+                      placeholder="Custom spoons"
+                      placeholderTextColor={Colors.textSubtle}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      autoFocus
+                    />
+                  ) : null}
+                </>
+              )}
             </View>
           ) : null}
           {step === 2 ? (
@@ -177,8 +269,10 @@ function TodayCheckInCard({ checkIn }: { checkIn: HomeDailyCheckIn }) {
   return (
     <View style={homeCheckInStyles.cardWrap}>
       <View style={homeCheckInStyles.summaryCard}>
-        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>Battery</Text>
-        <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>{checkIn.battery}%</Text>
+        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{checkIn.energyMode === 'spoon' ? 'Spoons' : 'Battery'}</Text>
+        <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>
+          {checkIn.energyMode === 'spoon' ? `${checkIn.energyLevel} spoon${checkIn.energyLevel === 1 ? '' : 's'}` : `${checkIn.energyLevel ?? checkIn.battery ?? 0}%`}
+        </Text>
         <SummaryList title="Affecting today" items={checkIn.affecting} />
         <SummaryList title="Must do" items={checkIn.mustDo} />
       </View>
@@ -848,6 +942,66 @@ const homeCheckInStyles = StyleSheet.create({
     fontSize: 38,
     color: Colors.text,
     textAlign: 'center',
+  },
+  energyModeRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  energyModeChip: {
+    flex: 1,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.surface,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  energyModeChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryFaint,
+  },
+  energyModeText: {
+    color: Colors.textMuted,
+    fontSize: FontSizes.sm,
+  },
+  energyModeTextActive: {
+    color: Colors.text,
+  },
+  spoonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  spoonChip: {
+    minWidth: 44,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+  },
+  spoonChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryFaint,
+  },
+  spoonChipText: {
+    color: Colors.textMuted,
+    fontSize: FontSizes.sm,
+  },
+  spoonChipTextActive: {
+    color: Colors.text,
+  },
+  customSpoonInput: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    color: Colors.text,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    fontSize: FontSizes.base,
   },
   chipsWrap: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,7 @@ export default function GardenScreen() {
   const fade = useRef(new Animated.Value(0)).current;
   const dailySeed = useRef(todaySeed()).current;
   const { state, actions } = useGardenState();
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 350, useNativeDriver: true }).start();
@@ -41,24 +42,26 @@ export default function GardenScreen() {
         <Text style={[styles.title, { fontFamily: ff.bold }]}>Lola's Garden</Text>
         <View style={styles.headerSpacer} />
       </View>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}>
-        <Animated.View style={{ opacity: fade }}>
-          <GardenCanvas gardenState={state} />
+      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + Spacing.xl }]}>
+        <Animated.View style={[styles.canvasWrap, { opacity: fade }]}>
+          <GardenCanvas gardenState={state} setScrollEnabled={setScrollEnabled} />
         </Animated.View>
-        <GardenDebugPanel
-          state={state}
-          updateState={actions.updateGardenState}
-          toggleUnlock={assetId => {
-            const nextUnlocks = state.unlockedAssetIds.includes(assetId)
-              ? state.unlockedAssetIds.filter(id => id !== assetId)
-              : [...state.unlockedAssetIds, assetId];
-            actions.setGardenUnlocks(nextUnlocks);
-          }}
-          resetGardenState={() => {
-            actions.resetGardenUnlocks();
-            actions.updateGardenState({ recentActivity: null, season: 'spring', weather: 'clear', timeOfDay: 'day', dailyVisitorIds: [] });
-          }}
-        />
+        <View style={styles.debugWrap}>
+          <GardenDebugPanel
+            state={state}
+            updateState={actions.updateGardenState}
+            toggleUnlock={assetId => {
+              const nextUnlocks = state.unlockedAssetIds.includes(assetId)
+                ? state.unlockedAssetIds.filter(id => id !== assetId)
+                : [...state.unlockedAssetIds, assetId];
+              actions.setGardenUnlocks(nextUnlocks);
+            }}
+            resetGardenState={() => {
+              actions.resetGardenUnlocks();
+              actions.updateGardenState({ recentActivity: null, season: 'spring', weather: 'clear', timeOfDay: 'day', dailyVisitorIds: [] });
+            }}
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -70,5 +73,7 @@ const styles = StyleSheet.create({
   back: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   title: { color: Colors.text, fontSize: FontSizes.lg },
   headerSpacer: { width: 42 },
-  scroll: { padding: Spacing.lg, gap: Spacing.lg },
+  scroll: { paddingTop: Spacing.sm, paddingBottom: Spacing.lg, gap: Spacing.lg },
+  canvasWrap: { width: '100%', opacity: 1 },
+  debugWrap: { paddingHorizontal: Spacing.lg },
 });
