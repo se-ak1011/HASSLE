@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ImageSourcePropType,
+  Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Slider from '@react-native-community/slider';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,8 +27,199 @@ import { EnergyMode, DailyTag, BUILT_IN_TAGS, dedupeCustomTags } from '@/constan
 import { Companion } from '@/constants/companion';
 import { IntentSheet } from '@/components/ui/IntentSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
-import { CompanionOrbit } from '@/components/ui/CompanionOrbit';
+import { CompanionOrbit, CompanionOrbitChip } from '@/components/ui/CompanionOrbit';
 
+
+
+// ─── Lightweight Home Daily Check-In ─────────────────────────────────────────
+
+type HomeDailyCheckIn = {
+  date: string;
+  battery: number;
+  affecting: string[];
+  mustDo: string[];
+};
+
+const HOME_CHECK_IN_KEY = 'hassle_home_daily_checkin_v1';
+const AFFECTING_OPTIONS = ['Pain', 'Fatigue', 'Brain fog', 'Poor sleep', 'Heat', 'Cold', 'Stress', 'Anxiety', 'Flare', 'Illness', 'Low mood', 'Other'];
+const MUST_DO_OPTIONS = ['Medication', 'Eat', 'Drink water', 'Doctor', 'School run', 'Work', 'Shopping', 'Laundry', 'Exercise', 'Rest', 'Custom'];
+
+function localDateString(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function greetingForDate(date = new Date(), name?: string | null) {
+  const hour = date.getHours();
+  const greeting = hour >= 5 && hour < 12
+    ? 'Good morning'
+    : hour >= 12 && hour < 17
+    ? 'Good afternoon'
+    : hour >= 17 && hour < 21
+    ? 'Good evening'
+    : 'Good night';
+  return name ? `${greeting}, ${name}.` : `${greeting}.`;
+}
+
+async function loadHomeDailyCheckIn(): Promise<HomeDailyCheckIn | null> {
+  try {
+    const raw = await AsyncStorage.getItem(HOME_CHECK_IN_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as HomeDailyCheckIn;
+    return parsed.date === localDateString() ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveHomeDailyCheckIn(checkIn: HomeDailyCheckIn) {
+  try {
+    await AsyncStorage.setItem(HOME_CHECK_IN_KEY, JSON.stringify(checkIn));
+  } catch {
+    // silent local persistence failure
+  }
+}
+
+function toggleSelection(value: string, selected: string[], setSelected: (next: string[]) => void) {
+  setSelected(selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value]);
+}
+
+function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (checkIn: HomeDailyCheckIn) => void }) {
+  const ff = useFontFamily();
+  const [step, setStep] = useState(1);
+  const [battery, setBattery] = useState(70);
+  const [affecting, setAffecting] = useState<string[]>([]);
+  const [mustDo, setMustDo] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!visible) return;
+    setStep(1);
+    setBattery(70);
+    setAffecting([]);
+    setMustDo([]);
+  }, [visible]);
+
+  function handlePrimaryPress() {
+    if (step < 3) {
+      setStep((current) => current + 1);
+      return;
+    }
+    onSave({ date: localDateString(), battery, affecting, mustDo });
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => {}}>
+      <View style={homeCheckInStyles.backdrop}>
+        <View style={homeCheckInStyles.sheet}>
+          <Text style={[homeCheckInStyles.stepLabel, { fontFamily: ff.medium }]}>Daily check-in · {step}/3</Text>
+          {step === 1 ? (
+            <View style={homeCheckInStyles.sectionBlock}>
+              <Text style={[homeCheckInStyles.title, { fontFamily: ff.bold }]}>How are you feeling today?</Text>
+              <Text style={[homeCheckInStyles.batteryValue, { fontFamily: ff.bold }]}>{battery}%</Text>
+              <Slider
+                value={battery}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                minimumTrackTintColor={Colors.primary}
+                maximumTrackTintColor={Colors.border}
+                thumbTintColor={Colors.primary}
+                onValueChange={setBattery}
+                accessibilityLabel="Battery percentage"
+              />
+            </View>
+          ) : null}
+          {step === 2 ? (
+            <View style={homeCheckInStyles.sectionBlock}>
+              <Text style={[homeCheckInStyles.title, { fontFamily: ff.bold }]}>What's affecting today?</Text>
+              <View style={homeCheckInStyles.chipsWrap}>
+                {AFFECTING_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[homeCheckInStyles.chip, affecting.includes(option) && homeCheckInStyles.chipActive]}
+                    onPress={() => toggleSelection(option, affecting, setAffecting)}
+                  >
+                    <Text style={[homeCheckInStyles.chipText, affecting.includes(option) && homeCheckInStyles.chipTextActive, { fontFamily: ff.medium }]}>{option}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {step === 3 ? (
+            <View style={homeCheckInStyles.sectionBlock}>
+              <Text style={[homeCheckInStyles.title, { fontFamily: ff.bold }]}>What absolutely needs doing today?</Text>
+              <View style={homeCheckInStyles.chipsWrap}>
+                {MUST_DO_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[homeCheckInStyles.chip, mustDo.includes(option) && homeCheckInStyles.chipActive]}
+                    onPress={() => toggleSelection(option, mustDo, setMustDo)}
+                  >
+                    <Text style={[homeCheckInStyles.chipText, mustDo.includes(option) && homeCheckInStyles.chipTextActive, { fontFamily: ff.medium }]}>{option}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          <Pressable style={homeCheckInStyles.primaryButton} onPress={handlePrimaryPress}>
+            <Text style={[homeCheckInStyles.primaryButtonText, { fontFamily: ff.semibold }]}>{step === 3 ? 'Start today' : 'Next'}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function TodayCheckInCard({ checkIn }: { checkIn: HomeDailyCheckIn }) {
+  const ff = useFontFamily();
+  return (
+    <View style={homeCheckInStyles.cardWrap}>
+      <View style={homeCheckInStyles.summaryCard}>
+        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>Battery</Text>
+        <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>{checkIn.battery}%</Text>
+        <SummaryList title="Affecting today" items={checkIn.affecting} />
+        <SummaryList title="Must do" items={checkIn.mustDo} />
+      </View>
+    </View>
+  );
+}
+
+function SummaryList({ title, items }: { title: string; items: string[] }) {
+  const ff = useFontFamily();
+  return (
+    <View style={homeCheckInStyles.summarySection}>
+      <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{title}</Text>
+      {items.length > 0 ? items.map((item) => (
+        <Text key={item} style={[homeCheckInStyles.summaryItem, { fontFamily: ff.regular }]}>• {item}</Text>
+      )) : (
+        <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>• Nothing added</Text>
+      )}
+    </View>
+  );
+}
+
+function HomeCompanionWithDailyCheckIn({ companion, chips, checkIn, onNeedCheckIn }: {
+  companion: ImageSourcePropType;
+  chips: CompanionOrbitChip[];
+  checkIn: HomeDailyCheckIn | null;
+  onNeedCheckIn: () => void;
+}) {
+  return (
+    <View style={homeCheckInStyles.orbitWrap}>
+      <CompanionOrbit companion={companion} chips={chips} />
+      {!checkIn ? (
+        <Pressable
+          style={homeCheckInStyles.lolaTapCatcher}
+          onPress={onNeedCheckIn}
+          accessibilityRole="button"
+          accessibilityLabel="Start daily check-in"
+        />
+      ) : null}
+    </View>
+  );
+}
 
 // ─── Check-In (inline, shown when no active day exists) ───────────────────────
 
@@ -427,8 +622,34 @@ export default function TodayScreen() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showHomeCheckIn, setShowHomeCheckIn] = useState(false);
+  const [homeCheckIn, setHomeCheckIn] = useState<HomeDailyCheckIn | null>(null);
   const [showIntentSheet, setShowIntentSheet] = useState(false);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    loadHomeDailyCheckIn().then((saved) => {
+      if (mounted) setHomeCheckIn(saved);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleSaveHomeCheckIn(checkIn: HomeDailyCheckIn) {
+    setHomeCheckIn(checkIn);
+    await saveHomeDailyCheckIn(checkIn);
+    setShowHomeCheckIn(false);
+  }
+
+  const homeChips = [
+    { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
+    { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
+    { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
+    { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
+  ];
+  const todaysHomeCheckIn = homeCheckIn?.date === localDateString() ? homeCheckIn : null;
 
   if (!day || !day.checkedIn) {
     if (showCheckIn) {
@@ -463,19 +684,19 @@ export default function TodayScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.homeIntro}>
-            <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>Morning.</Text>
+            <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>{greetingForDate(new Date(), prefs?.name)}</Text>
             <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>Tap Lola when you need something.</Text>
           </View>
-          <CompanionOrbit
+          <HomeCompanionWithDailyCheckIn
             companion={Companion.Home}
-            chips={[
-              { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
-              { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
-              { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
-              { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
-            ]}
+            chips={homeChips}
+            checkIn={todaysHomeCheckIn}
+            onNeedCheckIn={() => setShowHomeCheckIn(true)}
           />
+          {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} /> : null}
         </ScrollView>
+
+        <DailyCheckInModal visible={showHomeCheckIn} onSave={handleSaveHomeCheckIn} />
 
         <IntentSheet
           visible={showIntentSheet}
@@ -535,24 +756,23 @@ export default function TodayScreen() {
         {/* Ambient assistant hero — Today, together */}
         <View style={styles.homeIntro}>
           <Text style={[styles.homeTitle, { fontFamily: ff.bold }]}>
-            {prefs?.name ? `Morning, ${prefs.name}.` : 'Morning.'}
+            {greetingForDate(new Date(), prefs?.name)}
           </Text>
           <Text style={[styles.homeSubtitle, { fontFamily: ff.regular }]}>{heroSentence}</Text>
         </View>
-        <CompanionOrbit
+        <HomeCompanionWithDailyCheckIn
           companion={heroImage}
-          chips={[
-            { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
-            { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
-            { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
-            { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
-          ]}
+          chips={homeChips}
+          checkIn={todaysHomeCheckIn}
+          onNeedCheckIn={() => setShowHomeCheckIn(true)}
         />
-
+        {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} /> : null}
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
 
+
+      <DailyCheckInModal visible={showHomeCheckIn} onSave={handleSaveHomeCheckIn} />
 
       <AddTaskModal
         visible={showAddModal}
@@ -580,6 +800,125 @@ export default function TodayScreen() {
     </View>
   );
 }
+
+
+const homeCheckInStyles = StyleSheet.create({
+  orbitWrap: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  lolaTapCatcher: {
+    position: 'absolute',
+    width: 230,
+    height: 300,
+    top: 78,
+    alignSelf: 'center',
+    zIndex: 10,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(21, 24, 22, 0.34)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    gap: Spacing.md,
+  },
+  stepLabel: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  sectionBlock: {
+    gap: Spacing.md,
+  },
+  title: {
+    fontSize: FontSizes.lg,
+    color: Colors.text,
+    lineHeight: 26,
+  },
+  batteryValue: {
+    fontSize: 38,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.surface,
+  },
+  chipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryFaint,
+  },
+  chipText: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+  },
+  chipTextActive: {
+    color: Colors.text,
+  },
+  primaryButton: {
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: Colors.background,
+    fontSize: FontSizes.base,
+  },
+  cardWrap: {
+    paddingHorizontal: Spacing.lg,
+    marginTop: -Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  summaryCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  summaryLabel: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+  },
+  summaryBattery: {
+    fontSize: FontSizes.xl,
+    color: Colors.text,
+  },
+  summarySection: {
+    gap: 3,
+  },
+  summaryItem: {
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    lineHeight: 20,
+  },
+  summaryEmpty: {
+    fontSize: FontSizes.sm,
+    color: Colors.textSubtle,
+    lineHeight: 20,
+  },
+});
 
 // ─── Check-In Styles ──────────────────────────────────────────────────────────
 
