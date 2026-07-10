@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Circle, ClipPath, Defs, G, Image as SvgImage, Line, Path, Rect } from 'react-native-svg';
+import Svg, { ClipPath, Defs, Image as SvgImage, Path, Rect } from 'react-native-svg';
 import { Text } from '@/components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -12,13 +12,21 @@ import { loadJsonState, saveJsonState } from '@/services/storage';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 
 type Mode = 'colouring' | 'mahjong' | 'jigsaw';
-type Stroke = { color: string; width: number; points: { x: number; y: number }[] };
+type Stroke = { color: string; width: number; points: { x: number; y: number }[]; eraser?: boolean };
 type MahjongTile = { id: string; symbol: string; x: number; y: number; z: number; removed?: boolean };
 type JigsawPiece = { id: number; correctX: number; correctY: number; x: number; y: number; placed: boolean };
-type QuietState = { strokes: Stroke[]; colouringPage: string; mahjongTiles: MahjongTile[]; puzzlePieces: JigsawPiece[]; ghost: boolean; puzzleSize: 12 | 24; activeCompanion: string };
-const DEFAULT_STATE: QuietState = { strokes: [], colouringPage: 'bloom', mahjongTiles: [], puzzlePieces: [], ghost: true, puzzleSize: 12, activeCompanion: companionAssets[0].key };
+type QuietState = { strokes: Stroke[]; strokesByPage?: Record<string, Stroke[]>; colouringPage: string; mahjongTiles: MahjongTile[]; puzzlePieces: JigsawPiece[]; ghost: boolean; puzzleSize: 12 | 24; activeCompanion: string };
+const DEFAULT_STATE: QuietState = { strokes: [], colouringPage: 'colouring_1', mahjongTiles: [], puzzlePieces: [], ghost: true, puzzleSize: 12, activeCompanion: companionAssets[0].key };
 const PALETTE = ['#A06B63', '#78836F', '#6F8295', '#BFA98A', '#7A7A9E', '#5C8C7A', '#E8C982', '#F3F1ED'];
 const BOARD = 320;
+const COLOURING_TEMPLATES = [
+  { key: 'colouring_1', title: 'Floral Skull', source: require('../assets/colouring/colouring_1.png') },
+  { key: 'colouring_2', title: 'Music Skull', source: require('../assets/colouring/colouring_2.png') },
+  { key: 'colouring_3', title: 'Catrina Roses', source: require('../assets/colouring/colouring_3.png') },
+  { key: 'colouring_4', title: 'Sugar Skull', source: require('../assets/colouring/colouring_4.png') },
+  { key: 'colouring_5', title: 'Catrina Portrait', source: require('../assets/colouring/colouring_5.png') },
+];
+
 
 const MAHJONG_ASSETS = {
   alarm_clock: require('../assets/mahjong/alarm_clock.png'),
@@ -116,21 +124,139 @@ function smoothPath(points: { x: number; y: number }[]) {
   const last = points[points.length - 1];
   return `${d} L${last.x} ${last.y}`;
 }
-function mandala(page: string) {
-  const petals = page === 'lotus' ? 16 : 12;
-  return <G stroke="#303236" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
-    <Circle cx="160" cy="160" r="124" /><Circle cx="160" cy="160" r="86" /><Circle cx="160" cy="160" r="38" />
-    {Array.from({ length: petals }).map((_, i) => { const a = (Math.PI * 2 * i) / petals; const x = 160 + Math.cos(a) * 62; const y = 160 + Math.sin(a) * 62; const x2 = 160 + Math.cos(a) * 112; const y2 = 160 + Math.sin(a) * 112; return <G key={i}><Path d={`M160 160 Q${x} ${y} ${x2} ${y2} Q${x} ${y} 160 160`} /><Line x1="160" y1="160" x2={x2} y2={y2} /></G>; })}
-    {Array.from({ length: petals }).map((_, i) => { const a = (Math.PI * 2 * (i + 0.5)) / petals; const x = 160 + Math.cos(a) * 96; const y = 160 + Math.sin(a) * 96; return <Circle key={`c-${i}`} cx={x} cy={y} r={page === 'sun' ? 14 : 9} />; })}
-  </G>;
+const PAPER_COLOR = '#F6F1E8';
+const MIN_CANVAS_SCALE = 0.8;
+const MAX_CANVAS_SCALE = 4;
+
+function clamp(value: number, min: number, max: number) { return Math.max(min, Math.min(max, value)); }
+function distance(a: { x: number; y: number }, b: { x: number; y: number }) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function midpoint(a: { x: number; y: number }, b: { x: number; y: number }) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function touchPoint(touch: any, fallback: any) { return { x: touch?.locationX ?? fallback.locationX ?? 0, y: touch?.locationY ?? fallback.locationY ?? 0 }; }
+function clampOffset(offset: { x: number; y: number }, scale: number) {
+  const slack = BOARD * scale * 0.45;
+  return { x: clamp(offset.x, -slack, slack), y: clamp(offset.y, -slack, slack) };
 }
+function interpolatePoints(from: { x: number; y: number }, to: { x: number; y: number }) {
+  const gap = distance(from, to);
+  const steps = Math.max(1, Math.ceil(gap / 2.2));
+  return Array.from({ length: steps }, (_, i) => ({ x: from.x + ((to.x - from.x) * (i + 1)) / steps, y: from.y + ((to.y - from.y) * (i + 1)) / steps }));
+}
+
 function Colouring({ state, setPatch, ff }: any) {
-  const [color, setColor] = useState(PALETTE[0]); const [scale, setScale] = useState(1); const [offset, setOffset] = useState({ x: 0, y: 0 }); const mode = useRef<'draw' | 'pan'>('draw'); const start = useRef({ x: 0, y: 0 }); const base = useRef(offset); const pinch = useRef(0); const activeStroke = useRef<Stroke | null>(null);
-  const toPage = (x: number, y: number) => ({ x: Math.max(0, Math.min(BOARD, (x - offset.x) / scale)), y: Math.max(0, Math.min(BOARD, (y - offset.y) / scale)) });
-  const pushPoint = (p: { x: number; y: number }) => { const last = activeStroke.current?.points[activeStroke.current.points.length - 1]; if (last && Math.hypot(p.x - last.x, p.y - last.y) < 1.6) return; const stroke = activeStroke.current ? { ...activeStroke.current, points: [...activeStroke.current.points, p] } : { color, width: 7, points: [p] }; activeStroke.current = stroke; setPatch({ strokes: [...state.strokes.slice(0, -1), stroke] }); };
-  const pan = useMemo(() => PanResponder.create({ onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true, onPanResponderGrant: e => { const touches = e.nativeEvent.touches ?? []; mode.current = touches.length > 1 ? 'pan' : 'draw'; start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY }; base.current = offset; if (touches.length > 1) pinch.current = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY); if (mode.current === 'draw') { const stroke = { color, width: 7, points: [toPage(e.nativeEvent.locationX, e.nativeEvent.locationY)] }; activeStroke.current = stroke; setPatch({ strokes: [...state.strokes, stroke] }); } }, onPanResponderMove: e => { const touches = e.nativeEvent.touches ?? []; if (touches.length > 1 || mode.current === 'pan') { mode.current = 'pan'; setOffset({ x: base.current.x + e.nativeEvent.pageX - start.current.x, y: base.current.y + e.nativeEvent.pageY - start.current.y }); if (touches.length > 1 && pinch.current) { const dist = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY); setScale(Math.max(0.75, Math.min(3, scale * (dist / pinch.current)))); } return; } pushPoint(toPage(e.nativeEvent.locationX, e.nativeEvent.locationY)); }, onPanResponderRelease: () => { activeStroke.current = null; } }), [color, offset, scale, state.strokes]);
-  const pages = [['bloom', 'Bloom mandala'], ['lotus', 'Lotus mandala'], ['sun', 'Sun mandala']];
-  return <><Text style={[styles.detailTitle, { fontFamily: ff.bold }]}>Colouring</Text><Text style={styles.help}>Draw with one finger. Use two fingers to pan or pinch without interrupting the brush.</Text><View style={styles.row}>{pages.map(([key, label]) => <Button key={key} label={label} active={(state.colouringPage ?? 'bloom') === key} onPress={() => setPatch({ colouringPage: key, strokes: [] })} />)}</View><View style={styles.palette}>{PALETTE.map(c => <Pressable key={c} onPress={() => setColor(c)} style={[styles.swatch, { backgroundColor: c }, color === c && styles.activeSwatch]} />)}</View><View style={styles.canvas} {...pan.panHandlers}><View style={{ transform: [{ translateX: offset.x }, { translateY: offset.y }, { scale }] }}><Svg width={BOARD} height={BOARD} viewBox={`0 0 ${BOARD} ${BOARD}`}><Rect x="0" y="0" width={BOARD} height={BOARD} fill="#F6F1E8" />{mandala(state.colouringPage ?? 'bloom')}{state.strokes.map((s: Stroke, i: number) => <Path key={i} d={smoothPath(s.points)} fill="none" stroke={s.color} strokeWidth={s.width} strokeLinecap="round" strokeLinejoin="round" />)}</Svg></View></View><View style={styles.row}><Button label="Undo stroke" onPress={() => setPatch({ strokes: state.strokes.slice(0, -1) })} /><Button label="Clear page" onPress={() => setPatch({ strokes: [] })} /></View></>;
+  const [color, setColor] = useState(PALETTE[0]);
+  const [brushSize, setBrushSize] = useState(9);
+  const [eraser, setEraser] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [redoByPage, setRedoByPage] = useState<Record<string, Stroke[]>>({});
+  const mode = useRef<'idle' | 'draw' | 'pan'>('idle');
+  const start = useRef({ x: 0, y: 0 });
+  const base = useRef(offset);
+  const pinch = useRef({ distance: 0, scale: 1, offset: { x: 0, y: 0 }, focal: { x: 0, y: 0 }, content: { x: 0, y: 0 } });
+  const activeStroke = useRef<Stroke | null>(null);
+  const activeStrokes = useRef<Stroke[]>([]);
+  const selectedTemplate = COLOURING_TEMPLATES.find(page => page.key === state.colouringPage) ?? COLOURING_TEMPLATES[0];
+  const pageKey = selectedTemplate.key;
+  const pageStrokes: Stroke[] = state.strokesByPage?.[pageKey] ?? (state.colouringPage === pageKey ? state.strokes : []);
+
+  useEffect(() => { activeStrokes.current = pageStrokes; }, [pageKey, pageStrokes]);
+
+  function commitStrokes(next: Stroke[]) {
+    activeStrokes.current = next;
+    setPatch({ strokes: next, strokesByPage: { ...(state.strokesByPage ?? {}), [pageKey]: next } });
+  }
+
+  function toPage(x: number, y: number) {
+    return { x: clamp((x - offset.x) / scale, 0, BOARD), y: clamp((y - offset.y) / scale, 0, BOARD) };
+  }
+
+  function beginStroke(point: { x: number; y: number }) {
+    const stroke: Stroke = { color: eraser ? PAPER_COLOR : color, width: eraser ? brushSize * 1.6 : brushSize, points: [point], eraser };
+    activeStroke.current = stroke;
+    commitStrokes([...activeStrokes.current, stroke]);
+    setRedoByPage(prev => ({ ...prev, [pageKey]: [] }));
+  }
+
+  function pushPoint(point: { x: number; y: number }) {
+    const current = activeStroke.current;
+    if (!current) return;
+    const last = current.points[current.points.length - 1];
+    if (last && distance(last, point) < 0.8) return;
+    const additions = last ? interpolatePoints(last, point) : [point];
+    const stroke = { ...current, points: [...current.points, ...additions] };
+    activeStroke.current = stroke;
+    const next = [...activeStrokes.current.slice(0, -1), stroke];
+    commitStrokes(next);
+  }
+
+  function handleUndo() {
+    if (!pageStrokes.length) return;
+    const removed = pageStrokes[pageStrokes.length - 1];
+    commitStrokes(pageStrokes.slice(0, -1));
+    setRedoByPage(prev => ({ ...prev, [pageKey]: [...(prev[pageKey] ?? []), removed] }));
+  }
+
+  function handleRedo() {
+    const redo = redoByPage[pageKey] ?? [];
+    if (!redo.length) return;
+    const restored = redo[redo.length - 1];
+    commitStrokes([...pageStrokes, restored]);
+    setRedoByPage(prev => ({ ...prev, [pageKey]: redo.slice(0, -1) }));
+  }
+
+  function clearPage() {
+    commitStrokes([]);
+    setRedoByPage(prev => ({ ...prev, [pageKey]: [] }));
+  }
+
+  function resetView() {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+  }
+
+  const pan = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: e => {
+      const touches = e.nativeEvent.touches ?? [];
+      if (touches.length > 1) {
+        mode.current = 'pan';
+        const a = touchPoint(touches[0], e.nativeEvent);
+        const b = touchPoint(touches[1], e.nativeEvent);
+        const focal = midpoint(a, b);
+        start.current = focal;
+        base.current = offset;
+        pinch.current = { distance: Math.max(1, distance(a, b)), scale, offset, focal, content: toPage(focal.x, focal.y) };
+        return;
+      }
+      mode.current = 'draw';
+      beginStroke(toPage(e.nativeEvent.locationX, e.nativeEvent.locationY));
+    },
+    onPanResponderMove: e => {
+      const touches = e.nativeEvent.touches ?? [];
+      if (mode.current === 'draw') {
+        if (touches.length > 1) return;
+        pushPoint(toPage(e.nativeEvent.locationX, e.nativeEvent.locationY));
+        return;
+      }
+      if (mode.current === 'pan' && touches.length > 1) {
+        const a = touchPoint(touches[0], e.nativeEvent);
+        const b = touchPoint(touches[1], e.nativeEvent);
+        const focal = midpoint(a, b);
+        const nextScale = clamp(pinch.current.scale * (distance(a, b) / pinch.current.distance), MIN_CANVAS_SCALE, MAX_CANVAS_SCALE);
+        const nextOffset = clampOffset({ x: focal.x - pinch.current.content.x * nextScale, y: focal.y - pinch.current.content.y * nextScale }, nextScale);
+        setScale(nextScale);
+        setOffset(nextOffset);
+      }
+    },
+    onPanResponderRelease: () => { activeStroke.current = null; mode.current = 'idle'; },
+    onPanResponderTerminate: () => { activeStroke.current = null; mode.current = 'idle'; },
+  }), [brushSize, color, eraser, offset, pageKey, pageStrokes, redoByPage, scale, state.strokesByPage]);
+
+  return <><Text style={[styles.detailTitle, { fontFamily: ff.bold }]}>Colouring</Text><Text style={styles.help}>Draw with one finger or stylus. Use two fingers to pan or pinch without interrupting the brush.</Text><View style={styles.templateGrid}>{COLOURING_TEMPLATES.map(page => <Pressable key={page.key} accessibilityRole="button" accessibilityLabel={page.title} style={[styles.templateCard, selectedTemplate.key === page.key && styles.templateCardActive]} onPress={() => { setPatch({ colouringPage: page.key }); resetView(); }}><Image source={page.source} style={styles.templatePreview} resizeMode="contain" /><Text style={styles.templateLabel}>{page.title}</Text></Pressable>)}</View><View style={styles.palette}>{PALETTE.map(c => <Pressable key={c} onPress={() => { setColor(c); setEraser(false); }} style={[styles.swatch, { backgroundColor: c }, !eraser && color === c && styles.activeSwatch]} />)}</View><View style={styles.row}>{[5, 9, 14, 20].map(size => <Button key={size} label={`${size}px`} active={brushSize === size} onPress={() => setBrushSize(size)} />)}<Button label={eraser ? 'Eraser on' : 'Eraser'} active={eraser} onPress={() => setEraser(!eraser)} /><Button label="Reset View" onPress={resetView} /></View><View style={styles.canvas} {...pan.panHandlers}><View style={{ transform: [{ translateX: offset.x }, { translateY: offset.y }, { scale }] }}><Svg width={BOARD} height={BOARD} viewBox={`0 0 ${BOARD} ${BOARD}`}><Rect x="0" y="0" width={BOARD} height={BOARD} fill={PAPER_COLOR} /><SvgImage href={selectedTemplate.source} x="0" y="0" width={BOARD} height={BOARD} preserveAspectRatio="xMidYMid meet" opacity={0.16} />{pageStrokes.map((s: Stroke, i: number) => <Path key={i} d={smoothPath(s.points)} fill="none" stroke={s.color} strokeWidth={s.width} strokeLinecap="round" strokeLinejoin="round" opacity={s.eraser ? 1 : 0.82} />)}<SvgImage href={selectedTemplate.source} x="0" y="0" width={BOARD} height={BOARD} preserveAspectRatio="xMidYMid meet" opacity={0.38} /></Svg></View></View><View style={styles.row}><Button label="Undo" onPress={handleUndo} /><Button label="Redo" onPress={handleRedo} /><Button label="Clear page" onPress={clearPage} /></View></>;
 }
 function Mahjong({ state, setPatch, ff }: any) {
   const [picked, setPicked] = useState<string | null>(null); const [hint, setHint] = useState<string[]>([]); const tiles: MahjongTile[] = state.mahjongTiles?.length ? state.mahjongTiles : makeMahjongBoard(); const active = tiles.filter(t => !t.removed); const won = active.length === 0;
@@ -153,4 +279,4 @@ function jigsawPath(w: number, h: number, col: number, row: number, cols: number
 }
 function PuzzlePiece({ piece, asset, cols, rows, w, h, drag, onDragStart, onDragEnd }: any) { const [pos, setPos] = useState({ x: piece.x, y: piece.y }); const start = useRef({ x: piece.x, y: piece.y, px: 0, py: 0 }); useEffect(() => setPos({ x: piece.x, y: piece.y }), [piece.x, piece.y]); const pan = useMemo(() => PanResponder.create({ onStartShouldSetPanResponder: () => !piece.placed, onMoveShouldSetPanResponder: () => !piece.placed, onPanResponderGrant: e => { start.current = { x: pos.x, y: pos.y, px: e.nativeEvent.pageX, py: e.nativeEvent.pageY }; onDragStart(); }, onPanResponderMove: e => setPos({ x: start.current.x + e.nativeEvent.pageX - start.current.px, y: start.current.y + e.nativeEvent.pageY - start.current.py }), onPanResponderRelease: e => onDragEnd(start.current.x + e.nativeEvent.pageX - start.current.px, start.current.y + e.nativeEvent.pageY - start.current.py) }), [piece.placed, pos]); const col = piece.id % cols; const row = Math.floor(piece.id / cols); const path = jigsawPath(w, h, col, row, cols, rows); return <Animated.View {...pan.panHandlers} style={[styles.puzzlePiece, { width: w + 18, height: h + 18, left: pos.x - 9, top: pos.y - 9, zIndex: drag ? 20 : piece.placed ? 1 : 5, transform: [{ scale: drag ? 1.03 : 1 }] }, piece.placed && styles.placed]}><Svg width={w + 18} height={h + 18} viewBox={`-9 -9 ${w + 18} ${h + 18}`}><Defs><ClipPath id={`clip-${piece.id}`}><Path d={path} /></ClipPath></Defs><SvgImage href={asset} width={BOARD} height={BOARD} x={-col * w} y={-row * h} preserveAspectRatio="xMidYMid slice" clipPath={`url(#clip-${piece.id})`} /><Path d={path} fill="none" stroke={piece.placed ? Colors.primaryLight : Colors.borderLight} strokeWidth="2" /></Svg></Animated.View>; }
 function Button({ label, onPress, active }: { label: string; onPress: () => void; active?: boolean }) { return <Pressable onPress={onPress} style={[styles.smallButton, active && styles.smallButtonActive]}><Text style={styles.smallButtonText}>{label}</Text></Pressable>; }
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm }, scroll: { padding: Spacing.lg, gap: Spacing.md }, title: { color: Colors.text, fontSize: FontSizes.xxl }, subtitle: { color: Colors.textMuted, fontSize: FontSizes.base, lineHeight: 26 }, lolaBlock: { alignItems: 'center', gap: Spacing.sm, marginVertical: Spacing.md }, lola: { width: 92, height: 112 }, caption: { color: Colors.textSubtle, textAlign: 'center' }, card: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md }, icon: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primaryFaint, alignItems: 'center', justifyContent: 'center' }, cardTitle: { color: Colors.text, fontSize: FontSizes.md }, cardText: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 21 }, detail: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 80 }, done: { alignSelf: 'flex-start', padding: Spacing.sm }, doneText: { color: Colors.primaryLight, fontSize: FontSizes.base }, detailTitle: { color: Colors.text, fontSize: FontSizes.xl }, help: { color: Colors.textMuted, lineHeight: 22 }, palette: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: Colors.borderLight }, activeSwatch: { borderWidth: 3, borderColor: Colors.white }, canvas: { width: BOARD, height: BOARD, alignSelf: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, smallButton: { borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.borderLight, paddingHorizontal: 14, paddingVertical: 9 }, smallButtonActive: { backgroundColor: Colors.primaryFaint, borderColor: Colors.primaryLight }, smallButtonText: { color: Colors.textSecondary }, mahjongBoard: { height: 292, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, position: 'relative' }, mahjongTile: { position: 'absolute', width: 38, height: 52, borderRadius: 10, backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3, alignItems: 'center', justifyContent: 'center' }, blocked: { opacity: 0.38, backgroundColor: Colors.surface }, picked: { borderColor: Colors.primaryLight, backgroundColor: Colors.primaryFaint, transform: [{ translateY: -3 }, { scale: 1.04 }] }, hint: { borderColor: '#E8C982', borderWidth: 3 }, removed: { opacity: 0 }, mahjongIcon: { width: '72%', height: '72%' }, puzzleArea: { width: BOARD, minHeight: 560, alignSelf: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', position: 'relative' }, ghost: { position: 'absolute', width: BOARD, height: BOARD, opacity: 0.18, left: 0, top: 0 }, puzzlePiece: { position: 'absolute', overflow: 'hidden', borderWidth: 1, borderColor: Colors.borderLight, backgroundColor: Colors.surfaceElevated }, placed: { borderColor: Colors.primaryLight } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm }, scroll: { padding: Spacing.lg, gap: Spacing.md }, title: { color: Colors.text, fontSize: FontSizes.xxl }, subtitle: { color: Colors.textMuted, fontSize: FontSizes.base, lineHeight: 26 }, lolaBlock: { alignItems: 'center', gap: Spacing.sm, marginVertical: Spacing.md }, lola: { width: 92, height: 112 }, caption: { color: Colors.textSubtle, textAlign: 'center' }, card: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md }, icon: { width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.primaryFaint, alignItems: 'center', justifyContent: 'center' }, cardTitle: { color: Colors.text, fontSize: FontSizes.md }, cardText: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 21 }, detail: { padding: Spacing.lg, gap: Spacing.md, paddingBottom: 80 }, done: { alignSelf: 'flex-start', padding: Spacing.sm }, doneText: { color: Colors.primaryLight, fontSize: FontSizes.base }, detailTitle: { color: Colors.text, fontSize: FontSizes.xl }, help: { color: Colors.textMuted, lineHeight: 22 }, palette: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: Colors.borderLight }, activeSwatch: { borderWidth: 3, borderColor: Colors.white }, canvas: { width: BOARD, height: BOARD, alignSelf: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, templateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }, templateCard: { width: '31%', minWidth: 92, backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.borderLight, padding: Spacing.xs, alignItems: 'center', gap: 4 }, templateCardActive: { borderColor: Colors.primaryLight, backgroundColor: Colors.primaryFaint }, templatePreview: { width: '100%', height: 84 }, templateLabel: { color: Colors.textSecondary, fontSize: FontSizes.xs, textAlign: 'center' }, smallButton: { borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.borderLight, paddingHorizontal: 14, paddingVertical: 9 }, smallButtonActive: { backgroundColor: Colors.primaryFaint, borderColor: Colors.primaryLight }, smallButtonText: { color: Colors.textSecondary }, mahjongBoard: { height: 292, backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, position: 'relative' }, mahjongTile: { position: 'absolute', width: 38, height: 52, borderRadius: 10, backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.borderLight, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3, alignItems: 'center', justifyContent: 'center' }, blocked: { opacity: 0.38, backgroundColor: Colors.surface }, picked: { borderColor: Colors.primaryLight, backgroundColor: Colors.primaryFaint, transform: [{ translateY: -3 }, { scale: 1.04 }] }, hint: { borderColor: '#E8C982', borderWidth: 3 }, removed: { opacity: 0 }, mahjongIcon: { width: '72%', height: '72%' }, puzzleArea: { width: BOARD, minHeight: 560, alignSelf: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', position: 'relative' }, ghost: { position: 'absolute', width: BOARD, height: BOARD, opacity: 0.18, left: 0, top: 0 }, puzzlePiece: { position: 'absolute', overflow: 'hidden', borderWidth: 1, borderColor: Colors.borderLight, backgroundColor: Colors.surfaceElevated }, placed: { borderColor: Colors.primaryLight } });
