@@ -22,5 +22,5 @@ export const colouringPages = [
 export const mahjongTileSet = {
   key: 'soft-symbols',
   title: 'Soft symbols',
-  symbols: ['leaf', 'moon', 'cup', 'book', 'star', 'stone', 'rain', 'flower'],
+  symbols: ['leaf', 'moon', 'cup', 'book', 'sun', 'pebble', 'rain_cloud', 'flower'],
 };
