@@ -17,7 +17,7 @@ type MahjongTile = { id: string; symbol: string; x: number; y: number; z: number
 type JigsawPiece = { id: number; correctX: number; correctY: number; x: number; y: number; placed: boolean };
 type QuietState = { strokes: Stroke[]; strokesByPage?: Record<string, Stroke[]>; colouringPage: string; mahjongTiles: MahjongTile[]; puzzlePieces: JigsawPiece[]; ghost: boolean; puzzleSize: 12 | 24; activeCompanion: string };
 const DEFAULT_STATE: QuietState = { strokes: [], colouringPage: 'colouring_1', mahjongTiles: [], puzzlePieces: [], ghost: true, puzzleSize: 12, activeCompanion: companionAssets[0].key };
-const PALETTE = ['#A06B63', '#78836F', '#6F8295', '#BFA98A', '#7A7A9E', '#5C8C7A', '#E8C982', '#F3F1ED'];
+const PALETTE = ['#A06B63', '#998C99', '#B5ADB5', '#BFA98A', '#7A7A9E', '#5C8C7A', '#E8C982', '#F3F1ED'];
 const BOARD = 320;
 const COLOURING_TEMPLATES = [
   { key: 'colouring_1', title: 'Floral Skull', source: require('../assets/colouring/colouring_1.png') },

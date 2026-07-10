@@ -1,6 +1,6 @@
 // Hassle — Design System
 // Warm charcoal palette. A therapist's office. Soft lighting. Safety. Calm. Rest.
-// Sage accent — distinct from Alchono's purple-led identity.
+// Mauve accent — #998C99, matching the main character's identity.
 
 export const Colors = {
   background: '#151517',
@@ -8,12 +8,12 @@ export const Colors = {
   surfaceElevated: '#2A2D31',
   surfaceDark: '#111213',
 
-  primary: '#78836F',       // muted sage
-  primaryLight: '#909A87',  // light sage
-  primaryFaint: '#1E2220',  // dark sage-tinted
+  primary: '#998C99',       // muted mauve — main character accent
+  primaryLight: '#B5ADB5',  // light mauve
+  primaryFaint: '#1E1C1E',  // dark mauve-tinted
 
-  accent: '#6F8295',        // muted slate blue
-  accentFaint: '#1C2229',   // dark slate-tinted
+  accent: '#998C99',        // muted mauve (unified accent)
+  accentFaint: '#1E1C1E',   // dark mauve-tinted
 
   flare: '#A06B63',         // muted terracotta (flare state)
   flareFaint: '#271A18',    // dark terracotta-tinted
