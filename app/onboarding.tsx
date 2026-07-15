@@ -154,7 +154,7 @@ export default function OnboardingScreen() {
       mergeProfileDetails(details);
     } catch {
       mergeProfileDetails(null);
-      setOrganiseMessage('Lola saved what you said, but couldn’t organise it just now. You can still edit anything.');
+      setOrganiseMessage('Lola saved what you said, but couldn’t organize it just now. You can still edit anything.');
     } finally {
       setOrganising(false);
       setReviewing(true);
@@ -314,7 +314,7 @@ export default function OnboardingScreen() {
           <Image source={Companion.FirstLaunch} style={styles.waveLola} resizeMode="contain" />
         </View>
         <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Tell Lola about yourself.</Text>
-        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Talk first. Lola will quietly organise what she can.</Text>
+        <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Talk first. Lola will quietly organize what she can.</Text>
 
         <Pressable style={styles.micButton} onPress={() => setShowTyping(true)} accessibilityRole="button" accessibilityLabel="Tell Lola by voice">
           <MaterialIcons name="mic" size={46} color={Colors.text} />
@@ -346,9 +346,9 @@ export default function OnboardingScreen() {
         )}
 
         <Pressable style={[styles.primaryBtn, (transcript.trim().length === 0 || organising) && styles.primaryBtnDisabled]} onPress={beginReview} disabled={transcript.trim().length === 0 || organising}>
-          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>{organising ? 'Lola is organising...' : 'Let Lola organise this'}</Text>
+          <Text style={[styles.primaryBtnText, { fontFamily: ff.semibold }]}>{organising ? 'Lola is organizing...' : 'Let Lola organize this'}</Text>
         </Pressable>
-        <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>Lola uses the secure Supabase AI function to organise your transcript. If that is unavailable, your transcript stays local and editable.</Text>
+        <Text style={[styles.futureNoteText, { fontFamily: ff.regular }]}>Lola uses the secure Supabase AI function to organize your transcript. If that is unavailable, your transcript stays local and editable.</Text>
       </ScrollView>
     </View>
   );

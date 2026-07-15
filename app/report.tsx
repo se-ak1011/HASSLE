@@ -118,7 +118,7 @@ export default function ReportScreen() {
             <Text style={[styles.stateBody, { fontFamily: ff.regular }]}>
               {daysFound === 0
                 ? 'Keep using Hassle naturally — I\'ll be quietly paying attention. Your appointment summary will be ready in a few days.'
-                : `I've started recognising patterns from your ${daysFound} ${daysFound === 1 ? 'day' : 'days'} so far. Keep using Hassle naturally — your appointment summary will be ready soon.`}
+                : `I've started recognizing patterns from your ${daysFound} ${daysFound === 1 ? 'day' : 'days'} so far. Keep using Hassle naturally — your appointment summary will be ready soon.`}
             </Text>
             <View style={styles.progressRow}>
               <View style={styles.progressBar}>

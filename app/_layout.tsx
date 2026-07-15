@@ -61,6 +61,8 @@ export default function RootLayout() {
                     <Stack.Screen name="quiet-time" />
                     <Stack.Screen name="garden" />
                     <Stack.Screen name="life" />
+                    <Stack.Screen name="mind" />
+                    <Stack.Screen name="journal" />
                     <Stack.Screen name="body" />
                     <Stack.Screen name="body-pain" />
                     <Stack.Screen name="body-fatigue" />

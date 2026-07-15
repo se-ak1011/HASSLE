@@ -25,7 +25,7 @@ type NavItem = {
 const MAIN_ITEMS: NavItem[] = [
   { label: 'Home',        icon: 'home',           route: '/(tabs)' },
   { label: 'Body',        icon: 'accessibility-new', route: '/body' },
-  { label: 'Mind',        icon: 'edit-note',      route: '/reflect' },
+  { label: 'Mind',        icon: 'psychology',     route: '/mind' },
   { label: 'Life',        icon: 'folder-special', route: '/life' },
   { label: 'Quiet Time',  icon: 'spa',            route: '/quiet-time' },
 ];

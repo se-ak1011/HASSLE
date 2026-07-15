@@ -746,7 +746,7 @@ export default function TodayScreen() {
 
   const homeChips = [
     { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
-    { key: 'mind', label: 'Mind', onPress: () => router.push('/reflect' as any) },
+    { key: 'mind', label: 'Mind', onPress: () => router.push('/mind' as any) },
     { key: 'life', label: 'Life', onPress: () => router.push('/life' as any) },
     { key: 'quiet', label: 'Quiet Time', onPress: () => router.push('/quiet-time' as any), highlighted: true },
   ];

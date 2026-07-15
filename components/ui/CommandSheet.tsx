@@ -37,7 +37,7 @@ export function CommandSheet({ visible, onClose, handlers = {}, context }: Comma
     }
     if (key === 'mind') {
       if (handlers.openSomethingHappened) handlers.openSomethingHappened();
-      else router.push('/reflect' as any);
+      else router.push('/mind' as any);
       return;
     }
     if (key === 'life') {
