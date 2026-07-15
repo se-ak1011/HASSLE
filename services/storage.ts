@@ -158,24 +158,34 @@ export async function loadHistory(): Promise<DayState[]> {
  */
 export async function clearAllData(): Promise<void> {
   try {
-    // Clear history, prefs, and any scheduled (moved) tasks
-    await AsyncStorage.multiRemove([KEYS.HISTORY, KEYS.PREFERENCES, KEYS.SCHEDULED]);
-    // Clear today's active day key
-    await AsyncStorage.removeItem(todayKey());
-    // Also sweep any day keys from the last 90 days to be thorough
-    const keysToRemove: string[] = [];
-    const today = new Date();
-    for (let i = 0; i <= 90; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      keysToRemove.push(`${KEYS.DAY_PREFIX}${yyyy}-${mm}-${dd}`);
-    }
-    await AsyncStorage.multiRemove(keysToRemove);
+    // Sweep EVERY Hassle key so a reset is truly a fresh start — not just the
+    // day/history/prefs, but the home check-in, garden (+ overrides), quiet-time,
+    // body drafts, letters, looking-forward, region and plus flags too. Anything
+    // left behind (e.g. a completed check-in) would strand the user after they
+    // restart onboarding.
+    const allKeys = await AsyncStorage.getAllKeys();
+    const hassleKeys = allKeys.filter(k => k.startsWith('hassle_'));
+    if (hassleKeys.length) await AsyncStorage.multiRemove(hassleKeys);
   } catch {
-    // silent
+    // Fallback: remove the keys we know about explicitly.
+    try {
+      await AsyncStorage.multiRemove([
+        KEYS.HISTORY,
+        KEYS.PREFERENCES,
+        KEYS.SCHEDULED,
+        'hassle_home_daily_checkin_v1',
+        'hassle_garden_state_v1',
+        'hassle_garden_overrides_v1',
+        'hassle_quiet_time_state_v1',
+        'hassle_body_drafts_v1',
+        'hassle_future_letters_v1',
+        'hassle_looking_forward_v1',
+        'hassle_journal_entries_v1',
+      ]);
+      await AsyncStorage.removeItem(todayKey());
+    } catch {
+      // silent
+    }
   }
 }
 

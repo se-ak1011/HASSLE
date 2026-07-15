@@ -827,6 +827,29 @@ export default function TodayScreen() {
     });
   }
 
+  // End the day on demand — days already roll over with the clock, but this lets
+  // you start fresh whenever you like (e.g. a reset at 6:30pm). Clears today's
+  // check-in, wraps up any active day, and reopens the check-in.
+  function handleRestartDay() {
+    showAlert(
+      'End today and check in again?',
+      "Today's check-in will be cleared so you can start the day fresh. Your saved history isn't affected.",
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'End the day',
+          style: 'default',
+          onPress: async () => {
+            await AsyncStorage.removeItem(HOME_CHECK_IN_KEY);
+            setHomeCheckIn(null);
+            if (day && day.checkedIn) await endDay();
+            setShowHomeCheckIn(true);
+          },
+        },
+      ]
+    );
+  }
+
   const homeChips = [
     { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
     { key: 'mind', label: 'Mind', onPress: () => router.push('/mind' as any) },
@@ -871,7 +894,22 @@ export default function TodayScreen() {
             checkIn={todaysHomeCheckIn}
             onNeedCheckIn={() => setShowHomeCheckIn(true)}
           />
-          {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} /> : null}
+          {todaysHomeCheckIn ? (
+            <>
+              <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} />
+              <View style={styles.endDayWrap}>
+                <Pressable
+                  onPress={handleRestartDay}
+                  style={({ pressed }) => [styles.endDayBtn, pressed && { opacity: 0.7 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="End the day and check in again"
+                >
+                  <MaterialIcons name="restart-alt" size={18} color={Colors.textSubtle} />
+                  <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>End the day</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : null}
         </ScrollView>
 
         <DailyCheckInModal visible={showHomeCheckIn} onSave={handleSaveHomeCheckIn} />
@@ -941,7 +979,22 @@ export default function TodayScreen() {
           checkIn={todaysHomeCheckIn}
           onNeedCheckIn={() => setShowHomeCheckIn(true)}
         />
-        {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} /> : null}
+        {todaysHomeCheckIn ? (
+          <>
+            <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} />
+            <View style={styles.endDayWrap}>
+              <Pressable
+                onPress={handleRestartDay}
+                style={({ pressed }) => [styles.endDayBtn, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel="End the day and check in again"
+              >
+                <MaterialIcons name="restart-alt" size={18} color={Colors.textSubtle} />
+                <Text style={[styles.endDayText, { fontFamily: ff.medium }]}>End the day</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : null}
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
@@ -1767,6 +1820,11 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: Fonts.medium,
     color: Colors.primary,
+  },
+  endDayWrap: {
+    paddingHorizontal: Spacing.lg,
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   endDayBtn: {
     flexDirection: 'row',
