@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { Colors, FontSizes, Radius, Spacing } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useVoiceDictation } from '@/hooks/useVoiceDictation';
 import { tellLolaAboutBody, type BodyLolaCategory } from '@/services/aiLola';
+import type { BodyDraft } from '@/services/bodyDrafts';
 
 // The logging surface for one Body category — chips + "Tell Lola" — with no
 // header, title, or Lola image of its own. Rendered inline under the Body
@@ -18,6 +19,10 @@ type BodyLogPanelProps = {
   secondaryTitle?: string;
   secondaryChips?: string[];
   textPlaceholder?: string;
+  // Remembered selections for this category. When provided, the panel starts
+  // from them and reports every change back so the parent can autosave.
+  initialDraft?: BodyDraft;
+  onChangeDraft?: (draft: BodyDraft) => void;
 };
 
 type BodyAiResult = { summary?: string; structured?: unknown; originalTranscript?: string };
@@ -41,12 +46,25 @@ export function BodyLogPanel({
   secondaryTitle,
   secondaryChips = [],
   textPlaceholder = 'Tell Lola in your own words...',
+  initialDraft,
+  onChangeDraft,
 }: BodyLogPanelProps) {
   const ff = useFontFamily();
-  const [selectedPrimary, setSelectedPrimary] = useState<string[]>([]);
-  const [selectedSecondary, setSelectedSecondary] = useState<string[]>([]);
-  const [transcript, setTranscript] = useState('');
+  const [selectedPrimary, setSelectedPrimary] = useState<string[]>(initialDraft?.primary ?? []);
+  const [selectedSecondary, setSelectedSecondary] = useState<string[]>(initialDraft?.secondary ?? []);
+  const [transcript, setTranscript] = useState(initialDraft?.transcript ?? '');
   const [voiceRequested, setVoiceRequested] = useState(false);
+
+  // Autosave: report selections up whenever they change. Skips the very first
+  // render so we don't immediately echo the initial draft back.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!hydrated.current) {
+      hydrated.current = true;
+      return;
+    }
+    onChangeDraft?.({ primary: selectedPrimary, secondary: selectedSecondary, transcript });
+  }, [selectedPrimary, selectedSecondary, transcript, onChangeDraft]);
   const [loading, setLoading] = useState(false);
   const [lolaNote, setLolaNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

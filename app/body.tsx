@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -18,6 +18,7 @@ import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { BodyLogPanel } from '@/components/ui/BodyLogPanel';
 import { PulseRing } from '@/components/ui/PulseRing';
 import { BODY_CATEGORIES } from '@/constants/bodyCategories';
+import { BodyDraft, BodyDrafts, loadBodyDrafts, saveBodyDrafts } from '@/services/bodyDrafts';
 
 // Body is a single screen: a horizontal carousel of Lola poses (one active at a
 // time). Swiping or tapping a tab changes the active Lola, and that category's
@@ -31,6 +32,29 @@ export default function BodyScreen() {
   const carousel = useRef<FlatList>(null);
 
   const active = BODY_CATEGORIES[index];
+
+  // Remembered chips + note per category. Loaded once, autosaved on every change
+  // (so swiping, tapping a tab, or leaving all keep what you'd picked).
+  const [drafts, setDrafts] = useState<BodyDrafts>({});
+  const [draftsLoaded, setDraftsLoaded] = useState(false);
+  const activeIdRef = useRef(active.id);
+  activeIdRef.current = active.id;
+
+  useEffect(() => {
+    loadBodyDrafts().then(d => {
+      setDrafts(d);
+      setDraftsLoaded(true);
+    });
+  }, []);
+
+  const handleDraftChange = useCallback((draft: BodyDraft) => {
+    const cat = activeIdRef.current;
+    setDrafts(prev => {
+      const next = { ...prev, [cat]: draft };
+      saveBodyDrafts(next);
+      return next;
+    });
+  }, []);
 
   const goTo = useCallback(
     (next: number) => {
@@ -124,12 +148,14 @@ export default function BodyScreen() {
         <Text style={[styles.activeSubtitle, { fontFamily: ff.regular }]}>{active.subtitle}</Text>
 
         <BodyLogPanel
-          key={active.id}
+          key={`${active.id}-${draftsLoaded}`}
           category={active.id}
           primaryChips={active.primaryChips}
           secondaryTitle={active.secondaryTitle}
           secondaryChips={active.secondaryChips}
           textPlaceholder={active.textPlaceholder}
+          initialDraft={drafts[active.id]}
+          onChangeDraft={handleDraftChange}
         />
       </ScrollView>
     </View>
