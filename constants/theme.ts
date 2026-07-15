@@ -22,8 +22,8 @@ export const Colors = {
   danger: '#A06B63',        // understated, same as warning
   dangerFaint: '#2A1C1A',
 
-  success: '#7E9473',       // muted moss
-  successFaint: '#1E2620',  // dark moss-tinted
+  success: '#6A5A8C',       // deep understated purple — a quiet "done", not a green pop
+  successFaint: '#1D1826',  // almost-black, purple-tinted
 
   text: '#F3F1ED',
   textPrimary: '#F3F1ED',
