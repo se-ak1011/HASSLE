@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   FlatList,
   Image,
   NativeScrollEvent,
@@ -24,6 +26,27 @@ import { BodyDraft, BodyDrafts, loadBodyDrafts, saveBodyDrafts } from '@/service
 // time). Swiping or tapping a tab changes the active Lola, and that category's
 // logging chips + "Tell Lola" appear directly underneath — no navigation, no
 // modal. Everything is logged from here.
+// Gentle "bloom" — Lola's chips ease in from her when tapped open.
+function RevealView({ children }: { children: React.ReactNode }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: 1, duration: 260, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
+  }, [v]);
+  return (
+    <Animated.View
+      style={{
+        opacity: v,
+        transform: [
+          { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function BodyScreen() {
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
@@ -32,6 +55,13 @@ export default function BodyScreen() {
   const carousel = useRef<FlatList>(null);
 
   const active = BODY_CATEGORIES[index];
+
+  // Tap Lola to reveal her chips (like the Home Lola). Each new Lola starts
+  // calm — swiping or tapping a tab collapses the previous one.
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    setOpen(false);
+  }, [index]);
 
   // Remembered chips + note per category. Loaded once, autosaved on every change
   // (so swiping, tapping a tab, or leaving all keep what you'd picked).
@@ -115,26 +145,28 @@ export default function BodyScreen() {
           })}
         </ScrollView>
 
-        {/* The Lola carousel — one active pose, swipe or tap to change. A soft
-            pulse behind the active Lola signals she's interactive, like Home. */}
+        {/* The Lola carousel — one active pose. Swipe (or tap a tab) to change
+            area; tap Lola to open her chips, like the Home Lola. A soft pulse
+            behind her signals she's tappable while closed. */}
         <View style={[styles.carouselWrap, { width, marginLeft: -Spacing.lg }]}>
-          <PulseRing size={230} style={styles.pulse} />
+          {!open ? <PulseRing size={230} style={styles.pulse} /> : null}
           <FlatList
             ref={carousel}
             data={BODY_CATEGORIES}
             keyExtractor={c => c.id}
             horizontal
             pagingEnabled
-            extraData={index}
+            extraData={`${index}-${open}`}
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onMomentumEnd}
             getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => goTo((index + 1) % BODY_CATEGORIES.length)}
+                onPress={() => setOpen(o => !o)}
                 style={[styles.slide, { width }]}
                 accessibilityRole="button"
-                accessibilityLabel={`Lola — ${item.label}. Tap for the next area.`}
+                accessibilityState={{ expanded: open }}
+                accessibilityLabel={`Lola — ${item.label}. Tap to ${open ? 'close' : 'open'} what you can log.`}
               >
                 <Image source={item.companion} style={styles.lola} resizeMode="contain" />
               </Pressable>
@@ -142,21 +174,24 @@ export default function BodyScreen() {
           />
         </View>
 
-        {/* Active category copy + inline logging. Keyed so each category starts
-            fresh (its own chips / note), reducing to: swipe → tap chips → done. */}
-        <Text style={[styles.activeTitle, { fontFamily: ff.bold }]}>{active.title}</Text>
-        <Text style={[styles.activeSubtitle, { fontFamily: ff.regular }]}>{active.subtitle}</Text>
-
-        <BodyLogPanel
-          key={`${active.id}-${draftsLoaded}`}
-          category={active.id}
-          primaryChips={active.primaryChips}
-          secondaryTitle={active.secondaryTitle}
-          secondaryChips={active.secondaryChips}
-          textPlaceholder={active.textPlaceholder}
-          initialDraft={drafts[active.id]}
-          onChangeDraft={handleDraftChange}
-        />
+        {open ? (
+          <RevealView key={active.id}>
+            <Text style={[styles.activeTitle, { fontFamily: ff.bold }]}>{active.title}</Text>
+            <Text style={[styles.activeSubtitle, { fontFamily: ff.regular }]}>{active.subtitle}</Text>
+            <BodyLogPanel
+              key={`${active.id}-${draftsLoaded}`}
+              category={active.id}
+              primaryChips={active.primaryChips}
+              secondaryTitle={active.secondaryTitle}
+              secondaryChips={active.secondaryChips}
+              textPlaceholder={active.textPlaceholder}
+              initialDraft={drafts[active.id]}
+              onChangeDraft={handleDraftChange}
+            />
+          </RevealView>
+        ) : (
+          <Text style={[styles.tapHint, { fontFamily: ff.regular }]}>Tap Lola to note your {active.label.toLowerCase()}.</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -182,5 +217,6 @@ const styles = StyleSheet.create({
   lola: { width: 200, height: 236 },
   activeTitle: { color: Colors.text, fontSize: FontSizes.xl, textAlign: 'center', marginTop: Spacing.sm },
   activeSubtitle: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 20, textAlign: 'center', marginTop: 2, marginBottom: Spacing.xs },
+  tapHint: { color: Colors.textSubtle, fontSize: FontSizes.sm, fontStyle: 'italic', textAlign: 'center', marginTop: Spacing.md },
   pressed: { opacity: 0.75 },
 });

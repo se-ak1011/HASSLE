@@ -281,15 +281,44 @@ function TodayCheckInCard({ checkIn, onToggleMustDo }: { checkIn: HomeDailyCheck
   const remaining = homeEnergyRemaining(checkIn);
   const completed = checkIn.completed ?? [];
   const isSpoon = checkIn.energyMode === 'spoon';
+  const level = Math.max(1, checkIn.energyLevel);
+  const fraction = Math.max(0, Math.min(1, isSpoon ? remaining / level : remaining / 100));
+  const value = isSpoon ? `${remaining} spoon${remaining === 1 ? '' : 's'}` : `${remaining}%`;
+
   return (
     <View style={homeCheckInStyles.cardWrap}>
       <View style={homeCheckInStyles.summaryCard}>
-        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{isSpoon ? 'Spoons left' : 'Battery left'}</Text>
-        <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>
-          {isSpoon ? `${remaining} spoon${remaining === 1 ? '' : 's'}` : `${remaining}%`}
-        </Text>
+        {/* Header — icon tile + energy, like the Mind cards. */}
+        <View style={homeCheckInStyles.energyHeader}>
+          <View style={homeCheckInStyles.energyIcon}>
+            <MaterialIcons name={isSpoon ? 'restaurant' : 'bolt'} size={22} color={Colors.primaryLight} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{isSpoon ? 'Spoons left' : 'Battery left'}</Text>
+            <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>{value}</Text>
+          </View>
+        </View>
+        <View style={homeCheckInStyles.barTrack}>
+          <View style={[homeCheckInStyles.barFill, { width: `${Math.round(fraction * 100)}%` }]} />
+        </View>
 
-        <SummaryList title="Affecting today" items={checkIn.affecting} />
+        {/* Affecting today — soft chips instead of a flat list. */}
+        <View style={homeCheckInStyles.summarySection}>
+          <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>Affecting today</Text>
+          {checkIn.affecting.length > 0 ? (
+            <View style={homeCheckInStyles.chipRow}>
+              {checkIn.affecting.map((item) => (
+                <View key={item} style={homeCheckInStyles.softChip}>
+                  <Text style={[homeCheckInStyles.softChipText, { fontFamily: ff.medium }]}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>Nothing added</Text>
+          )}
+        </View>
+
+        <View style={homeCheckInStyles.divider} />
 
         <View style={homeCheckInStyles.summarySection}>
           <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>Must do</Text>
@@ -315,7 +344,7 @@ function TodayCheckInCard({ checkIn, onToggleMustDo }: { checkIn: HomeDailyCheck
               );
             })
           ) : (
-            <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>• Nothing added</Text>
+            <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>Nothing added</Text>
           )}
           {checkIn.mustDo.length > 0 ? (
             <Text style={[homeCheckInStyles.taskHint, { fontFamily: ff.regular }]}>
@@ -324,20 +353,6 @@ function TodayCheckInCard({ checkIn, onToggleMustDo }: { checkIn: HomeDailyCheck
           ) : null}
         </View>
       </View>
-    </View>
-  );
-}
-
-function SummaryList({ title, items }: { title: string; items: string[] }) {
-  const ff = useFontFamily();
-  return (
-    <View style={homeCheckInStyles.summarySection}>
-      <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{title}</Text>
-      {items.length > 0 ? items.map((item) => (
-        <Text key={item} style={[homeCheckInStyles.summaryItem, { fontFamily: ff.regular }]}>• {item}</Text>
-      )) : (
-        <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>• Nothing added</Text>
-      )}
     </View>
   );
 }
@@ -1115,15 +1130,60 @@ const homeCheckInStyles = StyleSheet.create({
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: Spacing.sm,
+    gap: Spacing.md,
+  },
+  energyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  energyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  barTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.surfaceElevated,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: 6,
+  },
+  softChip: {
+    backgroundColor: Colors.accentFaint,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 5,
+  },
+  softChipText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSecondary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.hairline,
   },
   summaryLabel: {
     fontSize: FontSizes.sm,
     color: Colors.textSubtle,
   },
   summaryBattery: {
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.xxl,
     color: Colors.text,
+    lineHeight: 40,
   },
   summarySection: {
     gap: 3,
