@@ -168,6 +168,11 @@ function placeScattered(
 export type ResolveOptions = {
   // Assets the placement engine should skip entirely (e.g. never render sky).
   hiddenIds?: GardenAssetId[];
+  // User rearrangements — a per-asset {x,y} that overrides the computed position
+  // (the coordinate system still decides everything else, incl. which assets
+  // appear and their size/layer). Applied after placement so the defaults always
+  // stand when there is no override.
+  overrides?: Partial<Record<GardenAssetId, { x: number; y: number }>>;
 };
 
 /**
@@ -213,8 +218,17 @@ export function resolvePlacements(visibleIds: GardenAssetId[], options: ResolveO
     placed.push({ id, x: spot.x, y: spot.y, width, anchor, layer, z: zForLayer(layer) });
   }
 
+  // Apply user rearrangements last, so defaults always stand without them.
+  const overrides = options.overrides;
+  const finalPlaced = overrides
+    ? placed.map(p => {
+        const o = overrides[p.id];
+        return o ? { ...p, x: o.x, y: o.y } : p;
+      })
+    : placed;
+
   // Final render order: layer first, then y (lower in the garden = in front).
-  return placed.sort((a, b) => (a.z !== b.z ? a.z - b.z : a.y - b.y));
+  return finalPlaced.sort((a, b) => (a.z !== b.z ? a.z - b.z : a.y - b.y));
 }
 
 // Helpers shared with the debug editor.

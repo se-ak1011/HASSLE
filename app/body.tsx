@@ -16,6 +16,7 @@ import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { BodyLogPanel } from '@/components/ui/BodyLogPanel';
+import { PulseRing } from '@/components/ui/PulseRing';
 import { BODY_CATEGORIES } from '@/constants/bodyCategories';
 
 // Body is a single screen: a horizontal carousel of Lola poses (one active at a
@@ -90,21 +91,29 @@ export default function BodyScreen() {
           })}
         </ScrollView>
 
-        {/* The Lola carousel — one active pose, swipe to change. */}
+        {/* The Lola carousel — one active pose, swipe or tap to change. A soft
+            pulse behind the active Lola signals she's interactive, like Home. */}
         <View style={[styles.carouselWrap, { width, marginLeft: -Spacing.lg }]}>
+          <PulseRing size={230} style={styles.pulse} />
           <FlatList
             ref={carousel}
             data={BODY_CATEGORIES}
             keyExtractor={c => c.id}
             horizontal
             pagingEnabled
+            extraData={index}
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onMomentumEnd}
             getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
             renderItem={({ item }) => (
-              <View style={[styles.slide, { width }]}>
-                <Image source={item.companion} style={styles.lola} resizeMode="contain" accessibilityLabel={`Lola — ${item.label}`} />
-              </View>
+              <Pressable
+                onPress={() => goTo((index + 1) % BODY_CATEGORIES.length)}
+                style={[styles.slide, { width }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Lola — ${item.label}. Tap for the next area.`}
+              >
+                <Image source={item.companion} style={styles.lola} resizeMode="contain" />
+              </Pressable>
             )}
           />
         </View>
@@ -141,7 +150,8 @@ const styles = StyleSheet.create({
   tabOn: { borderColor: Colors.primary, backgroundColor: Colors.primary },
   tabText: { color: Colors.textMuted, fontSize: FontSizes.sm },
   tabTextOn: { color: Colors.background },
-  carouselWrap: { alignItems: 'center' },
+  carouselWrap: { alignItems: 'center', justifyContent: 'center' },
+  pulse: { position: 'absolute', top: 19, alignSelf: 'center' },
   slide: { alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.md },
   lola: { width: 200, height: 236 },
   activeTitle: { color: Colors.text, fontSize: FontSizes.xl, textAlign: 'center', marginTop: Spacing.sm },

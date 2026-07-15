@@ -11,6 +11,8 @@ import { useFontFamily } from '@/hooks/useFontFamily';
 import { GardenCanvas } from '@/features/garden/GardenCanvas';
 import { GardenCoordinateEditor } from '@/features/garden/GardenCoordinateEditor';
 import { GardenDebugPanel } from '@/features/garden/GardenDebugPanel';
+import { GardenAssetId } from '@/features/garden/gardenAssets';
+import { clearGardenOverrides, GardenOverrides, loadGardenOverrides, saveGardenOverrides } from '@/features/garden/gardenOverrides';
 import { calculateDailyVisitors, todaySeed } from '@/features/garden/gardenRules';
 import { useGardenState } from '@/features/garden/gardenState';
 import { seasonForDate, weatherForDate, timeOfDayForDate, partOfDayForDate } from '@/features/garden/gardenEnvironment';
@@ -34,6 +36,27 @@ export default function GardenScreen() {
   const { state, actions } = useGardenState();
   const [editor, setEditor] = useState(false);
   const [devPanel, setDevPanel] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [overrides, setOverrides] = useState<GardenOverrides>({});
+
+  // Load any saved rearrangements. The coordinate system is always the default;
+  // these only move things the user chose to move.
+  useEffect(() => {
+    loadGardenOverrides().then(setOverrides);
+  }, []);
+
+  const handleMove = useCallback((id: GardenAssetId, x: number, y: number) => {
+    setOverrides(prev => {
+      const next = { ...prev, [id]: { x, y } };
+      saveGardenOverrides(next);
+      return next;
+    });
+  }, []);
+
+  const resetLayout = useCallback(() => {
+    setOverrides({});
+    clearGardenOverrides();
+  }, []);
 
   // Lola's Garden is a landscape place. Lock to landscape on entry and restore
   // the app's portrait orientation when leaving.
@@ -110,7 +133,10 @@ export default function GardenScreen() {
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
         <GardenCanvas
           gardenState={state}
-          interactive={!editor}
+          interactive={!editor && !editMode}
+          overrides={overrides}
+          editMode={editMode}
+          onMoveAsset={handleMove}
           renderOverlay={editor ? geom => <GardenCoordinateEditor geom={geom} /> : undefined}
         />
       </Animated.View>
@@ -129,16 +155,53 @@ export default function GardenScreen() {
       <Text style={[styles.title, { top: insets.top + 10, fontFamily: ff.bold }]}>Lola&apos;s Garden</Text>
 
       {/* Lola's whisper — a soft, wandering line floating over the lower garden. */}
-      {!editor ? (
+      {!editor && !editMode ? (
         <Text style={[styles.whisper, { bottom: insets.bottom + 12, fontFamily: ff.regular }]} numberOfLines={2}>
           {whisper}
         </Text>
       ) : null}
 
+      {/* Rearrange mode hint. */}
+      {editMode ? (
+        <Text style={[styles.editHint, { bottom: insets.bottom + 58, fontFamily: ff.regular }]} numberOfLines={2}>
+          Drag anything to move it. It stays where you put it.
+        </Text>
+      ) : null}
+
+      {/* User-facing "Rearrange" control — move things about; nothing is added or
+          removed, and Reset returns to the natural layout. */}
+      {!editor ? (
+        <View style={[styles.rearrangeBar, { bottom: insets.bottom + 12, right: Math.max(insets.right, 12) }]}>
+          {editMode ? (
+            <Pressable style={styles.rearrangeReset} onPress={resetLayout} accessibilityRole="button" accessibilityLabel="Reset garden layout">
+              <MaterialIcons name="restart-alt" size={16} color={Colors.text} />
+              <Text style={[styles.rearrangeText, { fontFamily: ff.semibold }]}>Reset</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            style={[styles.rearrangeBtn, editMode && styles.rearrangeBtnOn]}
+            onPress={() => setEditMode(v => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={editMode ? 'Finish rearranging' : 'Rearrange the garden'}
+          >
+            <MaterialIcons name={editMode ? 'check' : 'open-with'} size={16} color={editMode ? Colors.background : Colors.text} />
+            <Text style={[styles.rearrangeText, editMode && styles.rearrangeTextOn, { fontFamily: ff.semibold }]}>
+              {editMode ? 'Done' : 'Rearrange'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {/* Dev-only tools: coordinate editor + season/unlock panel. */}
       {__DEV__ ? (
         <View style={[styles.devButtons, { top: insets.top + 8, right: Math.max(insets.right, 12) }]}>
-          <Pressable style={[styles.devBtn, editor && styles.devBtnOn]} onPress={() => setEditor(v => !v)}>
+          <Pressable
+            style={[styles.devBtn, editor && styles.devBtnOn]}
+            onPress={() => {
+              setEditMode(false);
+              setEditor(v => !v);
+            }}
+          >
             <Text style={styles.devBtnText}>{editor ? 'edit ✕' : 'edit'}</Text>
           </Pressable>
           <Pressable style={[styles.devBtn, devPanel && styles.devBtnOn]} onPress={() => setDevPanel(v => !v)}>
@@ -201,6 +264,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     zIndex: 10,
   },
+  editHint: {
+    position: 'absolute',
+    alignSelf: 'center',
+    maxWidth: '80%',
+    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    textAlign: 'center',
+    zIndex: 10,
+  },
+  rearrangeBar: { position: 'absolute', flexDirection: 'row', gap: 8, alignItems: 'center', zIndex: 15 },
+  rearrangeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  rearrangeBtnOn: { backgroundColor: Colors.primary, borderColor: Colors.primaryLight },
+  rearrangeReset: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  rearrangeText: { color: Colors.text, fontSize: FontSizes.sm },
+  rearrangeTextOn: { color: Colors.background },
   devButtons: { position: 'absolute', flexDirection: 'row', gap: 6, zIndex: 20 },
   devBtn: {
     paddingHorizontal: 10,

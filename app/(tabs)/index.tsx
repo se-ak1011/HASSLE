@@ -828,9 +828,6 @@ export default function TodayScreen() {
             <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
               <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
             </Pressable>
-            <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
-              <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
-            </Pressable>
           </View>
           <CheckInView />
           <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
@@ -843,9 +840,6 @@ export default function TodayScreen() {
         <View style={styles.headerBar}>
           <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
             <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-          </Pressable>
-          <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
-            <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
           </Pressable>
         </View>
         <ScrollView
@@ -913,9 +907,6 @@ export default function TodayScreen() {
       <View style={styles.headerBar}>
         <Pressable onPress={() => setShowNavDrawer(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Open menu">
           <MaterialIcons name="menu" size={22} color={Colors.textSubtle} />
-        </Pressable>
-        <Pressable onPress={() => router.push('/settings' as any)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Settings">
-          <MaterialIcons name="tune" size={22} color={Colors.textSubtle} />
         </Pressable>
       </View>
       <ScrollView

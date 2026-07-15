@@ -480,10 +480,9 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await resetAllData();
-            showAlert(
-              'Done',
-              'All local data has been cleared. The app is back to a fresh state.'
-            );
+            // Actually restart onboarding rather than leaving the user stranded
+            // on Settings (the index redirect only runs on a fresh mount).
+            router.replace('/onboarding' as any);
           },
         },
       ]

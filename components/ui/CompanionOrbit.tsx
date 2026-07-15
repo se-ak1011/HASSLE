@@ -71,7 +71,8 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
     const lolaHeight = size === 'home' ? 280 : 226;
     const radiusX = Math.max(122, Math.min(zoneWidth / 2 - 64, size === 'home' ? 154 : 134));
     const radiusY = size === 'home' ? 168 : 142;
-    return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY };
+    const pulseSize = lolaWidth + 60;
+    return { zoneWidth, zoneHeight, lolaWidth, lolaHeight, radiusX, radiusY, pulseSize };
   }, [size, width]);
 
 
@@ -101,7 +102,7 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
   }, [breath, reduceMotion]);
 
   useEffect(() => {
-    if (reduceMotion || size !== 'home' || hasOpened || open) {
+    if (reduceMotion || hasOpened || open) {
       tapPulse.stopAnimation();
       tapPulse.setValue(0);
       return;
@@ -177,12 +178,15 @@ export function CompanionOrbit({ companion, chips, size = 'home', accessibilityL
           );
         })}
 
-        {size === 'home' && !hasOpened && !reduceMotion ? (
+        {!hasOpened && !reduceMotion ? (
           <Animated.View
             pointerEvents="none"
             style={[
               styles.tapPulse,
               {
+                width: metrics.pulseSize,
+                height: metrics.pulseSize,
+                borderRadius: metrics.pulseSize / 2,
                 opacity: tapPulse.interpolate({ inputRange: [0, 0.55, 1], outputRange: [0.16, 0.32, 0] }),
                 transform: [{ scale: tapPulse.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1.28] }) }],
               },

@@ -117,6 +117,64 @@ function AnimatedOverlay({ item, worldW, worldH }: { item: PlacedAsset; worldW: 
   );
 }
 
+// In "Rearrange" mode every overlay becomes draggable. Pan/zoom is locked to the
+// fit view (zoom 1, no offset), so a screen-space drag maps straight to a
+// normalised delta. On release we report the new ground-contact point.
+function DraggableOverlay({
+  item,
+  worldW,
+  worldH,
+  onMove,
+}: {
+  item: PlacedAsset;
+  worldW: number;
+  worldH: number;
+  onMove: (id: GardenAssetId, x: number, y: number) => void;
+}) {
+  const posRef = useRef({ x: item.x, y: item.y });
+  const startRef = useRef(posRef.current);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    posRef.current = { x: item.x, y: item.y };
+    setTick(t => t + 1);
+  }, [item.x, item.y]);
+
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => {
+          startRef.current = posRef.current;
+        },
+        onPanResponderMove: (_e, g) => {
+          posRef.current = {
+            x: Math.max(0.02, Math.min(0.98, startRef.current.x + g.dx / worldW)),
+            y: Math.max(0.04, Math.min(0.99, startRef.current.y + g.dy / worldH)),
+          };
+          setTick(t => t + 1);
+        },
+        onPanResponderRelease: () => onMove(item.id, posRef.current.x, posRef.current.y),
+        onPanResponderTerminate: () => onMove(item.id, posRef.current.x, posRef.current.y),
+      }),
+    [worldW, worldH, item.id, onMove]
+  );
+
+  const w = item.width * worldW;
+  const h = w / aspectOf(item.id);
+  const left = posRef.current.x * worldW - item.anchor.x * w;
+  const top = posRef.current.y * worldH - item.anchor.y * h;
+
+  return (
+    <View {...responder.panHandlers} style={{ position: 'absolute', left, top, width: w, height: h }}>
+      <Image source={GARDEN_ASSETS[item.id]} resizeMode="contain" style={{ width: w, height: h }} />
+      <View pointerEvents="none" style={styles.editOutline} />
+    </View>
+  );
+}
+
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.5;
 
@@ -146,9 +204,22 @@ type GardenCanvasProps = {
   interactive?: boolean;
   renderOverlay?: (geom: WorldGeometry) => React.ReactNode;
   onGeometry?: (geom: WorldGeometry) => void;
+  // User rearrangements applied over the coordinate system.
+  overrides?: Partial<Record<GardenAssetId, { x: number; y: number }>>;
+  // "Rearrange" mode — overlays become draggable and report their new position.
+  editMode?: boolean;
+  onMoveAsset?: (id: GardenAssetId, x: number, y: number) => void;
 };
 
-export function GardenCanvas({ gardenState, interactive = true, renderOverlay, onGeometry }: GardenCanvasProps) {
+export function GardenCanvas({
+  gardenState,
+  interactive = true,
+  renderOverlay,
+  onGeometry,
+  overrides,
+  editMode = false,
+  onMoveAsset,
+}: GardenCanvasProps) {
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
@@ -168,8 +239,8 @@ export function GardenCanvas({ gardenState, interactive = true, renderOverlay, o
 
   const placements = useMemo(() => {
     const visible = getVisibleOverlayIds(gardenState);
-    return resolvePlacements(visible);
-  }, [gardenState]);
+    return resolvePlacements(visible, { overrides });
+  }, [gardenState, overrides]);
 
   function onLayout(event: LayoutChangeEvent) {
     const { width, height } = event.nativeEvent.layout;
@@ -248,9 +319,13 @@ export function GardenCanvas({ gardenState, interactive = true, renderOverlay, o
           ]}
         >
           <Image source={GARDEN_ASSETS.baseGarden} resizeMode="contain" style={styles.base} accessibilityLabel="Lola's garden" />
-          {placements.map(item => (
-            <AnimatedOverlay key={item.id} item={item} worldW={world.width} worldH={world.height} />
-          ))}
+          {placements.map(item =>
+            editMode && onMoveAsset ? (
+              <DraggableOverlay key={item.id} item={item} worldW={world.width} worldH={world.height} onMove={onMoveAsset} />
+            ) : (
+              <AnimatedOverlay key={item.id} item={item} worldW={world.width} worldH={world.height} />
+            )
+          )}
           {renderOverlay ? renderOverlay(world) : null}
         </View>
       ) : null}
@@ -262,4 +337,15 @@ const styles = StyleSheet.create({
   viewport: { flex: 1, overflow: 'hidden', backgroundColor: 'transparent' },
   world: { position: 'absolute', overflow: 'visible' },
   base: { width: '100%', height: '100%' },
+  editOutline: {
+    position: 'absolute',
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(196, 180, 228, 0.9)',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+  },
 });
