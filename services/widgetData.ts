@@ -95,6 +95,47 @@ export function buildWidgetSnapshot(
 }
 
 /**
+ * Build a widget snapshot from the new home 3-step daily check-in (the current
+ * energy source). The lightweight check-in doesn't track task-cost usage, so
+ * "remaining" is simply the level the user set; tags come from what's affecting
+ * them and the task line from what they said needs doing.
+ */
+export function buildWidgetSnapshotFromCheckIn(checkIn: {
+  date: string;
+  energyMode: EnergyMode;
+  energyLevel: number;
+  affecting?: string[];
+  mustDo?: string[];
+}): WidgetSnapshot {
+  const isBattery = checkIn.energyMode === 'battery';
+  const level = Math.max(0, checkIn.energyLevel);
+  const energyMax = isBattery ? 100 : Math.max(level, 12);
+  const energyRemaining = level;
+  const energyPercent = isBattery
+    ? Math.min(100, level)
+    : energyMax > 0
+    ? Math.round((level / energyMax) * 100)
+    : 0;
+
+  return {
+    date: checkIn.date,
+    checkedIn: true,
+    energyMode: checkIn.energyMode,
+    energyRemaining,
+    energyMax,
+    energyPercent,
+    pose: poseFor(checkIn.energyMode, energyPercent, energyRemaining),
+    tasksDone: 0,
+    tasksTotal: checkIn.mustDo?.length ?? 0,
+    pendingTasks: (checkIn.mustDo ?? []).slice(0, 3),
+    isFlareDay: false,
+    tags: (checkIn.affecting ?? []).slice(0, 3),
+    reflection: undefined,
+    updatedAt: Date.now(),
+  };
+}
+
+/**
  * Push the snapshot to the iOS App Group and reload the widget timelines.
  *
  * Lazily loads `@bacons/apple-targets` so this is a safe no-op anywhere the

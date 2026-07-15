@@ -710,7 +710,10 @@ export function DayProvider({ children }: { children: ReactNode }) {
   // Keep the Home Screen widget's snapshot fresh (no-op until the native bridge
   // is wired — see WIDGET_SETUP.md).
   useEffect(() => {
-    updateWidget(buildWidgetSnapshot(day, energyRemaining));
+    // The home 3-step check-in now owns the widget (see app/(tabs)/index.tsx).
+    // Only push from the legacy day system when a day is actually active, so we
+    // never wipe the home snapshot by pushing null.
+    if (day) updateWidget(buildWidgetSnapshot(day, energyRemaining));
   }, [day, energyRemaining]);
 
   return (

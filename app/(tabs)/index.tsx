@@ -29,6 +29,7 @@ import { NavDrawer } from '@/components/ui/NavDrawer';
 import { CompanionOrbit, CompanionOrbitChip } from '@/components/ui/CompanionOrbit';
 import { recordCareDay } from '@/features/garden/gardenState';
 import { themeForMustDo } from '@/features/garden/gardenProgress';
+import { buildWidgetSnapshotFromCheckIn, updateWidget } from '@/services/widgetData';
 
 
 
@@ -733,7 +734,10 @@ export default function TodayScreen() {
   useEffect(() => {
     let mounted = true;
     loadHomeDailyCheckIn().then((saved) => {
-      if (mounted) setHomeCheckIn(saved);
+      if (!mounted) return;
+      setHomeCheckIn(saved);
+      // Keep the Home Screen widget in sync with today's check-in on launch.
+      if (saved) updateWidget(buildWidgetSnapshotFromCheckIn(saved));
     });
     return () => {
       mounted = false;
@@ -750,6 +754,8 @@ export default function TodayScreen() {
       .map(themeForMustDo)
       .filter((t): t is string => Boolean(t));
     recordCareDay(checkIn.date, themes).catch(() => {});
+    // Push the new energy level to the Home Screen widget.
+    updateWidget(buildWidgetSnapshotFromCheckIn(checkIn)).catch(() => {});
   }
 
   const homeChips = [
