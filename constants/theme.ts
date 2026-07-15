@@ -1,6 +1,6 @@
 // Hassle — Design System
-// Warm charcoal palette. A therapist's office. Soft lighting. Safety. Calm. Rest.
-// Mauve accent — #998C99, matching the main character's identity.
+// Black & purple identity — Lola's lavender hoodie, fibromyalgia purple. Dark,
+// calm, restful, but unmistakably lavender (not grey, not olive).
 
 export const Colors = {
   background: '#151517',
@@ -8,12 +8,12 @@ export const Colors = {
   surfaceElevated: '#2A2D31',
   surfaceDark: '#111213',
 
-  primary: '#998C99',       // muted mauve — main character accent
-  primaryLight: '#B5ADB5',  // light mauve
-  primaryFaint: '#1E1C1E',  // dark mauve-tinted
+  primary: '#A78BC9',       // lavender — Lola's hoodie, the core accent
+  primaryLight: '#C4B4E4',  // light lavender
+  primaryFaint: '#221D2E',  // dark lavender-tinted (reads purple, not neutral)
 
-  accent: '#998C99',        // muted mauve (unified accent)
-  accentFaint: '#1E1C1E',   // dark mauve-tinted
+  accent: '#A78BC9',        // lavender (unified accent)
+  accentFaint: '#221D2E',   // dark lavender-tinted
 
   flare: '#A06B63',         // muted terracotta (flare state)
   flareFaint: '#271A18',    // dark terracotta-tinted

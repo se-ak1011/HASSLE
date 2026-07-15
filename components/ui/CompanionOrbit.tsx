@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(120, 131, 111, 0.06)',
+    backgroundColor: 'rgba(167, 139, 201, 0.08)',
   },
   tapPulse: {
     position: 'absolute',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     borderRadius: 118,
     borderWidth: 1,
     borderColor: Colors.primaryLight,
-    backgroundColor: 'rgba(120, 131, 111, 0.05)',
+    backgroundColor: 'rgba(167, 139, 201, 0.07)',
     zIndex: 1,
   },
   anchorDot: {
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   chipHighlighted: {
     borderColor: Colors.primaryLight,
-    backgroundColor: 'rgba(120, 131, 111, 0.88)',
+    backgroundColor: 'rgba(167, 139, 201, 0.92)',
   },
   chipPressed: {
     opacity: 0.75,

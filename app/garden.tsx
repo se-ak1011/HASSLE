@@ -16,10 +16,10 @@ import { whisperFor } from '@/features/garden/gardenWhisper';
 // A soft ambient tint behind the garden so the letterbox margins feel like sky
 // and dusk rather than a dead black void. Dark to blend with the garden's edges.
 const AMBIENT: Record<string, string> = {
-  morning: '#191611',
-  day: '#12160f',
-  evening: '#17111a',
-  night: '#0c0f16',
+  morning: '#181420',
+  day: '#141118',
+  evening: '#191122',
+  night: '#0e0d16',
 };
 
 export default function GardenScreen() {
