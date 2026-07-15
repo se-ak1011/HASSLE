@@ -1,9 +1,75 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Image, ImageStyle, LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Image, ImageStyle, LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
 import { GARDEN_ASSETS, GardenAssetId } from './gardenAssets';
-import { GARDEN_LAYOUT, GardenLayoutItem } from './gardenLayout';
+import { GARDEN_LAYOUT, GardenLayer, GardenLayoutItem } from './gardenLayout';
 import { GardenState } from './gardenState';
 import { getVisibleOverlayIds } from './gardenRules';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+
+// Which gentle idle motion (if any) each layer gets. Nothing flashy — a soft
+// bob, a slow sway, a barely-there breath. Everything else stays perfectly still.
+type Motion = 'float' | 'sway' | 'breathe' | 'none';
+function motionForLayer(layer: GardenLayer): Motion {
+  if (layer === 'insects' || layer === 'birds') return 'float';
+  if (layer === 'flowersAndGround' || layer === 'seasonal') return 'sway';
+  if (layer === 'lola') return 'breathe';
+  return 'none';
+}
+
+function hashPhase(id: string): number {
+  let value = 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    value ^= id.charCodeAt(i);
+    value = Math.imul(value, 16777619);
+  }
+  return (value >>> 0) % 1000;
+}
+
+function AnimatedOverlay({ id, style, source }: { id: GardenAssetId; style: ImageStyle; source: any }) {
+  const layer = GARDEN_LAYOUT[id].layer;
+  const motion = motionForLayer(layer);
+  const reduceMotion = useReducedMotion();
+  const enter = useRef(new Animated.Value(0)).current;
+  const loop = useRef(new Animated.Value(0)).current;
+
+  // Soft fade-in when a discovery first renders.
+  useEffect(() => {
+    Animated.timing(enter, { toValue: 1, duration: 700, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
+  }, [enter]);
+
+  useEffect(() => {
+    if (reduceMotion || motion === 'none') {
+      loop.setValue(0);
+      return;
+    }
+    const duration = motion === 'float' ? 2600 : motion === 'sway' ? 3600 : 4200;
+    const delay = hashPhase(id) % duration;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loop, { toValue: 1, duration, delay, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(loop, { toValue: 0, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [id, loop, motion, reduceMotion]);
+
+  const transform: any[] = [];
+  if (motion === 'float') transform.push({ translateY: loop.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) });
+  if (motion === 'breathe') {
+    transform.push({ translateY: loop.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) });
+    transform.push({ scale: loop.interpolate({ inputRange: [0, 1], outputRange: [1, 1.006] }) });
+  }
+  if (motion === 'sway') transform.push({ rotate: loop.interpolate({ inputRange: [0, 1], outputRange: ['-1.5deg', '1.5deg'] }) });
+
+  return (
+    <Animated.Image
+      source={source}
+      resizeMode="contain"
+      style={[styles.overlay, style, { opacity: enter, transform }]}
+    />
+  );
+}
 
 const baseSize = Image.resolveAssetSource(GARDEN_ASSETS.baseGarden);
 const BASE_ASPECT_RATIO = baseSize.width / baseSize.height;
@@ -155,17 +221,14 @@ export function GardenCanvas({ gardenState, setScrollEnabled }: GardenCanvasProp
           ]}
         >
           <Image source={GARDEN_ASSETS.baseGarden} resizeMode="contain" style={styles.base} accessibilityLabel="Lola's garden" />
-          {visibleIds.map((id: GardenAssetId) => {
-            const layout = GARDEN_LAYOUT[id];
-            return (
-              <Image
-                key={id}
-                source={GARDEN_ASSETS[id]}
-                resizeMode="contain"
-                style={[styles.overlay, itemStyle(layout, canvas.width, canvas.height)]}
-              />
-            );
-          })}
+          {visibleIds.map((id: GardenAssetId) => (
+            <AnimatedOverlay
+              key={id}
+              id={id}
+              source={GARDEN_ASSETS[id]}
+              style={itemStyle(GARDEN_LAYOUT[id], canvas.width, canvas.height)}
+            />
+          ))}
         </View>
       ) : null}
     </View>

@@ -92,4 +92,8 @@ export const GARDEN_ASSETS = {
   lolaWateringFlowers: require('../../assets/Lola/watering_flowers.png'),
   lolaStargazing: require('../../assets/Lola/stargazing.png'),
   lolaWrappedInBlanket: require('../../assets/Lola/wrapped_in_blanket.png'),
+  lolaDrinkingCoffee: require('../../assets/Lola/drinking_coffee.png'),
+  lolaPettingFox: require('../../assets/Lola/petting_fox.png'),
+  lolaHoldingRobin: require('../../assets/Lola/holding_robin.png'),
+  lolaLyingOnGrass: require('../../assets/Lola/lying_on_grass.png'),
 } satisfies Record<string, ImageSourcePropType>;

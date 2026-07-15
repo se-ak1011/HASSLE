@@ -27,6 +27,8 @@ import { Companion } from '@/constants/companion';
 import { IntentSheet } from '@/components/ui/IntentSheet';
 import { NavDrawer } from '@/components/ui/NavDrawer';
 import { CompanionOrbit, CompanionOrbitChip } from '@/components/ui/CompanionOrbit';
+import { recordCareDay } from '@/features/garden/gardenState';
+import { themeForMustDo } from '@/features/garden/gardenProgress';
 
 
 
@@ -742,6 +744,12 @@ export default function TodayScreen() {
     setHomeCheckIn(checkIn);
     await saveHomeDailyCheckIn(checkIn);
     setShowHomeCheckIn(false);
+    // Showing up quietly grows Lola's Garden. What was logged only themes which
+    // discovery appears — never whether one does. Idempotent per day.
+    const themes = (checkIn.mustDo ?? [])
+      .map(themeForMustDo)
+      .filter((t): t is string => Boolean(t));
+    recordCareDay(checkIn.date, themes).catch(() => {});
   }
 
   const homeChips = [

@@ -85,12 +85,19 @@ const ACTIVITY_LOLA: Partial<Record<GardenActivity, GardenAssetId>> = {
   comfort: 'lolaWrappedInBlanket',
 };
 
+// One Lola, chosen to fit the moment — season, then weather, then what the user
+// has been doing, then who's visiting, then the time of day. Comforting, never
+// random. Every pose here maps to a real asset.
 export function getLolaAssetId(state: GardenState): GardenAssetId {
   if (state.season === 'winter') return 'lolaBuildSnowman';
-  if (state.season === 'autumn') return 'lolaHoldingPumpkin';
   if (state.weather === 'rain') return 'lolaHoldingUmbrella';
   if (state.recentActivity && ACTIVITY_LOLA[state.recentActivity]) return ACTIVITY_LOLA[state.recentActivity] ?? 'lolaReadingBook';
+  if (state.season === 'autumn') return 'lolaHoldingPumpkin';
+  if (state.dailyVisitorIds.includes('fox')) return 'lolaPettingFox';
+  if (state.dailyVisitorIds.includes('robin')) return 'lolaHoldingRobin';
+  if (state.partOfDay === 'morning') return 'lolaDrinkingCoffee';
   if (state.timeOfDay === 'night') return 'lolaStargazing';
+  if (state.season === 'summer' && state.weather === 'clear') return 'lolaLyingOnGrass';
   return 'lolaReadingBook';
 }
 
