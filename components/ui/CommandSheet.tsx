@@ -32,7 +32,7 @@ export function CommandSheet({ visible, onClose, handlers = {}, context }: Comma
     if (key === 'body') {
       if (handlers.openBody) handlers.openBody();
       else if (handlers.openPlanToday) handlers.openPlanToday();
-      else router.push('/(tabs)?body=1' as any);
+      else router.push('/body' as any);
       return;
     }
     if (key === 'mind') {

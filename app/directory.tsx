@@ -12,6 +12,7 @@ import {
   DIRECTORY_SPECIALTY_FILTERS,
   SPECIALIST_DIRECTORY_SEED,
 } from '@/constants/directory';
+import { useRegion } from '@/localization/RegionContext';
 
 const ALL_FILTERS = [...DIRECTORY_CONDITION_FILTERS, ...DIRECTORY_SPECIALTY_FILTERS];
 
@@ -19,16 +20,23 @@ export default function DirectoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
+  const { region } = useRegion();
   const [filter, setFilter] = useState<string | null>(null);
 
+  // Only show listings for the user's region — a UK user shouldn't see a US clinic.
+  const regionEntries = useMemo(
+    () => SPECIALIST_DIRECTORY_SEED.filter((entry) => entry.country === region),
+    [region]
+  );
+
   const entries = useMemo(() => {
-    if (!filter) return SPECIALIST_DIRECTORY_SEED;
-    return SPECIALIST_DIRECTORY_SEED.filter((entry) =>
+    if (!filter) return regionEntries;
+    return regionEntries.filter((entry) =>
       [...entry.conditions, ...entry.specialties, ...entry.tags].some(
         (item) => item.toLowerCase() === filter.toLowerCase()
       )
     );
-  }, [filter]);
+  }, [filter, regionEntries]);
 
   function openUrl(url: string) {
     Linking.openURL(url).catch(() => {});

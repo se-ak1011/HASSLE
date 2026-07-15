@@ -53,7 +53,6 @@ export default function RootLayout() {
                   <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
                     <Stack.Screen name="index" />
                     <Stack.Screen name="onboarding" />
-                    <Stack.Screen name="checkin" />
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="account" />
                     <Stack.Screen name="library" />

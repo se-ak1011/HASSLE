@@ -7,7 +7,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { Companion } from '@/constants/companion';
-import { LIBRARY, LIBRARY_DISCLAIMER, LibraryArticle, SourceKind } from '@/constants/library';
+import { getLibrary, LIBRARY_DISCLAIMER, LibraryArticle, SourceKind } from '@/constants/library';
+import { useRegion } from '@/localization/RegionContext';
 
 const KIND_LABEL: Record<SourceKind, string> = {
   study: 'Study',
@@ -19,6 +20,8 @@ export default function LibraryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
+  const { region } = useRegion();
+  const library = getLibrary(region);
   const [open, setOpen] = useState<LibraryArticle | null>(null);
 
   function openSource(url: string) {
@@ -91,7 +94,7 @@ export default function LibraryScreen() {
               real studies and guidelines behind it.
             </Text>
 
-            {LIBRARY.map((a) => (
+            {library.map((a) => (
               <Pressable
                 key={a.id}
                 style={({ pressed }) => [styles.card, pressed && styles.rowPressed]}

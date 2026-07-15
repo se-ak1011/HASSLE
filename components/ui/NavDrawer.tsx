@@ -24,13 +24,14 @@ type NavItem = {
 
 const MAIN_ITEMS: NavItem[] = [
   { label: 'Home',        icon: 'home',           route: '/(tabs)' },
-  { label: 'Body',        icon: 'accessibility-new', route: '/(tabs)?body=1' },
+  { label: 'Body',        icon: 'accessibility-new', route: '/body' },
   { label: 'Mind',        icon: 'edit-note',      route: '/reflect' },
   { label: 'Life',        icon: 'folder-special', route: '/life' },
   { label: 'Quiet Time',  icon: 'spa',            route: '/quiet-time' },
 ];
 
 const MORE_ITEMS: NavItem[] = [
+  { label: 'Talk to Lola',  icon: 'forum',          route: '/ai-coach' },
   { label: 'Library',       icon: 'menu-book',      route: '/library' },
   { label: 'Directory',     icon: 'local-hospital', route: '/directory' },
   { label: 'Doctor Report', icon: 'picture-as-pdf', route: '/report' },

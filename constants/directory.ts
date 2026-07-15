@@ -1,3 +1,5 @@
+import type { Region } from '@/localization/region';
+
 export type DirectoryVerificationStatus = 'public-info-seed' | 'unverified-public-listing';
 
 export type SpecialistDirectoryEntry = {
@@ -7,7 +9,7 @@ export type SpecialistDirectoryEntry = {
   profession: string;
   specialties: string[];
   conditions: string[];
-  country: 'US';
+  country: Region;
   regionState: string;
   city: string;
   website: string;
@@ -73,6 +75,65 @@ export const SPECIALIST_DIRECTORY_SEED: SpecialistDirectoryEntry[] = [
     accessibilityNotes: 'Confirm visit format, pacing, and accessibility needs before booking.',
     telehealth: false,
     tags: ['chronic pain', 'pain psychology', 'PM&R'],
+  },
+
+  // ── United Kingdom (GB) ──────────────────────────────────────────────────
+  // Public-info seeds for UK users. Well-known NHS specialist services, seeded
+  // from public information for later review — NOT verified or endorsed. A GP
+  // referral is usually required. Verify current services before relying on these.
+  {
+    id: 'gb-lon-royal-free-me-cfs-service',
+    name: 'Royal Free ME/CFS Service',
+    clinicName: 'Royal Free London NHS Foundation Trust',
+    profession: 'NHS specialist ME/CFS service',
+    specialties: ['ME/CFS', 'fatigue management', 'activity pacing'],
+    conditions: ['ME/CFS', 'Long COVID', 'fibromyalgia'],
+    country: 'GB',
+    regionState: 'England',
+    city: 'London',
+    website: 'https://www.royalfree.nhs.uk/',
+    sourceUrl: 'https://www.royalfree.nhs.uk/',
+    verificationStatus: 'public-info-seed',
+    notes: 'Seeded from public NHS information for later review. Usually needs a GP referral — check current services and referral routes before relying on this.',
+    accessibilityNotes: 'Ask the service about appointment format (in person / remote) and pacing support.',
+    telehealth: false,
+    tags: ['ME/CFS', 'Long COVID', 'NHS', 'fatigue'],
+  },
+  {
+    id: 'gb-lon-uclh-autonomic-unit',
+    name: 'Autonomic Unit, Queen Square',
+    clinicName: 'National Hospital for Neurology & Neurosurgery (UCLH)',
+    profession: 'Neurology / autonomic disorders unit',
+    specialties: ['POTS / dysautonomia', 'neurology', 'autonomic testing'],
+    conditions: ['POTS / dysautonomia'],
+    country: 'GB',
+    regionState: 'England',
+    city: 'London',
+    website: 'https://www.uclh.nhs.uk/',
+    sourceUrl: 'https://www.uclh.nhs.uk/',
+    verificationStatus: 'unverified-public-listing',
+    notes: 'Public listing seed for review; not an endorsement. Typically a tertiary referral service — confirm referral requirements with your GP or specialist.',
+    accessibilityNotes: 'Ask about testing demands, travel, and accommodations.',
+    telehealth: false,
+    tags: ['POTS', 'dysautonomia', 'neurology', 'NHS'],
+  },
+  {
+    id: 'gb-lon-guys-st-thomas-input-pain',
+    name: 'INPUT Pain Management Centre',
+    clinicName: "Guy's and St Thomas' NHS Foundation Trust",
+    profession: 'Multidisciplinary pain management programme',
+    specialties: ['chronic pain', 'pain psychology', 'rehabilitation medicine'],
+    conditions: ['chronic pain', 'fibromyalgia'],
+    country: 'GB',
+    regionState: 'England',
+    city: 'London',
+    website: 'https://www.guysandstthomas.nhs.uk/',
+    sourceUrl: 'https://www.guysandstthomas.nhs.uk/',
+    verificationStatus: 'unverified-public-listing',
+    notes: 'Seeded from public NHS information; check current referral requirements before booking.',
+    accessibilityNotes: 'Confirm visit format, pacing, and accessibility needs before attending.',
+    telehealth: false,
+    tags: ['chronic pain', 'pain psychology', 'NHS'],
   },
 ];
 

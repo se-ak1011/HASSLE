@@ -12,7 +12,6 @@ import {
   Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Slider from '@react-native-community/slider';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +44,11 @@ type HomeDailyCheckIn = {
 
 const HOME_CHECK_IN_KEY = 'hassle_home_daily_checkin_v1';
 const AFFECTING_OPTIONS = ['Pain', 'Fatigue', 'Brain fog', 'Poor sleep', 'Heat', 'Cold', 'Stress', 'Anxiety', 'Flare', 'Illness', 'Low mood', 'Other'];
-const MUST_DO_OPTIONS = ['Medication', 'Eat', 'Drink water', 'Doctor', 'School run', 'Work', 'Shopping', 'Laundry', 'Exercise', 'Rest', 'Custom'];
+// 'School run' (UK) / 'School drop-off' (US) is region-driven — see config.copy.schoolDropOffTask.
+const MUST_DO_BASE = ['Medication', 'Eat', 'Drink water', 'Doctor', '__school__', 'Work', 'Shopping', 'Laundry', 'Exercise', 'Rest', 'Custom'];
+// Battery is chosen from tap-targets (0–100 in tens) rather than a native slider,
+// so it works reliably without the @react-native-community/slider native module.
+const BATTERY_STEPS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 function localDateString(date = new Date()) {
   const yyyy = date.getFullYear();
@@ -96,6 +99,8 @@ function toggleSelection(value: string, selected: string[], setSelected: (next: 
 
 function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (checkIn: HomeDailyCheckIn) => void }) {
   const ff = useFontFamily();
+  const { config } = useRegion();
+  const mustDoOptions = MUST_DO_BASE.map((option) => (option === '__school__' ? config.copy.schoolDropOffTask : option));
   const [step, setStep] = useState(1);
   const [energyMode, setEnergyMode] = useState<EnergyMode>('battery');
   const [energyLevel, setEnergyLevel] = useState(70);
@@ -178,17 +183,19 @@ function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (che
               {energyMode === 'battery' ? (
                 <>
                   <Text style={[homeCheckInStyles.batteryValue, { fontFamily: ff.bold }]}>{energyLevel}%</Text>
-                  <Slider
-                    value={energyLevel}
-                    minimumValue={0}
-                    maximumValue={100}
-                    step={1}
-                    minimumTrackTintColor={Colors.primary}
-                    maximumTrackTintColor={Colors.border}
-                    thumbTintColor={Colors.primary}
-                    onValueChange={setEnergyLevel}
-                    accessibilityLabel="Battery percentage"
-                  />
+                  <View style={homeCheckInStyles.spoonGrid}>
+                    {BATTERY_STEPS.map((value) => (
+                      <Pressable
+                        key={value}
+                        style={[homeCheckInStyles.spoonChip, energyLevel === value && homeCheckInStyles.spoonChipActive]}
+                        onPress={() => setEnergyLevel(value)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${value} percent battery`}
+                      >
+                        <Text style={[homeCheckInStyles.spoonChipText, energyLevel === value && homeCheckInStyles.spoonChipTextActive, { fontFamily: ff.medium }]}>{value}%</Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </>
               ) : (
                 <>
@@ -243,7 +250,7 @@ function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (che
             <View style={homeCheckInStyles.sectionBlock}>
               <Text style={[homeCheckInStyles.title, { fontFamily: ff.bold }]}>What absolutely needs doing today?</Text>
               <View style={homeCheckInStyles.chipsWrap}>
-                {MUST_DO_OPTIONS.map((option) => (
+                {mustDoOptions.map((option) => (
                   <Pressable
                     key={option}
                     style={[homeCheckInStyles.chip, mustDo.includes(option) && homeCheckInStyles.chipActive]}

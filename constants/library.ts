@@ -12,6 +12,8 @@
  *  - Citations verified June 2026. Re-check before adding/altering any source.
  */
 
+import type { Region } from '@/localization/region';
+
 export type SourceKind = 'study' | 'guideline' | 'essay';
 
 export interface LibrarySource {
@@ -53,12 +55,12 @@ export const LIBRARY: LibraryArticle[] = [
     id: 'pem-boombust',
     tag: 'ME/CFS',
     title: 'Why “pushing through” backfires',
-    body: 'In ME/CFS, overdoing it on a good day can trigger a delayed crash — post-exertional malaise (PEM) — that can last days. That’s why “push through it” so often makes things worse. In 2021 the UK’s NICE guideline stopped recommending graded exercise therapy (GET) for ME/CFS, and now advises staying within your energy limits rather than climbing a fixed exercise ladder.',
-    note: 'Important: any program based on fixed, incremental exercise increases (GET) is no longer recommended for ME/CFS. Be cautious of older advice that still promotes it.',
+    body: 'In ME/CFS, overdoing it on a good day can trigger a delayed crash — post-exertional malaise (PEM) — that can last days. That’s why “push through it” so often makes things worse. The CDC advises staying within your energy limits — pacing — rather than pushing through a fixed, escalating exercise plan.',
+    note: 'Important: graded exercise therapy (GET) — any plan based on fixed, incremental exercise increases — is not recommended for ME/CFS. Be cautious of older advice that still promotes it.',
     sources: [
       {
-        label: 'NICE Guideline NG206 — ME/CFS: diagnosis and management (2021)',
-        url: 'https://www.nice.org.uk/guidance/ng206',
+        label: 'CDC — Myalgic Encephalomyelitis/Chronic Fatigue Syndrome (ME/CFS)',
+        url: 'https://www.cdc.gov/me-cfs/',
         kind: 'guideline',
       },
     ],
@@ -189,3 +191,35 @@ export const LIBRARY: LibraryArticle[] = [
     ],
   },
 ];
+
+/**
+ * Per-region article overrides. `LIBRARY` above is the US default; most articles
+ * are region-neutral (spoons, PEM mechanics, autistic burnout) and stay shared —
+ * only clinical guidance that differs by country is overridden here (e.g. the
+ * UK's NICE guideline in place of the CDC).
+ */
+const REGION_ARTICLE_OVERRIDES: Partial<Record<Region, Record<string, LibraryArticle>>> = {
+  GB: {
+    'pem-boombust': {
+      id: 'pem-boombust',
+      tag: 'ME/CFS',
+      title: 'Why “pushing through” backfires',
+      body: 'In ME/CFS, overdoing it on a good day can trigger a delayed crash — post-exertional malaise (PEM) — that can last days. That’s why “push through it” so often makes things worse. In 2021 the UK’s NICE guideline stopped recommending graded exercise therapy (GET) for ME/CFS, and now advises staying within your energy limits rather than climbing a fixed exercise ladder.',
+      note: 'Important: any programme based on fixed, incremental exercise increases (GET) is no longer recommended for ME/CFS. Be cautious of older advice that still promotes it.',
+      sources: [
+        {
+          label: 'NICE Guideline NG206 — ME/CFS: diagnosis and management (2021)',
+          url: 'https://www.nice.org.uk/guidance/ng206',
+          kind: 'guideline',
+        },
+      ],
+    },
+  },
+};
+
+/** The reading library for a region — US content with any region-specific overrides applied. */
+export function getLibrary(region: Region): LibraryArticle[] {
+  const overrides = REGION_ARTICLE_OVERRIDES[region];
+  if (!overrides) return LIBRARY;
+  return LIBRARY.map((article) => overrides[article.id] ?? article);
+}
