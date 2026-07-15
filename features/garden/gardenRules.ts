@@ -1,5 +1,4 @@
 import { GardenAssetId } from './gardenAssets';
-import { GARDEN_LAYOUT, GARDEN_LAYERS } from './gardenLayout';
 import { GardenActivity, GardenState } from './gardenState';
 
 export const PERMANENT_UNLOCK_IDS: GardenAssetId[] = [
@@ -62,12 +61,13 @@ function isVisuallyQuietDefault(state: GardenState) {
     && state.timeOfDay === 'day';
 }
 
-export function getSkyAssetIds(state: GardenState): GardenAssetId[] {
-  if (isVisuallyQuietDefault(state)) return [];
-  if (state.weather === 'rain') return state.timeOfDay === 'night' ? ['moon', 'stars', 'stormCloud'] : ['stormCloud'];
-  if (state.timeOfDay === 'night') return hash(`${todaySeed()}:night`) % 8 === 0 ? ['moon', 'stars', 'shootingStar'] : ['moon', 'stars'];
-  if (state.weather === 'cloudy') return ['cloud'];
-  return ['sun'];
+// The base illustration has no sky — it is a grounded, top-down meadow on a dark
+// field. Dropping a sun / moon / cloud onto the grass looks broken (it was the
+// "sun-like object by the shed"), so no sky assets are rendered until a
+// deliberate sky/weather layer exists. Weather still colours the ambient tint
+// and steers Lola's pose; it just doesn't spawn a ground object.
+export function getSkyAssetIds(_state: GardenState): GardenAssetId[] {
+  return [];
 }
 
 export function getSeasonalAssetIds(state: GardenState): GardenAssetId[] {
@@ -105,9 +105,10 @@ export function getVisibleOverlayIds(state: GardenState): GardenAssetId[] {
   const ids = [
     ...state.unlockedAssetIds,
     ...state.dailyVisitorIds,
-    ...getSkyAssetIds(state),
     ...getSeasonalAssetIds(state),
     getLolaAssetId(state),
   ];
-  return Array.from(new Set(ids)).sort((a, b) => GARDEN_LAYERS.indexOf(GARDEN_LAYOUT[a].layer) - GARDEN_LAYERS.indexOf(GARDEN_LAYOUT[b].layer));
+  // Ordering is handled by the placement engine (layer, then y) — here we only
+  // need a stable, de-duplicated set of what's visible.
+  return Array.from(new Set(ids));
 }

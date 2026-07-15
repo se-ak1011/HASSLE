@@ -1,18 +1,59 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Image, ImageStyle, LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
 import { GARDEN_ASSETS, GardenAssetId } from './gardenAssets';
-import { GARDEN_LAYOUT, GardenLayer, GardenLayoutItem } from './gardenLayout';
+import { GARDEN_ASPECT_RATIO, layerFor } from './gardenLayout';
+import { PlacedAsset, resolvePlacements } from './gardenPlacement';
 import { GardenState } from './gardenState';
 import { getVisibleOverlayIds } from './gardenRules';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
-// Which gentle idle motion (if any) each layer gets. Nothing flashy — a soft
-// bob, a slow sway, a barely-there breath. Everything else stays perfectly still.
+// Intrinsic aspect ratio (w/h) of each asset PNG, resolved once from the bundled
+// metadata. An <Image> with only `width` set lays out to zero height, so we must
+// give every overlay a real height derived from its own proportions — this also
+// makes the bottom-anchor sit exactly on the ground.
+const ASSET_ASPECT: Partial<Record<GardenAssetId, number>> = {};
+function aspectOf(id: GardenAssetId): number {
+  const cached = ASSET_ASPECT[id];
+  if (cached) return cached;
+  const src = Image.resolveAssetSource(GARDEN_ASSETS[id]);
+  const ratio = src && src.width && src.height ? src.width / src.height : 1;
+  ASSET_ASPECT[id] = ratio;
+  return ratio;
+}
+
+// ── Geometry of the contained world inside the viewport ──────────────────────
+export type WorldGeometry = {
+  left: number; // px offset of the world box within the viewport
+  top: number;
+  width: number; // px size of the world box (base image drawn at this size)
+  height: number;
+};
+
+function containWorld(viewportWidth: number, viewportHeight: number): WorldGeometry {
+  if (viewportWidth <= 0 || viewportHeight <= 0) return { left: 0, top: 0, width: 0, height: 0 };
+  // Fit the whole 3:2 world into the viewport (contain), centred. The base art
+  // is already an oval on black, so any letterbox margin reads as part of it.
+  let width = viewportWidth;
+  let height = width / GARDEN_ASPECT_RATIO;
+  if (height > viewportHeight) {
+    height = viewportHeight;
+    width = height * GARDEN_ASPECT_RATIO;
+  }
+  return {
+    left: (viewportWidth - width) / 2,
+    top: (viewportHeight - height) / 2,
+    width,
+    height,
+  };
+}
+
+// ── Gentle idle motion per layer ─────────────────────────────────────────────
 type Motion = 'float' | 'sway' | 'breathe' | 'none';
-function motionForLayer(layer: GardenLayer): Motion {
-  if (layer === 'insects' || layer === 'birds') return 'float';
-  if (layer === 'flowersAndGround' || layer === 'seasonal') return 'sway';
-  if (layer === 'lola') return 'breathe';
+function motionForAsset(id: GardenAssetId): Motion {
+  const layer = layerFor(id);
+  if (layer === 'birdsAndInsects') return 'float';
+  if (layer === 'flowers' || layer === 'seasonalGround' || layer === 'groundPlants') return 'sway';
+  if (layer === 'lolaAndAnimals') return 'breathe';
   return 'none';
 }
 
@@ -25,14 +66,14 @@ function hashPhase(id: string): number {
   return (value >>> 0) % 1000;
 }
 
-function AnimatedOverlay({ id, style, source }: { id: GardenAssetId; style: ImageStyle; source: any }) {
-  const layer = GARDEN_LAYOUT[id].layer;
-  const motion = motionForLayer(layer);
+// Anchor-aware overlay: a normalised ground-contact point + width becomes an
+// absolutely-positioned image inside the shared world container.
+function AnimatedOverlay({ item, worldW, worldH }: { item: PlacedAsset; worldW: number; worldH: number }) {
+  const motion = motionForAsset(item.id);
   const reduceMotion = useReducedMotion();
   const enter = useRef(new Animated.Value(0)).current;
   const loop = useRef(new Animated.Value(0)).current;
 
-  // Soft fade-in when a discovery first renders.
   useEffect(() => {
     Animated.timing(enter, { toValue: 1, duration: 700, easing: Easing.out(Easing.ease), useNativeDriver: true }).start();
   }, [enter]);
@@ -43,7 +84,7 @@ function AnimatedOverlay({ id, style, source }: { id: GardenAssetId; style: Imag
       return;
     }
     const duration = motion === 'float' ? 2600 : motion === 'sway' ? 3600 : 4200;
-    const delay = hashPhase(id) % duration;
+    const delay = hashPhase(item.id) % duration;
     const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(loop, { toValue: 1, duration, delay, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -52,7 +93,7 @@ function AnimatedOverlay({ id, style, source }: { id: GardenAssetId; style: Imag
     );
     anim.start();
     return () => anim.stop();
-  }, [id, loop, motion, reduceMotion]);
+  }, [item.id, loop, motion, reduceMotion]);
 
   const transform: any[] = [];
   if (motion === 'float') transform.push({ translateY: loop.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) });
@@ -62,69 +103,53 @@ function AnimatedOverlay({ id, style, source }: { id: GardenAssetId; style: Imag
   }
   if (motion === 'sway') transform.push({ rotate: loop.interpolate({ inputRange: [0, 1], outputRange: ['-1.5deg', '1.5deg'] }) });
 
+  const w = item.width * worldW;
+  const h = w / aspectOf(item.id);
+  const left = item.x * worldW - item.anchor.x * w;
+  const top = item.y * worldH - item.anchor.y * h;
+
   return (
     <Animated.Image
-      source={source}
+      source={GARDEN_ASSETS[item.id]}
       resizeMode="contain"
-      style={[styles.overlay, style, { opacity: enter, transform }]}
+      style={[{ position: 'absolute', left, top, width: w, height: h, opacity: enter, transform }]}
     />
   );
 }
 
-const baseSize = Image.resolveAssetSource(GARDEN_ASSETS.baseGarden);
-const BASE_ASPECT_RATIO = baseSize.width / baseSize.height;
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
-
-type GardenCanvasProps = {
-  gardenState: GardenState;
-  setScrollEnabled?: (enabled: boolean) => void;
-};
+const MAX_ZOOM = 2.5;
 
 type Point = { x: number; y: number };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
 }
-
 function distance(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
-
 function midpoint(a: Point, b: Point) {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
-
 function touchPoint(touch: any, fallback: any): Point {
   return { x: touch?.pageX ?? fallback.pageX ?? 0, y: touch?.pageY ?? fallback.pageY ?? 0 };
 }
-
-function clampOffset(offset: Point, zoom: number, viewportWidth: number, viewportHeight: number) {
-  const maxX = Math.max(0, (viewportWidth * zoom - viewportWidth) / 2);
-  const maxY = Math.max(0, (viewportHeight * zoom - viewportHeight) / 2);
-  return {
-    x: clamp(offset.x, -maxX, maxX),
-    y: clamp(offset.y, -maxY, maxY),
-  };
+function clampOffset(offset: Point, zoom: number, w: number, h: number) {
+  const maxX = Math.max(0, (w * zoom - w) / 2);
+  const maxY = Math.max(0, (h * zoom - h) / 2);
+  return { x: clamp(offset.x, -maxX, maxX), y: clamp(offset.y, -maxY, maxY) };
 }
 
-function itemStyle(item: GardenLayoutItem, baseWidth: number, baseHeight: number): ImageStyle {
-  const width = Math.min(item.width * baseWidth, baseWidth);
-  const left = item.x * baseWidth;
-  const top = item.y * baseHeight;
-  const anchor = item.anchor ?? 'topLeft';
+type GardenCanvasProps = {
+  gardenState: GardenState;
+  // When true, pan/zoom is locked to the fit view so the coordinate editor can
+  // map taps reliably. The editor is rendered via `renderOverlay`.
+  interactive?: boolean;
+  renderOverlay?: (geom: WorldGeometry) => React.ReactNode;
+  onGeometry?: (geom: WorldGeometry) => void;
+};
 
-  if (anchor === 'center') {
-    return { width, left: left - width / 2, top: top - width / 2 };
-  }
-  if (anchor === 'bottomCenter') {
-    return { width, left: left - width / 2, bottom: baseHeight - top };
-  }
-  return { width, left, top };
-}
-
-export function GardenCanvas({ gardenState, setScrollEnabled }: GardenCanvasProps) {
-  const [containerWidth, setContainerWidth] = useState(0);
+export function GardenCanvas({ gardenState, interactive = true, renderOverlay, onGeometry }: GardenCanvasProps) {
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
   const gesture = useRef({
@@ -135,100 +160,98 @@ export function GardenCanvas({ gardenState, setScrollEnabled }: GardenCanvasProp
     startZoom: MIN_ZOOM,
   });
 
-  const canvas = useMemo(() => {
-    const width = containerWidth;
-    return { width, height: width > 0 ? width / BASE_ASPECT_RATIO : 0 };
-  }, [containerWidth]);
+  const world = useMemo(() => containWorld(viewport.width, viewport.height), [viewport.width, viewport.height]);
 
-  const visibleIds = useMemo(() => getVisibleOverlayIds(gardenState), [gardenState]);
+  useEffect(() => {
+    if (world.width > 0) onGeometry?.(world);
+  }, [world, onGeometry]);
+
+  const placements = useMemo(() => {
+    const visible = getVisibleOverlayIds(gardenState);
+    return resolvePlacements(visible);
+  }, [gardenState]);
 
   function onLayout(event: LayoutChangeEvent) {
-    const width = event.nativeEvent.layout.width;
-    setContainerWidth(width);
-    setOffset(current => clampOffset(current, zoom, width, width / BASE_ASPECT_RATIO));
+    const { width, height } = event.nativeEvent.layout;
+    setViewport({ width, height });
+    setOffset(current => clampOffset(current, zoom, containWorld(width, height).width, containWorld(width, height).height));
   }
 
-  function releaseGesture() {
-    gesture.current.mode = 'idle';
-    setScrollEnabled?.(true);
-  }
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => interactive,
+        onMoveShouldSetPanResponder: () => interactive,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: event => {
+          const touches = event.nativeEvent.touches ?? [];
+          if (touches.length > 1) {
+            const a = touchPoint(touches[0], event.nativeEvent);
+            const b = touchPoint(touches[1], event.nativeEvent);
+            gesture.current = { mode: 'pinch', startPoint: midpoint(a, b), startOffset: offset, startDistance: Math.max(1, distance(a, b)), startZoom: zoom };
+            return;
+          }
+          gesture.current = { mode: 'pan', startPoint: touchPoint(touches[0], event.nativeEvent), startOffset: offset, startDistance: 1, startZoom: zoom };
+        },
+        onPanResponderMove: event => {
+          const touches = event.nativeEvent.touches ?? [];
+          if (touches.length > 1) {
+            const a = touchPoint(touches[0], event.nativeEvent);
+            const b = touchPoint(touches[1], event.nativeEvent);
+            const nextZoom = clamp(gesture.current.startZoom * (distance(a, b) / gesture.current.startDistance), MIN_ZOOM, MAX_ZOOM);
+            gesture.current.mode = 'pinch';
+            setZoom(nextZoom);
+            setOffset(clampOffset(gesture.current.startOffset, nextZoom, world.width, world.height));
+            return;
+          }
+          if (gesture.current.mode !== 'pan' || zoom <= MIN_ZOOM) return;
+          const point = touchPoint(touches[0], event.nativeEvent);
+          setOffset(
+            clampOffset(
+              {
+                x: gesture.current.startOffset.x + point.x - gesture.current.startPoint.x,
+                y: gesture.current.startOffset.y + point.y - gesture.current.startPoint.y,
+              },
+              zoom,
+              world.width,
+              world.height
+            )
+          );
+        },
+        onPanResponderRelease: () => {
+          gesture.current.mode = 'idle';
+        },
+        onPanResponderTerminate: () => {
+          gesture.current.mode = 'idle';
+        },
+      }),
+    [interactive, offset, world.width, world.height, zoom]
+  );
 
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onStartShouldSetPanResponderCapture: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponderCapture: () => true,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: event => {
-      setScrollEnabled?.(false);
-      const touches = event.nativeEvent.touches ?? [];
-      if (touches.length > 1) {
-        const a = touchPoint(touches[0], event.nativeEvent);
-        const b = touchPoint(touches[1], event.nativeEvent);
-        gesture.current = {
-          mode: 'pinch',
-          startPoint: midpoint(a, b),
-          startOffset: offset,
-          startDistance: Math.max(1, distance(a, b)),
-          startZoom: zoom,
-        };
-        return;
-      }
-      gesture.current = {
-        mode: 'pan',
-        startPoint: touchPoint(touches[0], event.nativeEvent),
-        startOffset: offset,
-        startDistance: 1,
-        startZoom: zoom,
-      };
-    },
-    onPanResponderMove: event => {
-      const touches = event.nativeEvent.touches ?? [];
-      if (touches.length > 1) {
-        const a = touchPoint(touches[0], event.nativeEvent);
-        const b = touchPoint(touches[1], event.nativeEvent);
-        const nextZoom = clamp(gesture.current.startZoom * (distance(a, b) / gesture.current.startDistance), MIN_ZOOM, MAX_ZOOM);
-        const nextOffset = clampOffset(gesture.current.startOffset, nextZoom, canvas.width, canvas.height);
-        gesture.current.mode = 'pinch';
-        setZoom(nextZoom);
-        setOffset(nextOffset);
-        return;
-      }
-
-      if (gesture.current.mode !== 'pan') return;
-      const point = touchPoint(touches[0], event.nativeEvent);
-      const nextOffset = clampOffset({
-        x: gesture.current.startOffset.x + point.x - gesture.current.startPoint.x,
-        y: gesture.current.startOffset.y + point.y - gesture.current.startPoint.y,
-      }, zoom, canvas.width, canvas.height);
-      setOffset(nextOffset);
-    },
-    onPanResponderRelease: releaseGesture,
-    onPanResponderTerminate: releaseGesture,
-  }), [canvas.height, canvas.width, offset, setScrollEnabled, zoom]);
+  // In editor mode we pin to the fit view so tap→coordinate mapping is exact.
+  const activeZoom = interactive ? zoom : MIN_ZOOM;
+  const activeOffset = interactive ? offset : { x: 0, y: 0 };
 
   return (
-    <View onLayout={onLayout} style={styles.viewport} {...panResponder.panHandlers}>
-      {canvas.width > 0 ? (
+    <View onLayout={onLayout} style={styles.viewport} {...(interactive ? panResponder.panHandlers : {})}>
+      {world.width > 0 ? (
         <View
           style={[
-            styles.canvas,
+            styles.world,
             {
-              width: canvas.width,
-              height: canvas.height,
-              transform: [{ translateX: offset.x }, { translateY: offset.y }, { scale: zoom }],
+              left: world.left,
+              top: world.top,
+              width: world.width,
+              height: world.height,
+              transform: [{ translateX: activeOffset.x }, { translateY: activeOffset.y }, { scale: activeZoom }],
             },
           ]}
         >
           <Image source={GARDEN_ASSETS.baseGarden} resizeMode="contain" style={styles.base} accessibilityLabel="Lola's garden" />
-          {visibleIds.map((id: GardenAssetId) => (
-            <AnimatedOverlay
-              key={id}
-              id={id}
-              source={GARDEN_ASSETS[id]}
-              style={itemStyle(GARDEN_LAYOUT[id], canvas.width, canvas.height)}
-            />
+          {placements.map(item => (
+            <AnimatedOverlay key={item.id} item={item} worldW={world.width} worldH={world.height} />
           ))}
+          {renderOverlay ? renderOverlay(world) : null}
         </View>
       ) : null}
     </View>
@@ -236,15 +259,7 @@ export function GardenCanvas({ gardenState, setScrollEnabled }: GardenCanvasProp
 }
 
 const styles = StyleSheet.create({
-  viewport: {
-    width: '100%',
-    aspectRatio: BASE_ASPECT_RATIO,
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
-  },
-  canvas: {
-    overflow: 'hidden',
-  },
+  viewport: { flex: 1, overflow: 'hidden', backgroundColor: 'transparent' },
+  world: { position: 'absolute', overflow: 'visible' },
   base: { width: '100%', height: '100%' },
-  overlay: { position: 'absolute', aspectRatio: 1 },
 });

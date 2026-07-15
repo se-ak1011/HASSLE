@@ -7,6 +7,7 @@ import { AccountProvider } from '@/contexts/AccountContext';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { billing } from '@/services/billing';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RegionProvider } from '@/localization/RegionContext';
@@ -39,6 +40,14 @@ export default function RootLayout() {
   // Initialise the billing SDK once (RevenueCat on native, no-op on web).
   useEffect(() => {
     billing.configure();
+  }, []);
+
+  // The app is portrait everywhere. Orientation is set to "default" (all
+  // orientations) only so Lola's Garden can lock itself to landscape at runtime;
+  // pinning portrait here on launch keeps every other screen upright, and the
+  // garden restores portrait when you leave it.
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
   return (
