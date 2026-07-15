@@ -18,6 +18,7 @@ import { extractOnboardingProfileWithLola, OnboardingExtractedProfile } from '@/
 import { Companion } from '@/constants/companion';
 import { useRegion } from '@/localization/RegionContext';
 import { Region } from '@/localization/region';
+import { useVoiceDictation } from '@/hooks/useVoiceDictation';
 
 const INTRO_EXAMPLES = [
   "I've got fibromyalgia.",
@@ -114,6 +115,7 @@ export default function OnboardingScreen() {
   const { region, setRegion } = useRegion();
 
   const [transcript, setTranscript] = useState('');
+  const voice = useVoiceDictation((text) => setTranscript(text));
   const [reviewing, setReviewing] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -316,10 +318,24 @@ export default function OnboardingScreen() {
         <Text style={[styles.stepTitle, { fontFamily: ff.bold }]}>Tell Lola about yourself.</Text>
         <Text style={[styles.stepSubtitle, { fontFamily: ff.regular }]}>Talk first. Lola will quietly organize what she can.</Text>
 
-        <Pressable style={styles.micButton} onPress={() => setShowTyping(true)} accessibilityRole="button" accessibilityLabel="Tell Lola by voice">
-          <MaterialIcons name="mic" size={46} color={Colors.text} />
-          <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>Start with voice</Text>
-          <Text style={[styles.micHint, { fontFamily: ff.regular }]}>Voice transcription is not available in this build yet. Type it exactly as you would say it.</Text>
+        <Pressable
+          style={styles.micButton}
+          onPress={() => {
+            setShowTyping(true);
+            if (voice.supported) voice.toggle();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={voice.listening ? 'Stop recording' : 'Tell Lola by voice'}
+        >
+          <MaterialIcons name={voice.listening ? 'stop-circle' : 'mic'} size={46} color={Colors.text} />
+          <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>{voice.listening ? 'Listening…' : 'Start with voice'}</Text>
+          <Text style={[styles.micHint, { fontFamily: ff.regular }]}>
+            {voice.supported
+              ? voice.listening
+                ? "Talk whenever you like — tap again when you're done."
+                : 'Tap to speak, or type it below.'
+              : "Voice isn't available on this device — type it exactly as you would say it."}
+          </Text>
         </Pressable>
 
         <View style={styles.examplesBox}>

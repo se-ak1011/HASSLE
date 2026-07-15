@@ -61,6 +61,7 @@
       ],
       "expo-web-browser",
       "@bacons/apple-targets",
+      "expo-speech-recognition",
       "./plugins/withFmtConsteval"
     ],
     "experiments": {

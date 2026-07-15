@@ -15,6 +15,7 @@ import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { formatDateTimeForRegion } from '@/services/regionFormat';
+import { useVoiceDictation } from '@/hooks/useVoiceDictation';
 
 const JOURNAL_KEY = 'hassle_journal_entries_v1';
 
@@ -50,6 +51,7 @@ export default function JournalScreen() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [draft, setDraft] = useState('');
   const [showTyping, setShowTyping] = useState(false);
+  const voice = useVoiceDictation((text) => setDraft(text));
 
   useEffect(() => {
     let mounted = true;
@@ -117,13 +119,22 @@ export default function JournalScreen() {
           {/* Voice-first entry (transcription stubbed for now, like onboarding) */}
           <Pressable
             style={styles.micButton}
-            onPress={() => setShowTyping(true)}
+            onPress={() => {
+              setShowTyping(true);
+              if (voice.supported) voice.toggle();
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Add a journal entry by voice"
+            accessibilityLabel={voice.listening ? 'Stop recording' : 'Add a journal entry by voice'}
           >
-            <MaterialIcons name="mic" size={40} color={Colors.text} />
-            <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>Start with voice</Text>
-            <Text style={[styles.micHint, { fontFamily: ff.regular }]}>Voice transcription isn&apos;t available in this build yet. Tap to type it instead.</Text>
+            <MaterialIcons name={voice.listening ? 'stop-circle' : 'mic'} size={40} color={Colors.text} />
+            <Text style={[styles.micLabel, { fontFamily: ff.semibold }]}>{voice.listening ? 'Listening…' : 'Start with voice'}</Text>
+            <Text style={[styles.micHint, { fontFamily: ff.regular }]}>
+              {voice.supported
+                ? voice.listening
+                  ? "Speak whenever you like — tap again when you're done."
+                  : 'Tap to speak, or just type below.'
+                : "Voice isn't available on this device — tap to type it instead."}
+            </Text>
           </Pressable>
 
           {showTyping ? (

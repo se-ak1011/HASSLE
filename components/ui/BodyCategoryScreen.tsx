@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useVoiceDictation } from '@/hooks/useVoiceDictation';
 import { ActivityIndicator, Image, ImageSourcePropType, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/components/ui/AppText';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -58,6 +59,8 @@ export function BodyCategoryScreen({
   const [loading, setLoading] = useState(false);
   const [lolaNote, setLolaNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Stream spoken words into the note. Falls back to plain typing if unsupported.
+  const voice = useVoiceDictation((text) => setTranscript(text));
 
   async function tellLola() {
     if (loading) return;
@@ -153,14 +156,19 @@ export function BodyCategoryScreen({
           <Text style={[styles.tellSubtitle, { fontFamily: ff.regular }]}>Voice or text. Only if it helps.</Text>
           <View style={styles.tellActions}>
             <Pressable
-              style={({ pressed }) => [styles.voiceButton, voiceRequested && styles.voiceButtonSelected, pressed && styles.pressed]}
-              onPress={() => setVoiceRequested((current) => !current)}
+              style={({ pressed }) => [styles.voiceButton, (voice.listening || voiceRequested) && styles.voiceButtonSelected, pressed && styles.pressed]}
+              onPress={() => {
+                setVoiceRequested(true);
+                if (voice.supported) voice.toggle();
+              }}
               accessibilityRole="button"
-              accessibilityState={{ selected: voiceRequested }}
+              accessibilityState={{ selected: voice.listening || voiceRequested }}
               accessibilityLabel="Voice note"
             >
-              <MaterialIcons name="mic" size={17} color={voiceRequested ? Colors.background : Colors.textMuted} />
-              <Text style={[styles.voiceText, voiceRequested && styles.voiceTextSelected, { fontFamily: ff.semibold }]}>Voice</Text>
+              <MaterialIcons name="mic" size={17} color={(voice.listening || voiceRequested) ? Colors.background : Colors.textMuted} />
+              <Text style={[styles.voiceText, (voice.listening || voiceRequested) && styles.voiceTextSelected, { fontFamily: ff.semibold }]}>
+                {voice.listening ? 'Listening…' : 'Voice'}
+              </Text>
             </Pressable>
           </View>
           <TextInput
