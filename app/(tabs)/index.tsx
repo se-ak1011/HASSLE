@@ -29,7 +29,7 @@ import { NavDrawer } from '@/components/ui/NavDrawer';
 import { CompanionOrbit, CompanionOrbitChip } from '@/components/ui/CompanionOrbit';
 import { recordCareDay } from '@/features/garden/gardenState';
 import { themeForMustDo } from '@/features/garden/gardenProgress';
-import { buildWidgetSnapshotFromCheckIn, updateWidget } from '@/services/widgetData';
+import { buildWidgetSnapshotFromCheckIn, homeEnergyRemaining, updateWidget } from '@/services/widgetData';
 
 
 
@@ -43,6 +43,8 @@ type HomeDailyCheckIn = {
   battery?: number;
   affecting: string[];
   mustDo: string[];
+  /** "Must do" items ticked off — each gently spends a little energy (for the widget). */
+  completed?: string[];
 };
 
 const HOME_CHECK_IN_KEY = 'hassle_home_daily_checkin_v1';
@@ -274,17 +276,53 @@ function DailyCheckInModal({ visible, onSave }: { visible: boolean; onSave: (che
   );
 }
 
-function TodayCheckInCard({ checkIn }: { checkIn: HomeDailyCheckIn }) {
+function TodayCheckInCard({ checkIn, onToggleMustDo }: { checkIn: HomeDailyCheckIn; onToggleMustDo?: (label: string) => void }) {
   const ff = useFontFamily();
+  const remaining = homeEnergyRemaining(checkIn);
+  const completed = checkIn.completed ?? [];
+  const isSpoon = checkIn.energyMode === 'spoon';
   return (
     <View style={homeCheckInStyles.cardWrap}>
       <View style={homeCheckInStyles.summaryCard}>
-        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{checkIn.energyMode === 'spoon' ? 'Spoons' : 'Battery'}</Text>
+        <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>{isSpoon ? 'Spoons left' : 'Battery left'}</Text>
         <Text style={[homeCheckInStyles.summaryBattery, { fontFamily: ff.bold }]}>
-          {checkIn.energyMode === 'spoon' ? `${checkIn.energyLevel} spoon${checkIn.energyLevel === 1 ? '' : 's'}` : `${checkIn.energyLevel ?? checkIn.battery ?? 0}%`}
+          {isSpoon ? `${remaining} spoon${remaining === 1 ? '' : 's'}` : `${remaining}%`}
         </Text>
+
         <SummaryList title="Affecting today" items={checkIn.affecting} />
-        <SummaryList title="Must do" items={checkIn.mustDo} />
+
+        <View style={homeCheckInStyles.summarySection}>
+          <Text style={[homeCheckInStyles.summaryLabel, { fontFamily: ff.medium }]}>Must do</Text>
+          {checkIn.mustDo.length > 0 ? (
+            checkIn.mustDo.map((item) => {
+              const done = completed.includes(item);
+              return (
+                <Pressable
+                  key={item}
+                  style={({ pressed }) => [homeCheckInStyles.taskRow, pressed && { opacity: 0.7 }]}
+                  onPress={() => onToggleMustDo?.(item)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: done }}
+                  accessibilityLabel={item}
+                >
+                  <MaterialIcons
+                    name={done ? 'check-circle' : 'radio-button-unchecked'}
+                    size={20}
+                    color={done ? Colors.primary : Colors.textSubtle}
+                  />
+                  <Text style={[homeCheckInStyles.taskText, done && homeCheckInStyles.taskTextDone, { fontFamily: ff.regular }]}>{item}</Text>
+                </Pressable>
+              );
+            })
+          ) : (
+            <Text style={[homeCheckInStyles.summaryEmpty, { fontFamily: ff.regular }]}>• Nothing added</Text>
+          )}
+          {checkIn.mustDo.length > 0 ? (
+            <Text style={[homeCheckInStyles.taskHint, { fontFamily: ff.regular }]}>
+              Ticking things off uses a little energy — that&apos;s meant to. No pressure to finish.
+            </Text>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -758,6 +796,22 @@ export default function TodayScreen() {
     updateWidget(buildWidgetSnapshotFromCheckIn(checkIn)).catch(() => {});
   }
 
+  // Tick a "must do" on/off — spends (or restores) a little energy and refreshes
+  // the widget so Lola's pose tracks how much is left.
+  function handleToggleMustDo(label: string) {
+    setHomeCheckIn((prev) => {
+      if (!prev) return prev;
+      const completed = prev.completed ?? [];
+      const nextCompleted = completed.includes(label)
+        ? completed.filter((l) => l !== label)
+        : [...completed, label];
+      const next = { ...prev, completed: nextCompleted };
+      saveHomeDailyCheckIn(next);
+      updateWidget(buildWidgetSnapshotFromCheckIn(next)).catch(() => {});
+      return next;
+    });
+  }
+
   const homeChips = [
     { key: 'body', label: 'Body', onPress: () => router.push('/body' as any) },
     { key: 'mind', label: 'Mind', onPress: () => router.push('/mind' as any) },
@@ -808,7 +862,7 @@ export default function TodayScreen() {
             checkIn={todaysHomeCheckIn}
             onNeedCheckIn={() => setShowHomeCheckIn(true)}
           />
-          {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} /> : null}
+          {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} /> : null}
         </ScrollView>
 
         <DailyCheckInModal visible={showHomeCheckIn} onSave={handleSaveHomeCheckIn} />
@@ -881,7 +935,7 @@ export default function TodayScreen() {
           checkIn={todaysHomeCheckIn}
           onNeedCheckIn={() => setShowHomeCheckIn(true)}
         />
-        {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} /> : null}
+        {todaysHomeCheckIn ? <TodayCheckInCard checkIn={todaysHomeCheckIn} onToggleMustDo={handleToggleMustDo} /> : null}
 
         <View style={{ height: insets.bottom + Spacing.xl }} />
       </ScrollView>
@@ -1092,6 +1146,28 @@ const homeCheckInStyles = StyleSheet.create({
     fontSize: FontSizes.sm,
     color: Colors.textSubtle,
     lineHeight: 20,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: 6,
+  },
+  taskText: {
+    flex: 1,
+    fontSize: FontSizes.base,
+    color: Colors.text,
+  },
+  taskTextDone: {
+    color: Colors.textSubtle,
+    textDecorationLine: 'line-through',
+  },
+  taskHint: {
+    fontSize: FontSizes.xs,
+    color: Colors.textSubtle,
+    fontStyle: 'italic',
+    lineHeight: 17,
+    marginTop: Spacing.xs,
   },
 });
 

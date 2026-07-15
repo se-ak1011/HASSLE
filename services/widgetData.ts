@@ -94,28 +94,48 @@ export function buildWidgetSnapshot(
   };
 }
 
-/**
- * Build a widget snapshot from the new home 3-step daily check-in (the current
- * energy source). The lightweight check-in doesn't track task-cost usage, so
- * "remaining" is simply the level the user set; tags come from what's affecting
- * them and the task line from what they said needs doing.
- */
-export function buildWidgetSnapshotFromCheckIn(checkIn: {
+/** Minimal shape of the home 3-step check-in the widget needs. */
+export type HomeCheckInLike = {
   date: string;
   energyMode: EnergyMode;
   energyLevel: number;
   affecting?: string[];
   mustDo?: string[];
-}): WidgetSnapshot {
+  completed?: string[];
+};
+
+/** Energy each ticked-off "must do" gently costs — enough that Lola's pose visibly
+ *  changes across the day, never so much that a normal day bottoms out instantly. */
+function taskCost(mode: EnergyMode): number {
+  return mode === 'battery' ? 10 : 1; // ~10% or 1 spoon per completed task
+}
+
+/**
+ * Energy left = the level you set, minus a little for each thing you ticked off.
+ * This is what makes the widget fun: the pose gets more tired as the day is spent.
+ */
+export function homeEnergyRemaining(checkIn: HomeCheckInLike): number {
+  const used = (checkIn.completed?.length ?? 0) * taskCost(checkIn.energyMode);
+  return Math.max(0, Math.max(0, checkIn.energyLevel) - used);
+}
+
+/**
+ * Build a widget snapshot from the new home 3-step daily check-in (the current
+ * energy source). "Remaining" reflects what's been ticked off, so Lola's pose
+ * changes with how much energy is left; tags come from what's affecting them.
+ */
+export function buildWidgetSnapshotFromCheckIn(checkIn: HomeCheckInLike): WidgetSnapshot {
   const isBattery = checkIn.energyMode === 'battery';
   const level = Math.max(0, checkIn.energyLevel);
   const energyMax = isBattery ? 100 : Math.max(level, 12);
-  const energyRemaining = level;
+  const energyRemaining = homeEnergyRemaining(checkIn);
   const energyPercent = isBattery
-    ? Math.min(100, level)
+    ? Math.min(100, energyRemaining)
     : energyMax > 0
-    ? Math.round((level / energyMax) * 100)
+    ? Math.round((energyRemaining / energyMax) * 100)
     : 0;
+  const completed = checkIn.completed ?? [];
+  const pending = (checkIn.mustDo ?? []).filter((t) => !completed.includes(t));
 
   return {
     date: checkIn.date,
@@ -125,9 +145,9 @@ export function buildWidgetSnapshotFromCheckIn(checkIn: {
     energyMax,
     energyPercent,
     pose: poseFor(checkIn.energyMode, energyPercent, energyRemaining),
-    tasksDone: 0,
+    tasksDone: completed.length,
     tasksTotal: checkIn.mustDo?.length ?? 0,
-    pendingTasks: (checkIn.mustDo ?? []).slice(0, 3),
+    pendingTasks: pending.slice(0, 3),
     isFlareDay: false,
     tags: (checkIn.affecting ?? []).slice(0, 3),
     reflection: undefined,
