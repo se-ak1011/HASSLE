@@ -3,6 +3,7 @@
 // App Store Connect (set PRIVACY_POLICY_URL once it's live).
 
 export const SUPPORT_EMAIL = 'drainedstore@gmail.com';
+export const COMPANY = 'Drained: Batteries Not Included LTD';
 
 // Public legal pages (GitHub Pages, served from /docs). Used for the App Store
 // Connect listing and any external links; the in-app Legal screen mirrors them.
@@ -20,6 +21,12 @@ export const MEDICAL_DISCLAIMER_SHORT =
 export type LegalSection = { heading: string; body: string[] };
 
 export const PRIVACY_POLICY: LegalSection[] = [
+  {
+    heading: 'Who is responsible',
+    body: [
+      `The data controller is ${COMPANY}, the company behind Hassle. For any privacy request or question, email ${SUPPORT_EMAIL}.`,
+    ],
+  },
   {
     heading: 'The short version',
     body: [
@@ -67,7 +74,7 @@ export const PRIVACY_POLICY: LegalSection[] = [
   },
   {
     heading: 'Contact',
-    body: [`Questions about your privacy? Email ${SUPPORT_EMAIL}.`],
+    body: [`${COMPANY}. Questions about your privacy? Email ${SUPPORT_EMAIL}.`],
   },
 ];
 
