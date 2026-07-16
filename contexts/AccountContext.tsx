@@ -40,6 +40,7 @@ interface AccountContextType {
   signIn(provider: AuthProvider): Promise<{ ok: boolean; error?: string }>;
   signOut(): Promise<void>;
   syncNow(): Promise<void>;
+  deleteAccount(): Promise<{ ok: boolean; error?: string }>;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -135,11 +136,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     if (result.syncedAt) setLastSyncedAt(result.syncedAt);
   }, []);
 
+  // Permanently delete the account and all synced data. The `delete-account`
+  // edge function verifies the caller's JWT and removes their auth user with the
+  // service role; every sync table cascades on that delete. We then sign out
+  // locally. (Clearing on-device data is handled by the caller via resetAllData.)
+  const deleteAccount = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account', { body: {} });
+      if (error) return { ok: false, error: error.message };
+      if (data && (data as { ok?: boolean }).ok === false) {
+        return { ok: false, error: (data as { error?: string }).error ?? 'Could not delete account.' };
+      }
+      await supabase.auth.signOut();
+      setAccount(null);
+      setSyncStatus('idle');
+      setLastSyncedAt(null);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Could not delete account.' };
+    }
+  }, []);
+
   const mode: AccountMode = account ? 'cloud' : 'local';
 
   return (
     <AccountContext.Provider
-      value={{ mode, account, isLoading, syncStatus, lastSyncedAt, signIn, signOut, syncNow }}
+      value={{ mode, account, isLoading, syncStatus, lastSyncedAt, signIn, signOut, syncNow, deleteAccount }}
     >
       {children}
     </AccountContext.Provider>

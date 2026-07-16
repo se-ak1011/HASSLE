@@ -7,6 +7,8 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Spacing, FontSizes, Radius } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { useAccount, AccountMode, AuthProvider } from '@/contexts/AccountContext';
+import { useDay } from '@/contexts/DayContext';
+import { useAlert } from '@/template';
 import { formatDateTimeForRegion } from '@/services/regionFormat';
 
 interface OptionMeta {
@@ -45,11 +47,41 @@ export default function AccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const ff = useFontFamily();
-  const { mode, account, syncStatus, lastSyncedAt, signIn, signOut, syncNow } = useAccount();
+  const { mode, account, syncStatus, lastSyncedAt, signIn, signOut, syncNow, deleteAccount } = useAccount();
+  const { resetAllData } = useDay();
+  const { showAlert } = useAlert();
 
   const [intent, setIntent] = useState<AccountMode>(mode);
-  const [busy, setBusy] = useState<AuthProvider | 'out' | 'sync' | null>(null);
+  const [busy, setBusy] = useState<AuthProvider | 'out' | 'sync' | 'delete' | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function handleDeleteAccount() {
+    showAlert(
+      'Delete your account?',
+      'This permanently deletes your account and all synced data. Data on this device will also be cleared. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            setBusy('delete');
+            setError(null);
+            const res = await deleteAccount();
+            if (!res.ok) {
+              setBusy(null);
+              setError(res.error ?? 'Could not delete your account. Please try again.');
+              return;
+            }
+            // Wipe everything local, then restart at onboarding.
+            await resetAllData();
+            setBusy(null);
+            router.replace('/onboarding' as any);
+          },
+        },
+      ]
+    );
+  }
 
   async function handleSignIn(provider: AuthProvider) {
     setBusy(provider);
@@ -275,6 +307,29 @@ export default function AccountScreen() {
                   )}
                 </Pressable>
               </View>
+
+              <Pressable
+                style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.85 }]}
+                onPress={handleDeleteAccount}
+                disabled={busy === 'delete'}
+                accessibilityRole="button"
+                accessibilityLabel="Delete account"
+              >
+                {busy === 'delete' ? (
+                  <ActivityIndicator size="small" color={Colors.danger} />
+                ) : (
+                  <>
+                    <MaterialIcons name="delete-outline" size={16} color={Colors.danger} />
+                    <Text style={[styles.deleteBtnText, { fontFamily: ff.semibold }]}>Delete account</Text>
+                  </>
+                )}
+              </Pressable>
+              {error ? (
+                <View style={styles.errorRow}>
+                  <MaterialIcons name="error-outline" size={15} color={Colors.flare} />
+                  <Text style={[styles.errorText, { fontFamily: ff.regular }]}>{error}</Text>
+                </View>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -407,4 +462,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   smallBtnText: { fontSize: FontSizes.sm, color: Colors.text },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.danger + '55',
+  },
+  deleteBtnText: { fontSize: FontSizes.sm, color: Colors.danger },
 });
