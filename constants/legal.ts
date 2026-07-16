@@ -4,11 +4,10 @@
 
 export const SUPPORT_EMAIL = 'drainedstore@gmail.com';
 
-// Set these to your hosted pages before submitting to the App Store. App Store
-// Connect requires a public privacy-policy URL. The in-app Legal screen works
-// without them; these are only for the store listing / external links.
-export const PRIVACY_POLICY_URL = '';
-export const TERMS_URL = '';
+// Public legal pages (GitHub Pages, served from /docs). Used for the App Store
+// Connect listing and any external links; the in-app Legal screen mirrors them.
+export const PRIVACY_POLICY_URL = 'https://se-ak1011.github.io/HASSLE/privacy/';
+export const TERMS_URL = 'https://se-ak1011.github.io/HASSLE/terms/';
 
 // Shown wherever Lola gives health-adjacent output (AI, reports) and in Settings.
 export const MEDICAL_DISCLAIMER =
