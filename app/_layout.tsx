@@ -74,6 +74,7 @@ export default function RootLayout() {
                     <Stack.Screen name="journal" />
                     <Stack.Screen name="looking-forward" />
                     <Stack.Screen name="letters" />
+                    <Stack.Screen name="legal" />
                     <Stack.Screen name="body" />
                     <Stack.Screen name="body-pain" />
                     <Stack.Screen name="body-fatigue" />

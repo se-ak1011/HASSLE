@@ -7,6 +7,7 @@ import { Colors, FontSizes, Radius, Spacing } from '@/constants/theme';
 import { useFontFamily } from '@/hooks/useFontFamily';
 import { HomeBackButton } from '@/components/ui/HomeBackButton';
 import { invokeLola } from '@/services/aiLola';
+import { MEDICAL_DISCLAIMER_SHORT } from '@/constants/legal';
 
 type Message = { role: 'user' | 'lola'; text: string };
 
@@ -59,6 +60,7 @@ export default function AiCoachScreen() {
         <View style={{ width: 24 }} />
       </View>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 150 }]} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.disclaimer, { fontFamily: ff.regular }]}>{MEDICAL_DISCLAIMER_SHORT}</Text>
         {messages.map((message, index) => (
           <View key={`${message.role}-${index}`} style={[styles.bubble, message.role === 'user' ? styles.userBubble : styles.lolaBubble]}>
             <Text style={[styles.bubbleText, message.role === 'user' ? styles.userText : styles.lolaText, { fontFamily: ff.regular }]}>{message.text}</Text>
@@ -96,6 +98,7 @@ const styles = StyleSheet.create({
   lolaText: { color: Colors.text },
   userText: { color: Colors.background },
   loader: { marginVertical: Spacing.sm },
+  disclaimer: { color: Colors.textSubtle, fontSize: FontSizes.xs, lineHeight: 17, fontStyle: 'italic', textAlign: 'center', paddingHorizontal: Spacing.md, marginBottom: Spacing.md },
   error: { color: Colors.danger, fontSize: FontSizes.sm, lineHeight: 20 },
   composer: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, backgroundColor: Colors.background, borderTopWidth: 1, borderTopColor: Colors.hairline },
   input: { flex: 1, minHeight: 48, maxHeight: 120, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.xl, paddingHorizontal: Spacing.md, paddingVertical: 12, color: Colors.text, backgroundColor: Colors.surface, fontSize: FontSizes.base },

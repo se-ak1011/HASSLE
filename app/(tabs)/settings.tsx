@@ -17,9 +17,7 @@ import { useDay } from '@/hooks/useDay';
 import { useAlert } from '@/template';
 import { exportLast7Days, exportClinicalReport } from '@/services/exportService';
 import { useFontFamily } from '@/hooks/useFontFamily';
-import { usePlus } from '@/contexts/PlusContext';
 import { useAccount } from '@/contexts/AccountContext';
-import { PaywallModal } from '@/components/ui/PaywallModal';
 import { useRouter } from 'expo-router';
 import {
   ReminderFrequency,
@@ -440,11 +438,9 @@ export default function SettingsScreen() {
   const { resetAllData } = useDay();
   const ff = useFontFamily();
   const router = useRouter();
-  const { isPlus } = usePlus();
   const { mode } = useAccount();
   const [exporting, setExporting] = useState(false);
   const [exportingClinical, setExportingClinical] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [showNavDrawer, setShowNavDrawer] = useState(false);
 
   async function handleClinicalExport() {
@@ -614,32 +610,6 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        {/* Hassle Plus */}
-        <SectionHeader title="Hassle Plus" />
-        <Card>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-            onPress={() => setShowPaywall(true)}
-          >
-            <View style={[styles.rowIcon, styles.rowIconDefault]}>
-              <MaterialIcons name="auto-awesome" size={18} color={Colors.primary} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>{isPlus ? 'Plus is active' : 'Hassle Plus'}</Text>
-              <Text style={styles.rowSublabel}>
-                {isPlus
-                  ? 'Thank you for supporting Hassle 💜'
-                  : 'The core app stays free. Plus adds extra tools and supports development.'}
-              </Text>
-            </View>
-            <MaterialIcons
-              name={isPlus ? 'check-circle' : 'chevron-right'}
-              size={20}
-              color={isPlus ? Colors.success : Colors.textSubtle}
-            />
-          </Pressable>
-        </Card>
-
         {/* Export */}
         <SectionHeader title="Export" />
         <Card>
@@ -754,11 +724,28 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <Card>
+          <Pressable
+            style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+            onPress={() => router.push('/legal' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Privacy policy and terms"
+          >
+            <View style={[styles.rowIcon, styles.rowIconDefault]}>
+              <MaterialIcons name="description" size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Privacy policy & terms</Text>
+              <Text style={styles.rowSublabel}>How your data is handled, plus our health &amp; safety note.</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={Colors.textSubtle} />
+          </Pressable>
+        </Card>
+
         {/* Version */}
         <Text style={[styles.version, { fontFamily: ff.regular }]}>Version {APP_VERSION}</Text>
       </ScrollView>
 
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
       <NavDrawer visible={showNavDrawer} onClose={() => setShowNavDrawer(false)} />
     </View>
   );

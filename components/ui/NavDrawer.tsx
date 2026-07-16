@@ -35,7 +35,6 @@ const MORE_ITEMS: NavItem[] = [
   { label: 'Library',       icon: 'menu-book',      route: '/library' },
   { label: 'Directory',     icon: 'local-hospital', route: '/directory' },
   { label: 'Doctor Report', icon: 'picture-as-pdf', route: '/report' },
-  { label: 'Plus',          icon: 'auto-awesome',   route: '/plus' },
   { label: 'Settings',      icon: 'tune',           route: '/settings' },
   { label: 'Account',       icon: 'person-outline', route: '/account' },
 ];
